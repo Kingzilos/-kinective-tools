@@ -1,0 +1,1503 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ABC Club Deposit Reconciliation</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --navy:      #1F3864;
+    --blue:      #2E4D8A;
+    --lt-blue:   #D9E1F2;
+    --green-bg:  #E2EFDA;
+    --green-txt: #375623;
+    --amber-bg:  #FFF3CD;
+    --amber-txt: #856404;
+    --red-bg:    #F8D7DA;
+    --red-txt:   #842029;
+    --gray-100:  #F7F8FA;
+    --gray-200:  #EAECEF;
+    --gray-300:  #C8CDD5;
+    --gray-600:  #6B7280;
+    --gray-800:  #1E2328;
+    --white:     #FFFFFF;
+    --carry-out: #FEF3C7;
+    --carry-out-border: #D97706;
+    --carry-in:  #E0F2FE;
+    --carry-in-border:  #0369A1;
+  }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: #F0F2F5;
+    color: var(--gray-800);
+    min-height: 100vh;
+  }
+
+  /* ── Header ── */
+  header {
+    background: var(--navy);
+    padding: 0 40px;
+    height: 64px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: white;
+  }
+  .logo-mark {
+    width: 32px; height: 32px;
+    background: rgba(255,255,255,0.15);
+    border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; font-weight: 600; color: white;
+    font-family: 'DM Mono', monospace;
+  }
+  .logo-text { font-size: 15px; font-weight: 500; color: rgba(255,255,255,0.9); }
+  .logo-sub  { font-size: 11px; color: rgba(255,255,255,0.45); margin-top: 1px; }
+  header .status-pill {
+    font-size: 11px; font-weight: 500;
+    padding: 4px 10px; border-radius: 20px;
+    background: rgba(255,255,255,0.1); color: rgba(255,255,255,0.6);
+    font-family: 'DM Mono', monospace;
+  }
+
+  /* ── Main layout ── */
+  main {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 48px 24px;
+  }
+
+  /* ── Section heading ── */
+  .step-label {
+    font-size: 10px; font-weight: 600; letter-spacing: .12em;
+    text-transform: uppercase; color: var(--gray-600);
+    margin-bottom: 8px;
+  }
+  .section-title {
+    font-size: 22px; font-weight: 600;
+    color: var(--gray-800); margin-bottom: 6px;
+  }
+  .section-sub {
+    font-size: 13px; color: var(--gray-600); margin-bottom: 32px;
+    line-height: 1.5;
+  }
+
+  /* ── Upload cards ── */
+  .upload-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 32px;
+  }
+  .upload-card {
+    background: var(--white);
+    border: 1.5px dashed var(--gray-300);
+    border-radius: 10px;
+    padding: 28px 24px;
+    cursor: pointer;
+    transition: border-color .15s, background .15s, box-shadow .15s;
+    position: relative;
+  }
+  .upload-card:hover {
+    border-color: var(--blue);
+    background: #F5F7FF;
+    box-shadow: 0 2px 12px rgba(46,77,138,.08);
+  }
+  .upload-card.dragging {
+    border-color: var(--blue);
+    background: #EEF2FF;
+  }
+  .upload-card.loaded {
+    border-style: solid;
+    border-color: var(--green-txt);
+    background: var(--green-bg);
+  }
+  .upload-card input[type=file] {
+    position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;
+  }
+  .upload-icon {
+    width: 40px; height: 40px;
+    background: var(--gray-100); border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 12px; font-size: 18px;
+  }
+  .upload-card.loaded .upload-icon { background: var(--green-bg); }
+  .upload-title { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
+  .upload-hint  { font-size: 12px; color: var(--gray-600); }
+  .upload-card.loaded .upload-hint { color: var(--green-txt); font-weight: 500; }
+  .file-name {
+    font-size: 11px; font-family: 'DM Mono', monospace;
+    color: var(--green-txt); margin-top: 8px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+
+  /* ── Month selector ── */
+  .month-row {
+    display: flex; align-items: center; gap: 16px;
+    background: var(--white);
+    border: 1px solid var(--gray-200);
+    border-radius: 10px;
+    padding: 16px 20px;
+    margin-bottom: 28px;
+  }
+  .month-row label { font-size: 13px; font-weight: 500; white-space: nowrap; }
+  .month-row select {
+    font-family: 'DM Sans', sans-serif; font-size: 13px;
+    padding: 6px 12px; border: 1px solid var(--gray-300);
+    border-radius: 6px; background: var(--gray-100);
+    color: var(--gray-800); outline: none; cursor: pointer;
+  }
+  .month-row .hint { font-size: 12px; color: var(--gray-600); margin-left: auto; }
+
+  /* ── Run button ── */
+  .run-btn {
+    display: flex; align-items: center; justify-content: center; gap: 10px;
+    width: 100%; padding: 14px;
+    background: var(--navy); color: white;
+    font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 600;
+    border: none; border-radius: 10px; cursor: pointer;
+    transition: background .15s, transform .1s, box-shadow .15s;
+    margin-bottom: 32px;
+  }
+  .run-btn:hover:not(:disabled) {
+    background: var(--blue);
+    box-shadow: 0 4px 16px rgba(31,56,100,.25);
+    transform: translateY(-1px);
+  }
+  .run-btn:disabled { opacity: .45; cursor: not-allowed; transform: none; }
+
+  /* ── Progress / status ── */
+  .progress-wrap { margin-bottom: 28px; display: none; }
+  .progress-track {
+    height: 4px; background: var(--gray-200); border-radius: 4px; overflow: hidden;
+    margin-bottom: 10px;
+  }
+  .progress-bar {
+    height: 100%; background: var(--navy);
+    border-radius: 4px; transition: width .3s ease;
+    width: 0%;
+  }
+  .progress-msg { font-size: 12px; color: var(--gray-600); font-family: 'DM Mono', monospace; }
+
+  /* ── Results panel ── */
+  .results { display: none; }
+  .results-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 20px;
+  }
+  .results-title { font-size: 18px; font-weight: 600; }
+  .export-btn {
+    display: flex; align-items: center; gap: 8px;
+    padding: 9px 18px;
+    background: var(--green-txt); color: white;
+    font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 600;
+    border: none; border-radius: 8px; cursor: pointer;
+    transition: background .15s, box-shadow .15s;
+  }
+  .export-btn:hover { background: #2d4a1f; box-shadow: 0 4px 12px rgba(55,86,35,.25); }
+
+  /* ── Summary cards ── */
+  .summary-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
+    margin-bottom: 24px;
+  }
+  .summary-card {
+    background: var(--white); border-radius: 10px;
+    border: 1px solid var(--gray-200);
+    padding: 20px;
+  }
+  .summary-card .label { font-size: 11px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--gray-600); margin-bottom: 8px; }
+  .summary-card .value { font-size: 20px; font-weight: 600; font-family: 'DM Mono', monospace; margin-bottom: 4px; }
+  .summary-card .sub   { font-size: 11px; color: var(--gray-600); }
+  .badge-reconciled {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-size: 11px; font-weight: 600; padding: 3px 8px;
+    background: var(--green-bg); color: var(--green-txt); border-radius: 20px;
+  }
+  .badge-variance {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-size: 11px; font-weight: 600; padding: 3px 8px;
+    background: var(--red-bg); color: var(--red-txt); border-radius: 20px;
+  }
+
+  /* ── Data preview tables ── */
+  .tabs {
+    display: flex; gap: 0; border-bottom: 2px solid var(--gray-200);
+    margin-bottom: 0;
+  }
+  .tab-btn {
+    padding: 10px 20px; font-size: 13px; font-weight: 500;
+    background: none; border: none; cursor: pointer; color: var(--gray-600);
+    border-bottom: 2px solid transparent; margin-bottom: -2px;
+    transition: color .15s, border-color .15s;
+  }
+  .tab-btn.active { color: var(--navy); border-bottom-color: var(--navy); font-weight: 600; }
+  .tab-btn:hover:not(.active) { color: var(--gray-800); }
+
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  .preview-wrap {
+    background: var(--white); border: 1px solid var(--gray-200);
+    border-radius: 0 0 10px 10px; overflow: hidden;
+  }
+  .preview-scroll { overflow-x: auto; max-height: 360px; overflow-y: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  thead th {
+    position: sticky; top: 0; z-index: 2;
+    background: var(--navy); color: white;
+    padding: 9px 12px; text-align: left; font-weight: 500;
+    white-space: nowrap;
+  }
+  tbody tr { border-bottom: 1px solid var(--gray-100); }
+  tbody tr:last-child { border-bottom: none; }
+  tbody td { padding: 7px 12px; }
+
+  /* Carry highlight rows in preview */
+  tbody tr.carry-out td { background: var(--carry-out); }
+  tbody tr.carry-in  td { background: var(--carry-in); }
+  tbody tr.carry-out td:first-child { border-left: 3px solid var(--carry-out-border); }
+  tbody tr.carry-in  td:first-child { border-left: 3px solid var(--carry-in-border); }
+
+  .legend {
+    display: flex; gap: 20px; padding: 10px 14px;
+    border-top: 1px solid var(--gray-200);
+    font-size: 11px; color: var(--gray-600);
+  }
+  .legend-item { display: flex; align-items: center; gap: 6px; }
+  .legend-dot {
+    width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0;
+  }
+  .legend-dot.carry-out { background: var(--carry-out); border: 1.5px solid var(--carry-out-border); }
+  .legend-dot.carry-in  { background: var(--carry-in);  border: 1.5px solid var(--carry-in-border); }
+
+  /* ── Error alert ── */
+  .alert {
+    display: none;
+    padding: 12px 16px; border-radius: 8px; font-size: 13px;
+    margin-bottom: 20px;
+  }
+  .alert.error   { background: var(--red-bg);   color: var(--red-txt);   border: 1px solid #F5C2C7; }
+  .alert.warning { background: var(--amber-bg);  color: var(--amber-txt); border: 1px solid #FFECB5; }
+
+  .mono { font-family: 'DM Mono', monospace; }
+  .text-right { text-align: right; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-mark">RC</div>
+    <div>
+      <div class="logo-text">ABC Reconciliation Tool</div>
+      <div class="logo-sub">Kinective Fitness Club</div>
+    </div>
+  </div>
+  <div class="status-pill" id="headerStatus">Ready</div>
+</header>
+
+<main>
+
+  <!-- Step 1: Upload -->
+  <div class="step-label">Step 1</div>
+  <div class="section-title">Upload Source Files</div>
+  <div class="section-sub">
+    Upload the ABC Club Deposits report and the Bank Statement export. Both files must cover the month you want to reconcile plus at least a few days before and after.
+  </div>
+
+  <div class="upload-grid">
+    <!-- Club file -->
+    <div class="upload-card" id="clubCard">
+      <input type="file" id="clubFile" accept=".xlsx,.xls" onchange="handleFile('club', this)">
+      <div class="upload-icon" id="clubIcon">📋</div>
+      <div class="upload-title">ABC Club Deposits Report</div>
+      <div class="upload-hint" id="clubHint">Click or drag .xlsx file here</div>
+      <div class="file-name" id="clubFileName"></div>
+    </div>
+    <!-- Bank file -->
+    <div class="upload-card" id="bankCard">
+      <input type="file" id="bankFile" accept=".xlsx,.xls" onchange="handleFile('bank', this)">
+      <div class="upload-icon" id="bankIcon">🏦</div>
+      <div class="upload-title">Bank Statement Export</div>
+      <div class="upload-hint" id="bankHint">Click or drag .xlsx file here</div>
+      <div class="file-name" id="bankFileName"></div>
+    </div>
+  </div>
+
+  <!-- Step 2: Select month -->
+  <div class="step-label">Step 2</div>
+  <div class="section-title">Select Reconciliation Month</div>
+  <div class="section-sub" style="margin-bottom:16px;">Choose the month you want to reconcile.</div>
+
+  <div class="month-row">
+    <label for="reconMonth">Reconciliation Month</label>
+    <select id="reconMonth">
+      <option value="2025-12">December 2025</option>
+      <option value="2026-01">January 2026</option>
+      <option value="2026-02">February 2026</option>
+      <option value="2026-03">March 2026</option>
+      <option value="2026-04">April 2026</option>
+      <option value="2026-05">May 2026</option>
+      <option value="2026-06">June 2026</option>
+      <option value="2026-07">July 2026</option>
+      <option value="2026-08">August 2026</option>
+      <option value="2026-09">September 2026</option>
+      <option value="2026-10">October 2026</option>
+      <option value="2026-11">November 2026</option>
+      <option value="2026-12">December 2026</option>
+    </select>
+    <span class="hint">Bank files should cover the full month ± a few days</span>
+  </div>
+
+  <!-- Alert -->
+  <div class="alert" id="alertBox"></div>
+
+  <!-- Run -->
+  <button class="run-btn" id="runBtn" disabled onclick="runReconciliation()">
+    <span>Run Reconciliation</span>
+  </button>
+
+  <!-- Progress -->
+  <div class="progress-wrap" id="progressWrap">
+    <div class="progress-track"><div class="progress-bar" id="progressBar"></div></div>
+    <div class="progress-msg" id="progressMsg">Initializing...</div>
+  </div>
+
+  <!-- Results -->
+  <div class="results" id="resultsPanel">
+
+    <div class="results-header">
+      <div class="results-title">Reconciliation Results</div>
+      <button class="export-btn" onclick="exportExcel()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Export to Excel
+      </button>
+    </div>
+
+    <div class="summary-grid" id="summaryGrid"></div>
+
+    <div class="tabs">
+      <button class="tab-btn active" onclick="switchTab('recon')">Reconciliation</button>
+      <button class="tab-btn" onclick="switchTab('club')">Club Data</button>
+      <button class="tab-btn" onclick="switchTab('bank')">Bank Data</button>
+    </div>
+
+    <!-- Reconciliation preview -->
+    <div class="tab-panel active" id="tab-recon">
+      <div class="preview-wrap">
+        <div class="preview-scroll">
+          <table id="reconTable"></table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Club data preview -->
+    <div class="tab-panel" id="tab-club">
+      <div class="preview-wrap">
+        <div class="preview-scroll">
+          <table id="clubTable"></table>
+        </div>
+        <div class="legend">
+          <div class="legend-item"><div class="legend-dot carry-out"></div>Carry-Out — January ABC date posts to February bank</div>
+          <div class="legend-item"><div class="legend-dot carry-in"></div>Carry-In — December ABC date posts to January bank</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bank data preview -->
+    <div class="tab-panel" id="tab-bank">
+      <div class="preview-wrap">
+        <div class="preview-scroll">
+          <table id="bankTable"></table>
+        </div>
+        <div class="legend">
+          <div class="legend-item"><div class="legend-dot carry-out"></div>Carry-Out — January ABC date, posted in February</div>
+          <div class="legend-item"><div class="legend-dot carry-in"></div>Carry-In — December ABC date, posted in January</div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /results -->
+
+</main>
+
+<script>
+// ── State ─────────────────────────────────────────────────────────────────────
+let state = { clubWb: null, bankWb: null, result: null };
+
+// ── File handling ─────────────────────────────────────────────────────────────
+function handleFile(type, input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const wb = XLSX.read(e.target.result, { type: 'binary', cellDates: true });
+      if (type === 'club') {
+        state.clubWb = wb;
+        setCardLoaded('club', file.name);
+      } else {
+        state.bankWb = wb;
+        setCardLoaded('bank', file.name);
+      }
+      checkReady();
+    } catch(err) {
+      showAlert('error', `Could not read ${file.name}: ${err.message}`);
+    }
+  };
+  reader.readAsBinaryString(file);
+}
+
+function setCardLoaded(type, name) {
+  const card = document.getElementById(type + 'Card');
+  const hint = document.getElementById(type + 'Hint');
+  const fn   = document.getElementById(type + 'FileName');
+  const icon = document.getElementById(type + 'Icon');
+  card.classList.add('loaded');
+  hint.textContent = 'File loaded successfully';
+  fn.textContent   = name;
+  icon.textContent = '✓';
+}
+
+function checkReady() {
+  document.getElementById('runBtn').disabled = !(state.clubWb && state.bankWb);
+}
+
+// ── Tab switching ─────────────────────────────────────────────────────────────
+function switchTab(name) {
+  document.querySelectorAll('.tab-btn').forEach((b,i) => {
+    const names = ['recon','club','bank'];
+    b.classList.toggle('active', names[i] === name);
+  });
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+}
+
+// ── Alert ─────────────────────────────────────────────────────────────────────
+function showAlert(type, msg) {
+  const el = document.getElementById('alertBox');
+  el.className = `alert ${type}`;
+  el.style.display = 'block';
+  el.textContent = msg;
+}
+function clearAlert() {
+  const el = document.getElementById('alertBox');
+  el.style.display = 'none';
+}
+
+// ── Progress ──────────────────────────────────────────────────────────────────
+function setProgress(pct, msg) {
+  document.getElementById('progressBar').style.width = pct + '%';
+  document.getElementById('progressMsg').textContent = msg;
+}
+
+// ── Date helpers ──────────────────────────────────────────────────────────────
+const US_HOLIDAYS = {
+  // 2025
+  '2025-01-01': true, '2025-01-20': true, '2025-02-17': true,
+  '2025-05-26': true, '2025-06-19': true, '2025-07-04': true,
+  '2025-09-01': true, '2025-10-13': true, '2025-11-11': true,
+  '2025-11-27': true, '2025-12-25': true,
+  // 2026
+  '2026-01-01': true, '2026-01-19': true, '2026-02-16': true,
+  '2026-05-25': true, '2026-06-19': true, '2026-07-03': true,
+  '2026-09-07': true, '2026-10-12': true, '2026-11-11': true,
+  '2026-11-26': true, '2026-12-25': true,
+};
+
+// Parse any date value from SheetJS into a LOCAL noon Date to avoid timezone crossing.
+// SheetJS with raw:false returns strings like "12/30/2025", "2025-12-30T00:00:00.000Z", or JS Date objects.
+// Setting time to noon (12:00) prevents UTC midnight from shifting the day in any US timezone.
+function parseToLocalNoon(v) {
+  if (!v) return null;
+  let y, m, d;
+  if (v instanceof Date) {
+    y = v.getFullYear(); m = v.getMonth(); d = v.getDate();
+  } else {
+    const s = String(v).trim();
+    // Try ISO format: 2025-12-30 or 2025-12-30T...
+    let match = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (match) { y = +match[1]; m = +match[2]-1; d = +match[3]; }
+    else {
+      // Try M/D/YYYY or MM/DD/YYYY
+      match = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+      if (match) { m = +match[1]-1; d = +match[2]; y = +match[3]; }
+      else {
+        const dt = new Date(s);
+        if (isNaN(dt)) return null;
+        y = dt.getFullYear(); m = dt.getMonth(); d = dt.getDate();
+      }
+    }
+  }
+  return new Date(y, m, d, 12, 0, 0); // local noon — never crosses a day boundary
+}
+
+function fmtDate(d) {
+  if (!d) return '';
+  const dt = d instanceof Date ? d : parseToLocalNoon(d);
+  if (!dt || isNaN(dt)) return '';
+  return String(dt.getMonth()+1).padStart(2,'0') + '/' +
+         String(dt.getDate()).padStart(2,'0') + '/' +
+         dt.getFullYear();
+}
+
+function isoDate(d) {
+  if (!d) return '';
+  const dt = d instanceof Date ? d : parseToLocalNoon(d);
+  if (!dt || isNaN(dt)) return '';
+  return dt.getFullYear() + '-' +
+    String(dt.getMonth()+1).padStart(2,'0') + '-' +
+    String(dt.getDate()).padStart(2,'0');
+}
+
+function addBizDays(d, n) {
+  // Start from a local noon date to avoid timezone drift
+  const base = d instanceof Date ? new Date(d.getFullYear(), d.getMonth(), d.getDate(), 12, 0, 0)
+                                  : parseToLocalNoon(d);
+  let dt = new Date(base);
+  let count = 0;
+  while (count < n) {
+    dt.setDate(dt.getDate() + 1);
+    const iso = isoDate(dt);
+    if (dt.getDay() !== 0 && dt.getDay() !== 6 && !US_HOLIDAYS[iso]) count++;
+  }
+  return dt;
+}
+
+function monthOf(d) {
+  if (!d) return '';
+  const dt = d instanceof Date ? d : parseToLocalNoon(d);
+  if (!dt || isNaN(dt)) return '';
+  return dt.getFullYear() + '-' + String(dt.getMonth()+1).padStart(2,'0');
+}
+
+function monthLabel(d) {
+  const dt = typeof d === 'string' ? new Date(d+'T00:00:00') : d;
+  return dt.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+}
+
+function fmtCurr(n) {
+  if (n == null || n === '') return '';
+  return '$' + Number(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+// ── Parse Club file ───────────────────────────────────────────────────────────
+function parseClub(wb) {
+  // Find the sheet with club deposit data
+  const sheetName = wb.SheetNames.find(s =>
+    s.toLowerCase().includes('club') ||
+    s.toLowerCase().includes('deposit') ||
+    s.toLowerCase().includes('settlement') ||
+    s.toLowerCase().includes('all locations') ||
+    s.toLowerCase().includes('location')
+  );
+  if (!sheetName) throw new Error(`Could not find Club Deposits sheet. Sheet names found: ${wb.SheetNames.join(', ')}. Expected a sheet containing "Club", "Deposit", "Settlement", or "All Locations".`);
+  const ws = wb.Sheets[sheetName];
+  const raw = XLSX.utils.sheet_to_json(ws, { header: 1, defval: null, raw: false });
+
+  // Find header row — look for "Club Name"
+  let headerIdx = -1;
+  for (let i = 0; i < Math.min(raw.length, 20); i++) {
+    if (raw[i] && raw[i].some(c => String(c||'').trim() === 'Club Name')) {
+      headerIdx = i; break;
+    }
+  }
+  if (headerIdx < 0) throw new Error('Could not find header row in Club Deposits sheet. Expected a row containing "Club Name".');
+
+  const headers = raw[headerIdx].map(h => String(h||'').trim());
+  const clubNameIdx = headers.findIndex(h => h === 'Club Name');
+  const dateIdx     = headers.findIndex(h => h.toLowerCase().includes('deposit date') || h.toLowerCase().includes('date'));
+  const amtIdx      = headers.findIndex(h => h.toLowerCase().includes('amount'));
+  const descIdx     = headers.findIndex(h => h.toLowerCase().includes('description'));
+  const methodIdx   = headers.findIndex(h => h.toLowerCase().includes('method'));
+  const clubNumIdx  = headers.findIndex(h => h.toLowerCase().includes('club') && h.toLowerCase().includes('#') || h === 'Club #');
+
+  if (dateIdx < 0 || amtIdx < 0) throw new Error('Club sheet missing required columns (Deposit Date, Amount).');
+
+  const rows = [];
+  for (let i = headerIdx + 1; i < raw.length; i++) {
+    const r = raw[i];
+    if (!r || !r[clubNameIdx]) continue;
+    const clubName = String(r[clubNameIdx]||'').trim();
+    if (!clubName || clubName === 'Club Name') continue;
+
+    const rawDate = r[dateIdx];
+    if (!rawDate) continue;
+    const dt = parseToLocalNoon(rawDate);
+    if (!dt || isNaN(dt)) continue;
+
+    const amt = parseFloat(String(r[amtIdx]||'0').replace(/[$,]/g,''));
+    if (isNaN(amt) || amt === 0) continue;
+
+    const desc   = String(r[descIdx]||'').trim();
+    const method = String(r[methodIdx]||'').trim();
+    const clubNum= r[clubNumIdx] ? String(r[clubNumIdx]).trim() : '';
+    const type   = desc.toLowerCase().includes('merchant') ? 'Merchant' : 'ABC Billing';
+    const lag    = type === 'ABC Billing' ? 1 : 2;
+    const bankDate = addBizDays(dt, lag);
+
+    rows.push({ clubName, clubNum, abcDate: dt, method, amount: amt, description: desc, type, bankDate, reconMonth: monthOf(bankDate) });
+  }
+
+  if (rows.length === 0) throw new Error('No data rows found in Club Deposits sheet.');
+  rows.sort((a,b) => a.abcDate - b.abcDate);
+  return rows;
+}
+
+// ── Parse Bank file ───────────────────────────────────────────────────────────
+function parseBank(wb) {
+  const sheetName = wb.SheetNames.find(s => s.toLowerCase().includes('bank') || s.toLowerCase().includes('posting') || s.toLowerCase().includes('statement')) || wb.SheetNames[0];
+  const ws = wb.Sheets[sheetName];
+  const raw = XLSX.utils.sheet_to_json(ws, { header: 1, defval: null, raw: false });
+
+  // Find header row
+  let headerIdx = 0;
+  for (let i = 0; i < Math.min(raw.length, 10); i++) {
+    if (raw[i] && raw[i].some(c => String(c||'').toLowerCase().includes('post date') || String(c||'').toLowerCase() === 'date')) {
+      headerIdx = i; break;
+    }
+  }
+
+  const headers = raw[headerIdx].map(h => String(h||'').trim().toLowerCase());
+  const dateIdx  = headers.findIndex(h => h.includes('post date') || h === 'date');
+  const descIdx  = headers.findIndex(h => h.includes('description') || h.includes('desc'));
+  const debitIdx = headers.findIndex(h => h.includes('debit'));
+  const creditIdx= headers.findIndex(h => h.includes('credit'));
+  const statusIdx= headers.findIndex(h => h.includes('status'));
+
+  if (dateIdx < 0) throw new Error('Bank sheet missing Post Date column.');
+
+  function categorize(desc) {
+    const d = String(desc||'');
+    if (d.includes('ABCBillDep') || d.includes('ABCCADep')) return 'ABC Billing';
+    if (d.includes('Daily Dep') || d.includes('MerchantServices')) return 'Merchant';
+    if (d.toUpperCase().includes('STRIPE')) return 'Stripe';
+    if (d.includes('EOM Fees')) return 'Merchant Fee';
+    if (d.trim() === 'Deposit') return 'Cash/Check';
+    return 'Other';
+  }
+
+  const rows = [];
+  for (let i = headerIdx + 1; i < raw.length; i++) {
+    const r = raw[i];
+    if (!r || !r[dateIdx]) continue;
+    const dt = parseToLocalNoon(r[dateIdx]);
+    if (!dt || isNaN(dt)) continue;
+
+    const debit  = debitIdx  >= 0 && r[debitIdx]  ? parseFloat(String(r[debitIdx]).replace(/[$,]/g,''))  : null;
+    const credit = creditIdx >= 0 && r[creditIdx] ? parseFloat(String(r[creditIdx]).replace(/[$,]/g,'')) : null;
+    const desc   = String(r[descIdx]||'').trim();
+    const status = statusIdx >= 0 ? String(r[statusIdx]||'').trim() : '';
+
+    rows.push({
+      postDate: dt,
+      description: desc,
+      debit: isNaN(debit) ? null : debit,
+      credit: isNaN(credit) ? null : credit,
+      status,
+      category: categorize(desc)
+    });
+  }
+
+  if (rows.length === 0) throw new Error('No data rows found in Bank sheet.');
+  rows.sort((a,b) => a.postDate - b.postDate);
+  return rows;
+}
+
+// ── Core reconciliation logic ─────────────────────────────────────────────────
+function reconcile(clubRows, bankRows, reconMonthStr) {
+  // reconMonthStr like '2026-01'
+  const [yr, mo] = reconMonthStr.split('-').map(Number);
+  const reconStart = new Date(yr, mo-1, 1);
+  const reconEnd   = new Date(yr, mo, 0);   // last day of month
+  const prevMonthStr = mo === 1 ? `${yr-1}-12` : `${yr}-${String(mo-1).padStart(2,'0')}`;
+  const nextMonthStr = mo === 12 ? `${yr+1}-01` : `${yr}-${String(mo+1).padStart(2,'0')}`;
+
+  // Bank totals for the recon month
+  const bankInReconMonth = bankRows.filter(r => monthOf(r.postDate) === reconMonthStr);
+  const bankABC   = bankInReconMonth.filter(r => r.category === 'ABC Billing' && r.credit != null).reduce((s,r) => s+r.credit, 0);
+  const bankMerch = bankInReconMonth.filter(r => r.category === 'Merchant'    && r.credit != null).reduce((s,r) => s+r.credit, 0);
+
+  // ABC Ignite total for recon month
+  const clubInReconMonth = clubRows.filter(r => monthOf(r.abcDate) === reconMonthStr);
+  const igniteABC   = clubInReconMonth.filter(r => r.type === 'ABC Billing').reduce((s,r) => s+r.amount, 0);
+  const igniteMerch = clubInReconMonth.filter(r => r.type === 'Merchant').reduce((s,r) => s+r.amount, 0);
+  const igniteTotal = igniteABC + igniteMerch;
+
+  // Carry-Out: Club entries in recon month whose bank date falls in the NEXT month
+  const carryOutClub = clubRows.filter(r =>
+    monthOf(r.abcDate) === reconMonthStr && monthOf(r.bankDate) !== reconMonthStr
+  );
+  const carryOutABC   = carryOutClub.filter(r => r.type === 'ABC Billing').reduce((s,r) => s+r.amount, 0);
+  const carryOutMerch = carryOutClub.filter(r => r.type === 'Merchant').reduce((s,r) => s+r.amount, 0);
+
+  // ── Carry-In: calculated from the CLUB side ──────────────────────────────────
+  //
+  // Carry-in = club entries where:
+  //   - bankDate falls in the recon month (the deposit shows up in this month's bank), AND
+  //   - abcDate is in a prior month (the activity actually belongs to the prior period)
+  //
+  // We compute carry-in by summing club entries directly — NOT by matching bank amounts.
+  // This is correct because the bank BATCHES multiple club entries into a single deposit,
+  // so individual amount matching against bank rows will always fail for merchant entries.
+  // (e.g. club Dec 30 has two entries $2,220.55 + $3,448.96 which post as a single bank
+  //  deposit of $5,669.51 — no single club entry matches that bank amount.)
+  //
+  // By working from the club side we correctly get the prior-month subtotal regardless
+  // of how the bank batches the payments.
+
+  const carryInClubRows = new Set();
+  let carryInABC   = 0;
+  let carryInMerch = 0;
+
+  clubRows.forEach(c => {
+    // bankDate must fall in the recon month
+    if (monthOf(c.bankDate) !== reconMonthStr) return;
+    // abcDate must be in a prior month (not the recon month)
+    if (monthOf(c.abcDate) === reconMonthStr) return;
+
+    carryInClubRows.add(c);
+    if (c.type === 'ABC Billing') carryInABC   += c.amount;
+    else                          carryInMerch += c.amount;
+  });
+
+  // For bank-row highlighting: flag bank entries on dates where ALL contributing
+  // club entries are from the prior month (i.e. the entire deposit is carry-in)
+  // Build: bankDate → set of abcDate months for that type
+  const bankDateTypePrior = {}; // key: "date|type" → true if all club entries are prior month
+  const bankDateTypeHasCurrent = {};
+  clubRows.forEach(c => {
+    if (monthOf(c.bankDate) !== reconMonthStr) return;
+    const k = isoDate(c.bankDate) + '|' + c.type;
+    if (monthOf(c.abcDate) !== reconMonthStr) {
+      if (!bankDateTypePrior[k]) bankDateTypePrior[k] = 0;
+      bankDateTypePrior[k] += c.amount;
+    } else {
+      bankDateTypeHasCurrent[k] = true;
+    }
+  });
+
+  // Bank rows that are carry-in: their date+type key has prior-month club entries
+  const carryInBankABCRows   = bankRows.filter(b =>
+    b.credit != null && b.category === 'ABC Billing' &&
+    monthOf(b.postDate) === reconMonthStr &&
+    bankDateTypePrior[isoDate(b.postDate) + '|ABC Billing']
+  );
+  const carryInBankMerchRows = bankRows.filter(b =>
+    b.credit != null && b.category === 'Merchant' &&
+    monthOf(b.postDate) === reconMonthStr &&
+    bankDateTypePrior[isoDate(b.postDate) + '|Merchant']
+  );
+
+  const adjustedABC   = bankABC   + carryOutABC   - carryInABC;
+  const adjustedMerch = bankMerch + carryOutMerch - carryInMerch;
+  const varianceABC   = adjustedABC   - igniteABC;
+  const varianceMerch = adjustedMerch - igniteMerch;
+
+  // Tag club rows
+  clubRows.forEach(r => {
+    r.carryFlag = '';
+    // Carry-Out: abc date in recon month, bank date in a different (future) month
+    if (monthOf(r.abcDate) === reconMonthStr && monthOf(r.bankDate) !== reconMonthStr) r.carryFlag = 'carry-out';
+    // Carry-In: this club row was identified as the source of a bank carry-in
+    if (carryInClubRows.has(r)) r.carryFlag = 'carry-in';
+  });
+
+  // Tag bank rows
+  const carryInBankIds = new Set([...carryInBankABCRows, ...carryInBankMerchRows].map(r => r));
+  bankRows.forEach(r => {
+    r.carryFlag = '';
+    if (carryInBankIds.has(r)) r.carryFlag = 'carry-in';
+    // Carry-out in bank: entries in NEXT month that correspond to this recon month club entries
+  });
+  // Also tag bank carry-out (Feb entries that are Jan Ignite)
+  const carryOutBankRows = bankRows.filter(r => {
+    if (r.category !== 'ABC Billing' && r.category !== 'Merchant') return false;
+    if (!r.credit) return false;
+    if (monthOf(r.postDate) !== nextMonthStr) return false;
+    // Check if there's a matching club entry in recon month
+    const matchingClub = carryOutClub.find(c => {
+      return Math.abs(c.amount - r.credit) < 0.02 &&
+             isoDate(c.bankDate) === isoDate(r.postDate);
+    });
+    return !!matchingClub;
+  });
+  carryOutBankRows.forEach(r => { r.carryFlag = 'carry-out'; });
+
+  // Build a lookup: for carry-in bank rows, map to their source prior-month club rows
+  // so the export can show the original ABC Date in the carry-in detail table
+  const carryInBankToClub = new Map();
+  const priorClubByBankDateType = {};
+  clubRows.forEach(c => {
+    if (monthOf(c.abcDate) === reconMonthStr) return;
+    if (monthOf(c.bankDate) !== reconMonthStr) return;
+    const k = isoDate(c.bankDate) + '|' + c.type;
+    if (!priorClubByBankDateType[k]) priorClubByBankDateType[k] = [];
+    priorClubByBankDateType[k].push(c);
+  });
+  [...carryInBankABCRows, ...carryInBankMerchRows].forEach(b => {
+    const k = isoDate(b.postDate) + '|' + b.category;
+    carryInBankToClub.set(b, priorClubByBankDateType[k] || []);
+  });
+
+  return {
+    reconMonthStr,
+    bankABC, bankMerch,
+    carryOutABC, carryOutMerch,
+    carryInABC, carryInMerch,
+    adjustedABC, adjustedMerch,
+    igniteABC, igniteMerch, igniteTotal,
+    varianceABC, varianceMerch,
+    carryOutClub, carryInBankABCRows, carryInBankMerchRows,
+    carryInBankToClub,
+    clubRows, bankRows,
+  };
+}
+
+// ── Run ───────────────────────────────────────────────────────────────────────
+async function runReconciliation() {
+  clearAlert();
+  document.getElementById('progressWrap').style.display = 'block';
+  document.getElementById('resultsPanel').style.display = 'none';
+  document.getElementById('runBtn').disabled = true;
+  document.getElementById('headerStatus').textContent = 'Processing...';
+
+  try {
+    setProgress(10, 'Parsing Club Deposits file...');
+    await sleep(80);
+    const clubRows = parseClub(state.clubWb);
+
+    // Warn if club file doesn't cover the prior month (needed for carry-in detection)
+    const reconMon = document.getElementById('reconMonth').value;
+    const [chkYr, chkMo] = reconMon.split('-').map(Number);
+    const prevMonStr = chkMo === 1 ? `${chkYr-1}-12` : `${chkYr}-${String(chkMo-1).padStart(2,'0')}`;
+    const hasPriorMonth = clubRows.some(r => monthOf(r.abcDate) === prevMonStr);
+    if (!hasPriorMonth) {
+      const prevMonName = new Date(chkYr, chkMo-2, 1).toLocaleDateString('en-US', {month:'long'});
+      const curMonName  = new Date(chkYr, chkMo-1, 1).toLocaleDateString('en-US', {month:'long'});
+      showAlert('warning', `⚠️ Club Deposits file only covers ${curMonName} — it has no ${prevMonName} dates. Carry-In will be $0.00. For accurate carry-in, export a club file that also includes the last few days of ${prevMonName}.`);
+    }
+
+    setProgress(35, 'Parsing Bank Statement file...');
+    await sleep(80);
+    const bankRows = parseBank(state.bankWb);
+
+    setProgress(60, 'Running reconciliation logic...');
+    await sleep(80);
+    const reconMonth = document.getElementById('reconMonth').value;
+    const result = reconcile(clubRows, bankRows, reconMonth);
+    state.result = result;
+
+    setProgress(80, 'Building preview...');
+    await sleep(80);
+    renderResults(result);
+
+    setProgress(100, 'Done.');
+    document.getElementById('headerStatus').textContent = 'Reconciled';
+    await sleep(300);
+    document.getElementById('progressWrap').style.display = 'none';
+    document.getElementById('resultsPanel').style.display = 'block';
+
+  } catch(err) {
+    document.getElementById('progressWrap').style.display = 'none';
+    showAlert('error', err.message);
+    document.getElementById('runBtn').disabled = false;
+    document.getElementById('headerStatus').textContent = 'Error';
+  }
+}
+
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+// ── Render results ────────────────────────────────────────────────────────────
+function renderResults(r) {
+  const ml = monthLabel(new Date(r.reconMonthStr + '-15'));
+  // Dynamic month abbreviations for display labels
+  const [ryr, rmo] = r.reconMonthStr.split('-').map(Number);
+  const reconDt  = new Date(ryr, rmo-1, 1);
+  const prevDt   = new Date(ryr, rmo-2, 1);
+  const nextDt   = new Date(ryr, rmo,   1);
+  const curMon   = reconDt.toLocaleDateString('en-US', { month: 'short' });
+  const prevMon  = prevDt.toLocaleDateString('en-US',  { month: 'short' });
+  const nextMon  = nextDt.toLocaleDateString('en-US',  { month: 'short' });
+  const lastDay  = new Date(ryr, rmo, 0).getDate();
+
+  // Summary cards
+  const sg = document.getElementById('summaryGrid');
+  sg.innerHTML = '';
+  const cards = [
+    { label: 'ABC Billing', value: fmtCurr(r.adjustedABC), sub: `Variance: ${fmtCurr(r.varianceABC)}`, ok: Math.abs(r.varianceABC) < 0.01 },
+    { label: 'Merchant Services', value: fmtCurr(r.adjustedMerch), sub: `Variance: ${fmtCurr(r.varianceMerch)}`, ok: Math.abs(r.varianceMerch) < 0.01 },
+  ];
+  cards.forEach(c => {
+    const d = document.createElement('div');
+    d.className = 'summary-card';
+    d.innerHTML = `
+      <div class="label">${c.label}</div>
+      <div class="value">${c.value}</div>
+      <div class="sub">${c.sub}&nbsp;&nbsp;
+        ${c.ok
+          ? '<span class="badge-reconciled">Reconciled</span>'
+          : '<span class="badge-variance">Variance</span>'}
+      </div>`;
+    sg.appendChild(d);
+  });
+
+  // Recon table
+  const rt = document.getElementById('reconTable');
+  rt.innerHTML = `
+    <thead><tr>
+      <th>Section</th><th>Item</th><th class="text-right">Amount</th>
+    </tr></thead>
+    <tbody>
+      <tr><td>ABC Billing</td><td>Bank postings ${curMon} 1–${lastDay}</td><td class="text-right mono">${fmtCurr(r.bankABC)}</td></tr>
+      <tr><td></td><td>Add: Carry-Out (${curMon} → ${nextMon} bank)</td><td class="text-right mono">${fmtCurr(r.carryOutABC)}</td></tr>
+      <tr><td></td><td>Less: Carry-In (${prevMon} → ${curMon} bank)</td><td class="text-right mono">(${fmtCurr(r.carryInABC)})</td></tr>
+      <tr style="font-weight:600;background:#F7F9FC"><td></td><td>Adjusted Bank Total</td><td class="text-right mono">${fmtCurr(r.adjustedABC)}</td></tr>
+      <tr><td></td><td>ABC Ignite Total</td><td class="text-right mono">${fmtCurr(r.igniteABC)}</td></tr>
+      <tr style="background:${Math.abs(r.varianceABC)<0.01?'#E2EFDA':'#F8D7DA'}">
+        <td></td><td><strong>Variance</strong></td>
+        <td class="text-right mono"><strong>${fmtCurr(r.varianceABC)}</strong></td></tr>
+      <tr><td colspan="3" style="padding:4px"></td></tr>
+      <tr><td>Merchant Svc</td><td>Bank postings ${curMon} 1–${lastDay}</td><td class="text-right mono">${fmtCurr(r.bankMerch)}</td></tr>
+      <tr><td></td><td>Add: Carry-Out (${curMon} → ${nextMon} bank)</td><td class="text-right mono">${fmtCurr(r.carryOutMerch)}</td></tr>
+      <tr><td></td><td>Less: Carry-In (${prevMon} → ${curMon} bank)</td><td class="text-right mono">(${fmtCurr(r.carryInMerch)})</td></tr>
+      <tr style="font-weight:600;background:#F7F9FC"><td></td><td>Adjusted Bank Total</td><td class="text-right mono">${fmtCurr(r.adjustedMerch)}</td></tr>
+      <tr><td></td><td>ABC Ignite Total</td><td class="text-right mono">${fmtCurr(r.igniteMerch)}</td></tr>
+      <tr style="background:${Math.abs(r.varianceMerch)<0.01?'#E2EFDA':'#F8D7DA'}">
+        <td></td><td><strong>Variance</strong></td>
+        <td class="text-right mono"><strong>${fmtCurr(r.varianceMerch)}</strong></td></tr>
+    </tbody>`;
+
+  // Club table
+  const ct = document.getElementById('clubTable');
+  ct.innerHTML = `<thead><tr>
+    <th>ABC Date</th><th>Type</th><th>Method</th><th class="text-right">Amount</th>
+    <th>Description</th><th>Recon Month</th>
+  </tr></thead><tbody>` +
+    r.clubRows.map(row => `
+      <tr class="${row.carryFlag}">
+        <td>${fmtDate(row.abcDate)}</td>
+        <td>${row.type}</td>
+        <td>${row.method}</td>
+        <td class="text-right mono">${fmtCurr(row.amount)}</td>
+        <td>${row.description}</td>
+        <td>${row.reconMonth ? monthLabel(new Date(row.reconMonth+'-15')) : ''}</td>
+      </tr>`).join('') +
+  '</tbody>';
+
+  // Bank table
+  const bt = document.getElementById('bankTable');
+  bt.innerHTML = `<thead><tr>
+    <th>Post Date</th><th>Category</th><th>Description</th>
+    <th class="text-right">Debit</th><th class="text-right">Credit</th>
+  </tr></thead><tbody>` +
+    r.bankRows.map(row => `
+      <tr class="${row.carryFlag}">
+        <td>${fmtDate(row.postDate)}</td>
+        <td>${row.category}</td>
+        <td>${row.description}</td>
+        <td class="text-right mono">${row.debit != null ? fmtCurr(row.debit) : ''}</td>
+        <td class="text-right mono">${row.credit != null ? fmtCurr(row.credit) : ''}</td>
+      </tr>`).join('') +
+  '</tbody>';
+}
+
+// ── Export to Excel ───────────────────────────────────────────────────────────
+async function exportExcel() {
+  const r = state.result;
+  if (!r) return;
+  const btn = document.querySelector('.export-btn');
+  btn.textContent = 'Building file...';
+  btn.disabled = true;
+  await sleep(50);
+
+  try {
+    const wb = new ExcelJS.Workbook();
+    const ml = monthLabel(new Date(r.reconMonthStr + '-15'));
+    const [exYr, exMo] = r.reconMonthStr.split('-').map(Number);
+    const exCurMon  = new Date(exYr, exMo-1, 1).toLocaleDateString('en-US', { month: 'long' });
+    const exPrevMon = new Date(exYr, exMo-2, 1).toLocaleDateString('en-US', { month: 'long' });
+    const exNextMon = new Date(exYr, exMo,   1).toLocaleDateString('en-US', { month: 'long' });
+    const exLastDay = new Date(exYr, exMo, 0).getDate();
+
+    // Colors
+    const NAVY     = { argb: 'FF1F3864' };
+    const BLUE     = { argb: 'FF2E4D8A' };
+    const COL_HDR  = { argb: 'FFD9E1F2' };
+    const WHITE    = { argb: 'FFFFFFFF' };
+    const STRIPE   = { argb: 'FFF7F9FC' };
+    const LT_GRAY  = { argb: 'FFF2F2F2' };
+    const GREEN_BG = { argb: 'FFE2EFDA' };
+    const GREEN_FT = { argb: 'FF375623' };
+    const MID_GRAY = { argb: 'FF808080' };
+    const CARRY_OUT_BG   = { argb: 'FFFFF3CD' };
+    const CARRY_OUT_FONT = { argb: 'FF92400E' };
+    const CARRY_IN_BG    = { argb: 'FFE0F2FE' };
+    const CARRY_IN_FONT  = { argb: 'FF0C4A6E' };
+    const BORDER_C = { argb: 'FFC0C0C0' };
+
+    function borderAll(ws, row, cols) {
+      cols.forEach(c => {
+        const cell = row.getCell(c);
+        cell.border = { top:{style:'thin',color:BORDER_C}, bottom:{style:'thin',color:BORDER_C}, left:{style:'thin',color:BORDER_C}, right:{style:'thin',color:BORDER_C} };
+      });
+    }
+
+    function hdrRow(ws, cols, texts, bg) {
+      const row = ws.addRow(texts);
+      row.height = 18;
+      cols.forEach((c, i) => {
+        const cell = row.getCell(c);
+        cell.font = { name:'Calibri', bold:true, size:9, color:{argb:'FF000000'} };
+        cell.fill = { type:'pattern', pattern:'solid', fgColor: bg || COL_HDR };
+        cell.alignment = { horizontal:'center', vertical:'middle' };
+        cell.border = { top:{style:'thin',color:BORDER_C}, bottom:{style:'thin',color:BORDER_C}, left:{style:'thin',color:BORDER_C}, right:{style:'thin',color:BORDER_C} };
+      });
+      return row;
+    }
+
+    // ── SHEET 1: Reconciliation ───────────────────────────────────────────────
+    const wsR = wb.addWorksheet('Reconciliation');
+    wsR.views = [{ showGridLines: false }];
+    wsR.columns = [
+      {width:3},{width:46},{width:18},{width:3}
+    ];
+
+    // Title
+    wsR.addRow([]);
+    {
+      const row = wsR.addRow(['', `KINECTIVE FITNESS CLUB  |  Club #3754`]);
+      row.height = 30;
+      wsR.mergeCells(`B${row.number}:C${row.number}`);
+      const cell = row.getCell(2);
+      cell.font = { name:'Calibri', bold:true, size:13, color:{argb:'FFFFFFFF'} };
+      cell.fill = { type:'pattern', pattern:'solid', fgColor: NAVY };
+      cell.alignment = { horizontal:'center', vertical:'middle' };
+      wsR.getCell(`C${row.number}`).fill = { type:'pattern', pattern:'solid', fgColor: NAVY };
+    }
+    {
+      const row = wsR.addRow(['', `Bank Deposit Reconciliation  —  ${ml}`]);
+      row.height = 20;
+      wsR.mergeCells(`B${row.number}:C${row.number}`);
+      const cell = row.getCell(2);
+      cell.font = { name:'Calibri', size:10, color:{argb:'FFFFFFFF'} };
+      cell.fill = { type:'pattern', pattern:'solid', fgColor: BLUE };
+      cell.alignment = { horizontal:'center', vertical:'middle' };
+      wsR.getCell(`C${row.number}`).fill = { type:'pattern', pattern:'solid', fgColor: BLUE };
+    }
+    {
+      const row = wsR.addRow(['', `Prepared: ${new Date().toLocaleDateString('en-US',{month:'long',year:'numeric'})}     Bank Account: XXXXXX8152     Source: ABC Ignite & Bank Statement`]);
+      row.height = 16;
+      wsR.mergeCells(`B${row.number}:C${row.number}`);
+      const cell = row.getCell(2);
+      cell.font = { name:'Calibri', size:8, italic:true, color: MID_GRAY };
+      cell.alignment = { horizontal:'center', vertical:'middle' };
+    }
+    wsR.addRow([]).height = 10;
+
+    function addSection(ws, title) {
+      const row = ws.addRow(['', title]);
+      row.height = 22;
+      ws.mergeCells(`B${row.number}:C${row.number}`);
+      const cell = row.getCell(2);
+      cell.font = { name:'Calibri', bold:true, size:10, color:{argb:'FFFFFFFF'} };
+      cell.fill = { type:'pattern', pattern:'solid', fgColor: BLUE };
+      cell.alignment = { horizontal:'left', vertical:'middle', indent:1 };
+      ws.getCell(`C${row.number}`).fill = { type:'pattern', pattern:'solid', fgColor: BLUE };
+    }
+
+    function addColHdr(ws) {
+      const row = ws.addRow(['', 'Description', 'Amount']);
+      row.height = 16;
+      ['B','C'].forEach(c => {
+        const cell = ws.getCell(`${c}${row.number}`);
+        cell.font = { name:'Calibri', bold:true, size:9 };
+        cell.fill = { type:'pattern', pattern:'solid', fgColor: COL_HDR };
+        cell.alignment = { horizontal: c==='C' ? 'right' : 'left', vertical:'middle', indent: c==='B' ? 1 : 0 };
+        cell.border = { top:{style:'thin',color:BORDER_C}, bottom:{style:'thin',color:BORDER_C}, left:{style:'thin',color:BORDER_C}, right:{style:'thin',color:BORDER_C} };
+      });
+      return row;
+    }
+
+    function addLine(ws, label, value, bg, bold) {
+      const row = ws.addRow(['', label, value]);
+      row.height = 16;
+      const bCell = ws.getCell(`B${row.number}`);
+      const cCell = ws.getCell(`C${row.number}`);
+      bCell.font = { name:'Calibri', size:9, bold: !!bold };
+      cCell.font = { name:'Calibri', size:9, bold: !!bold };
+      if (bg) {
+        bCell.fill = { type:'pattern', pattern:'solid', fgColor: bg };
+        cCell.fill = { type:'pattern', pattern:'solid', fgColor: bg };
+      }
+      bCell.alignment = { horizontal:'left', vertical:'middle', indent:2 };
+      cCell.alignment = { horizontal:'right', vertical:'middle' };
+      cCell.numFmt = '$#,##0.00';
+      bCell.border = { top:{style:'thin',color:BORDER_C}, bottom:{style:'thin',color:BORDER_C}, left:{style:'thin',color:BORDER_C}, right:{style:'thin',color:BORDER_C} };
+      cCell.border = { top:{style:'thin',color:BORDER_C}, bottom:{style:'thin',color:BORDER_C}, left:{style:'thin',color:BORDER_C}, right:{style:'thin',color:BORDER_C} };
+      return row;
+    }
+
+    function addSubtotal(ws, label, value, bg) {
+      const row = ws.addRow(['', label, value]);
+      row.height = 18;
+      const fg = bg || LT_GRAY;
+      ['B','C'].forEach(c => {
+        const cell = ws.getCell(`${c}${row.number}`);
+        cell.font = { name:'Calibri', size:9, bold:true };
+        cell.fill = { type:'pattern', pattern:'solid', fgColor: fg };
+        cell.border = { top:{style:'thin',color:BORDER_C}, bottom:{style:'thin',color:BORDER_C}, left:{style:'thin',color:BORDER_C}, right:{style:'thin',color:BORDER_C} };
+      });
+      ws.getCell(`B${row.number}`).alignment = { horizontal:'left', vertical:'middle', indent:1 };
+      ws.getCell(`C${row.number}`).alignment = { horizontal:'right', vertical:'middle' };
+      ws.getCell(`C${row.number}`).numFmt = '$#,##0.00';
+      return row;
+    }
+
+    function addDiff(ws, value) {
+      const ok = Math.abs(value) < 0.01;
+      const row = ws.addRow(['', 'Variance', value]);
+      row.height = 18;
+      ['B','C'].forEach(c => {
+        const cell = ws.getCell(`${c}${row.number}`);
+        cell.font = { name:'Calibri', size:9, bold:true, color: ok ? GREEN_FT : {argb:'FF842029'} };
+        cell.fill = { type:'pattern', pattern:'solid', fgColor: ok ? GREEN_BG : {argb:'FFF8D7DA'} };
+        cell.border = { top:{style:'thin',color:BORDER_C}, bottom:{style:'thin',color:BORDER_C}, left:{style:'thin',color:BORDER_C}, right:{style:'thin',color:BORDER_C} };
+      });
+      ws.getCell(`B${row.number}`).alignment = { horizontal:'left', vertical:'middle', indent:2 };
+      ws.getCell(`C${row.number}`).alignment = { horizontal:'right', vertical:'middle' };
+      ws.getCell(`C${row.number}`).numFmt = '$#,##0.00';
+      return row;
+    }
+
+    function addBadge(ws, text) {
+      const row = ws.addRow(['', text]);
+      row.height = 22;
+      ws.mergeCells(`B${row.number}:C${row.number}`);
+      const cell = ws.getCell(`B${row.number}`);
+      cell.font = { name:'Calibri', size:10, bold:true, color: GREEN_FT };
+      cell.fill = { type:'pattern', pattern:'solid', fgColor: GREEN_BG };
+      cell.alignment = { horizontal:'center', vertical:'middle' };
+      ['B','C'].forEach(c => {
+        ws.getCell(`${c}${row.number}`).fill = { type:'pattern', pattern:'solid', fgColor: GREEN_BG };
+        ws.getCell(`${c}${row.number}`).border = { top:{style:'thin',color:BORDER_C}, bottom:{style:'thin',color:BORDER_C}, left:{style:'thin',color:BORDER_C}, right:{style:'thin',color:BORDER_C} };
+      });
+    }
+
+    // Section 1
+    addSection(wsR, `Section 1  |  ABC Member Billing`);
+    addColHdr(wsR);
+    addLine(wsR, `Bank deposits posted ${exCurMon} 1 – ${exLastDay}  (see Bank Data tab)`, r.bankABC);
+    addLine(wsR, `Add: Carry-Out — ${exCurMon} ABC deposits posting to ${exNextMon} bank  (see Club Data tab, Recon Month = ${exNextMon})`, r.carryOutABC);
+    addLine(wsR, `Less: Carry-In — ${exPrevMon} ABC deposits posted to ${exCurMon} bank  (see Bank Data tab)`, -r.carryInABC);
+    addSubtotal(wsR, 'Adjusted Bank Total', r.adjustedABC);
+    addLine(wsR, `ABC Ignite Report Total  (${ml})`, r.igniteABC, LT_GRAY);
+    addDiff(wsR, r.varianceABC);
+    addBadge(wsR, Math.abs(r.varianceABC) < 0.01 ? 'Reconciled — $0.00 Variance' : 'Variance Detected — Review Required');
+    wsR.addRow([]).height = 10;
+
+    // Section 2
+    addSection(wsR, `Section 2  |  Merchant Services`);
+    addColHdr(wsR);
+    addLine(wsR, `Bank deposits posted ${exCurMon} 1 – ${exLastDay}  (see Bank Data tab)`, r.bankMerch);
+    addLine(wsR, `Add: Carry-Out — ${exCurMon} merchant settlements posting to ${exNextMon} bank  (see Club Data tab, Recon Month = ${exNextMon})`, r.carryOutMerch);
+    addLine(wsR, `Less: Carry-In — ${exPrevMon} merchant settlements posted to ${exCurMon} bank  (see Bank Data tab)`, -r.carryInMerch);
+    addSubtotal(wsR, 'Adjusted Bank Total', r.adjustedMerch);
+    addLine(wsR, `ABC Ignite Report Total  (${ml})`, r.igniteMerch, LT_GRAY);
+    addDiff(wsR, r.varianceMerch);
+    addBadge(wsR, Math.abs(r.varianceMerch) < 0.01 ? 'Reconciled — $0.00 Variance' : 'Variance Detected — Review Required');
+    wsR.addRow([]).height = 10;
+
+    // Carry detail
+    {
+      const shdr = wsR.addRow(['', 'Carry-In and Carry-Out Detail  |  Reference for Sections 1 and 2']);
+      shdr.height = 22;
+      wsR.mergeCells(`B${shdr.number}:C${shdr.number}`);
+      const cell = shdr.getCell(2);
+      cell.font = { name:'Calibri', bold:true, size:10, color:{argb:'FFFFFFFF'} };
+      cell.fill = { type:'pattern', pattern:'solid', fgColor: BLUE };
+      cell.alignment = { horizontal:'left', vertical:'middle', indent:1 };
+      wsR.getCell(`C${shdr.number}`).fill = { type:'pattern', pattern:'solid', fgColor: BLUE };
+    }
+    wsR.addRow([]).height = 8;
+
+    // Detail table cols - need wider layout
+    const wsRDetailCols = [
+      {width:3},{width:14},{width:16},{width:5},{width:16},{width:28},{width:15},{width:3}
+    ];
+    // Adjust column widths after detail section headers
+    wsR.columns = [
+      {width:3},{width:46},{width:18},{width:3}
+    ];
+
+    // Rewrite as a sub-table: use cols 2-7
+    // Col headers for detail
+    const dtHdr = ['', 'Type','ABC Date','','Bank Post Date','Description','Amount',''];
+    const dhRow = wsR.addRow(dtHdr);
+    dhRow.height = 18;
+    [2,3,4,5,6,7].forEach(c => {
+      const cell = dhRow.getCell(c);
+      cell.font = { name:'Calibri', bold:true, size:9 };
+      cell.fill = { type:'pattern', pattern:'solid', fgColor: COL_HDR };
+      cell.alignment = { horizontal:'center', vertical:'middle' };
+      cell.border = { top:{style:'thin',color:BORDER_C}, bottom:{style:'thin',color:BORDER_C}, left:{style:'thin',color:BORDER_C}, right:{style:'thin',color:BORDER_C} };
+    });
+
+    // Need wider cols - patch them
+    wsR.getColumn(3).width = 14;
+    wsR.getColumn(4).width = 14;
+    wsR.getColumn(5).width = 5;
+    wsR.getColumn(6).width = 14;
+    wsR.getColumn(7).width = 24;
+    wsR.getColumn(8).width = 14;
+
+    // CARRY-OUT group header
+    const coGrp = wsR.addRow(['','CARRY-OUT  —  '+exCurMon+' ABC Dates / '+exNextMon+' Bank Dates  (Add Back)']);
+    wsR.mergeCells(`B${coGrp.number}:G${coGrp.number}`);
+    coGrp.height = 16;
+    coGrp.getCell(2).font = { name:'Calibri', bold:true, size:9 };
+    coGrp.getCell(2).fill = { type:'pattern', pattern:'solid', fgColor: LT_GRAY };
+    coGrp.getCell(2).alignment = { horizontal:'left', vertical:'middle', indent:1 };
+    for(let c=2;c<=7;c++) {
+      wsR.getCell(`${String.fromCharCode(64+c)}${coGrp.number}`).fill = { type:'pattern', pattern:'solid', fgColor: LT_GRAY };
+      wsR.getCell(`${String.fromCharCode(64+c)}${coGrp.number}`).border = { top:{style:'thin',color:BORDER_C}, bottom:{style:'thin',color:BORDER_C}, left:{style:'thin',color:BORDER_C}, right:{style:'thin',color:BORDER_C} };
+    }
+
+    r.carryOutClub.forEach((row, i) => {
+      const dr = wsR.addRow(['', row.type, fmtDate(row.abcDate), '→', fmtDate(row.bankDate), row.description, row.amount]);
+      dr.height = 15;
+      const bg = i%2===0 ? WHITE : STRIPE;
+      [2,3,4,5,6,7].forEach(c => {
+        const cell = dr.getCell(c);
+        cell.font = { name:'Calibri', size:9 };
+        cell.fill = { type:'pattern', pattern:'solid', fgColor: bg };
+        cell.border = { top:{style:'thin',color:BORDER_C}, bottom:{style:'thin',color:BORDER_C}, left:{style:'thin',color:BORDER_C}, right:{style:'thin',color:BORDER_C} };
+        if (c===7) { cell.numFmt = '$#,##0.00'; cell.alignment = {horizontal:'right',vertical:'middle'}; }
+        else cell.alignment = { horizontal: c===6 ? 'left' : 'center', vertical:'middle', indent: c===6 ? 1 : 0 };
+      });
+    });
+
+    // CARRY-IN group header
+    wsR.addRow([]).height = 6;
+    const ciGrp = wsR.addRow(['','CARRY-IN  —  '+exPrevMon+' ABC Dates / '+exCurMon+' Bank Dates  (Subtract)']);
+    wsR.mergeCells(`B${ciGrp.number}:G${ciGrp.number}`);
+    ciGrp.height = 16;
+    ciGrp.getCell(2).font = { name:'Calibri', bold:true, size:9 };
+    ciGrp.getCell(2).fill = { type:'pattern', pattern:'solid', fgColor: LT_GRAY };
+    ciGrp.getCell(2).alignment = { horizontal:'left', vertical:'middle', indent:1 };
+    for(let c=2;c<=7;c++) {
+      wsR.getCell(`${String.fromCharCode(64+c)}${ciGrp.number}`).fill = { type:'pattern', pattern:'solid', fgColor: LT_GRAY };
+      wsR.getCell(`${String.fromCharCode(64+c)}${ciGrp.number}`).border = { top:{style:'thin',color:BORDER_C}, bottom:{style:'thin',color:BORDER_C}, left:{style:'thin',color:BORDER_C}, right:{style:'thin',color:BORDER_C} };
+    }
+
+    // Carry-in detail: expand each bank row into its source club rows (one line per club entry)
+    // so we can show the original ABC date alongside the bank post date
+    const ciRows = [...r.carryInBankABCRows, ...r.carryInBankMerchRows];
+    let ciRowIdx = 0;
+    ciRows.forEach(bankRow => {
+      const sourceClub = r.carryInBankToClub.get(bankRow) || [];
+      if (sourceClub.length > 0) {
+        // One detail line per source club entry showing: Type | ABC Date → Bank Post Date | Description | Amount
+        sourceClub.forEach(clubSrc => {
+          const dr = wsR.addRow(['', clubSrc.type, fmtDate(clubSrc.abcDate), '→', fmtDate(bankRow.postDate), bankRow.description, clubSrc.amount]);
+          dr.height = 15;
+          const bg = ciRowIdx%2===0 ? WHITE : STRIPE;
+          [2,3,4,5,6,7].forEach(c => {
+            const cell = dr.getCell(c);
+            cell.font = { name:'Calibri', size:9 };
+            cell.fill = { type:'pattern', pattern:'solid', fgColor: bg };
+            cell.border = { top:{style:'thin',color:BORDER_C}, bottom:{style:'thin',color:BORDER_C}, left:{style:'thin',color:BORDER_C}, right:{style:'thin',color:BORDER_C} };
+            if (c===7) { cell.numFmt = '$#,##0.00'; cell.alignment = {horizontal:'right',vertical:'middle'}; }
+            else cell.alignment = { horizontal: c===6 ? 'left' : 'center', vertical:'middle', indent: c===6 ? 1 : 0 };
+          });
+          ciRowIdx++;
+        });
+      } else {
+        // Fallback: no club match found — show bank row directly
+        const dr = wsR.addRow(['', bankRow.category, '', '→', fmtDate(bankRow.postDate), bankRow.description, bankRow.credit]);
+        dr.height = 15;
+        const bg = ciRowIdx%2===0 ? WHITE : STRIPE;
+        [2,3,4,5,6,7].forEach(c => {
+          const cell = dr.getCell(c);
+          cell.font = { name:'Calibri', size:9 };
+          cell.fill = { type:'pattern', pattern:'solid', fgColor: bg };
+          cell.border = { top:{style:'thin',color:BORDER_C}, bottom:{style:'thin',color:BORDER_C}, left:{style:'thin',color:BORDER_C}, right:{style:'thin',color:BORDER_C} };
+          if (c===7) { cell.numFmt = '$#,##0.00'; cell.alignment = {horizontal:'right',vertical:'middle'}; }
+          else cell.alignment = { horizontal: c===6 ? 'left' : 'center', vertical:'middle', indent: c===6 ? 1 : 0 };
+        });
+        ciRowIdx++;
+      }
+    });
+
+    wsR.views = [{ state:'frozen', ySplit:5, showGridLines:false }];
+
+    // ── SHEET 2: Club Data ────────────────────────────────────────────────────
+    const wsC = wb.addWorksheet('Club Data');
+    wsC.views = [{ showGridLines: false }];
+    wsC.columns = [{width:3},{width:14},{width:16},{width:14},{width:14},{width:48},{width:16},{width:3}];
+
+    wsC.addRow([]);
+    {
+      const row = wsC.addRow(['','KINECTIVE FITNESS CLUB  |  Club #3754  |  ABC Club Deposit Report']);
+      row.height = 28; wsC.mergeCells(`B${row.number}:G${row.number}`);
+      const cell = row.getCell(2);
+      cell.font = { name:'Calibri', bold:true, size:12, color:{argb:'FFFFFFFF'} };
+      cell.fill = { type:'pattern', pattern:'solid', fgColor: NAVY };
+      cell.alignment = { horizontal:'center', vertical:'middle' };
+      for(let c=3;c<=7;c++) wsC.getCell(`${String.fromCharCode(64+c)}${row.number}`).fill = { type:'pattern', pattern:'solid', fgColor: NAVY };
+    }
+    {
+      const row = wsC.addRow(['',`Remittance Period covered by file     Source: ABC Ignite`]);
+      row.height = 18; wsC.mergeCells(`B${row.number}:G${row.number}`);
+      const cell = row.getCell(2);
+      cell.font = { name:'Calibri', size:9, color:{argb:'FFFFFFFF'} };
+      cell.fill = { type:'pattern', pattern:'solid', fgColor: BLUE };
+      cell.alignment = { horizontal:'center', vertical:'middle' };
+      for(let c=3;c<=7;c++) wsC.getCell(`${String.fromCharCode(64+c)}${row.number}`).fill = { type:'pattern', pattern:'solid', fgColor: BLUE };
+    }
+    {
+      const row = wsC.addRow(['','Note: ABC Billing posts to bank 1 business day after ABC Date. Merchant Services posts 2 business days after.  Highlighted rows indicate carry-in/carry-out items.']);
+      row.height = 20; wsC.mergeCells(`B${row.number}:G${row.number}`);
+      const cell = row.getCell(2);
+      cell.font = { name:'Calibri', size:8, italic:true, color: MID_GRAY };
+      cell.alignment = { horizontal:'left', vertical:'middle', wrapText:true, indent:1 };
+    }
+    wsC.addRow([]).height = 6;
+
+    // Col headers
+    const cHdrs = wsC.addRow(['','ABC Date','Type','Method','Amount','Description','Recon Month','']);
+    cHdrs.height = 18;
+    [2,3,4,5,6,7].forEach(c => {
+      const cell = cHdrs.getCell(c);
+      cell.font = { name:'Calibri', bold:true, size:9 };
+      cell.fill = { type:'pattern', pattern:'solid', fgColor: COL_HDR };
+      cell.alignment = { horizontal:'center', vertical:'middle' };
+      cell.border = { top:{style:'thin',color:BORDER_C}, bottom:{style:'thin',color:BORDER_C}, left:{style:'thin',color:BORDER_C}, right:{style:'thin',color:BORDER_C} };
+    });
+    wsC.views = [{ state:'frozen', ySplit:cHdrs.number, showGridLines:false }];
+
+    r.clubRows.forEach((row, i) => {
+      let bg, fontColor;
+      if (row.carryFlag === 'carry-out') { bg = CARRY_OUT_BG; fontColor = CARRY_OUT_FONT; }
+      else if (row.carryFlag === 'carry-in') { bg = CARRY_IN_BG; fontColor = CARRY_IN_FONT; }
+      else { bg = i%2===0 ? WHITE : STRIPE; fontColor = {argb:'FF000000'}; }
+
+      const dr = wsC.addRow(['', row.abcDate, row.type, row.method, row.amount, row.description,
+        row.reconMonth ? monthLabel(new Date(row.reconMonth+'-15')) : '', '']);
+      dr.height = 15;
+      [2,3,4,5,6,7].forEach(c => {
+        const cell = dr.getCell(c);
+        cell.font = { name:'Calibri', size:9, color: fontColor };
+        cell.fill = { type:'pattern', pattern:'solid', fgColor: bg };
+        cell.border = { top:{style:'thin',color:BORDER_C}, bottom:{style:'thin',color:BORDER_C}, left:{style:'thin',color:BORDER_C}, right:{style:'thin',color:BORDER_C} };
+        if (c===2) { cell.numFmt = 'MM/DD/YYYY'; cell.alignment = {horizontal:'center',vertical:'middle'}; }
+        else if (c===5) { cell.numFmt = '$#,##0.00'; cell.alignment = {horizontal:'right',vertical:'middle'}; }
+        else if (c===6) { cell.alignment = {horizontal:'left',vertical:'middle',indent:1}; }
+        else cell.alignment = {horizontal:'center',vertical:'middle'};
+      });
+    });
+
+    // Totals
+    const totR = wsC.addRow(['','','','',r.clubRows.reduce((s,x)=>s+x.amount,0),'Total','','']);
+    totR.height = 18;
+    [2,3,4,5,6,7].forEach(c => {
+      const cell = totR.getCell(c);
+      cell.font = { name:'Calibri', bold:true, size:9 };
+      cell.fill = { type:'pattern', pattern:'solid', fgColor: COL_HDR };
+      cell.border = { top:{style:'thin',color:BORDER_C}, bottom:{style:'thin',color:BORDER_C}, left:{style:'thin',color:BORDER_C}, right:{style:'thin',color:BORDER_C} };
+      if(c===5) { cell.numFmt='$#,##0.00'; cell.alignment={horizontal:'right',vertical:'middle'}; }
+      else cell.alignment={horizontal:'center',vertical:'middle'};
+    });
+
+    // ── SHEET 3: Bank Data ────────────────────────────────────────────────────
+    const wsB = wb.addWorksheet('Bank Data');
+    wsB.views = [{ showGridLines: false }];
+    wsB.columns = [{width:3},{width:14},{width:16},{width:50},{width:14},{width:14},{width:3}];
+
+    wsB.addRow([]);
+    {
+      const row = wsB.addRow(['','KINECTIVE FITNESS CLUB  |  Account XXXXXX8152  |  Bank Statement']);
+      row.height = 28; wsB.mergeCells(`B${row.number}:F${row.number}`);
+      const cell = row.getCell(2);
+      cell.font = { name:'Calibri', bold:true, size:12, color:{argb:'FFFFFFFF'} };
+      cell.fill = { type:'pattern', pattern:'solid', fgColor: NAVY };
+      cell.alignment = { horizontal:'center', vertical:'middle' };
+      for(let c=3;c<=6;c++) wsB.getCell(`${String.fromCharCode(64+c)}${row.number}`).fill = { type:'pattern', pattern:'solid', fgColor: NAVY };
+    }
+    {
+      const row = wsB.addRow(['','Statement period covered by file']);
+      row.height = 18; wsB.mergeCells(`B${row.number}:F${row.number}`);
+      const cell = row.getCell(2);
+      cell.font = { name:'Calibri', size:9, color:{argb:'FFFFFFFF'} };
+      cell.fill = { type:'pattern', pattern:'solid', fgColor: BLUE };
+      cell.alignment = { horizontal:'center', vertical:'middle' };
+      for(let c=3;c<=6;c++) wsB.getCell(`${String.fromCharCode(64+c)}${row.number}`).fill = { type:'pattern', pattern:'solid', fgColor: BLUE };
+    }
+    wsB.addRow([]).height = 6;
+
+    const bHdrs = wsB.addRow(['','Post Date','Category','Description','Debit','Credit','']);
+    bHdrs.height = 18;
+    [2,3,4,5,6].forEach(c => {
+      const cell = bHdrs.getCell(c);
+      cell.font = { name:'Calibri', bold:true, size:9 };
+      cell.fill = { type:'pattern', pattern:'solid', fgColor: COL_HDR };
+      cell.alignment = { horizontal:'center', vertical:'middle' };
+      cell.border = { top:{style:'thin',color:BORDER_C}, bottom:{style:'thin',color:BORDER_C}, left:{style:'thin',color:BORDER_C}, right:{style:'thin',color:BORDER_C} };
+    });
+    wsB.views = [{ state:'frozen', ySplit:bHdrs.number, showGridLines:false }];
+
+    r.bankRows.forEach((row, i) => {
+      let bg, fontColor;
+      if (row.carryFlag === 'carry-out') { bg = CARRY_OUT_BG; fontColor = CARRY_OUT_FONT; }
+      else if (row.carryFlag === 'carry-in') { bg = CARRY_IN_BG; fontColor = CARRY_IN_FONT; }
+      else { bg = i%2===0 ? WHITE : STRIPE; fontColor = {argb:'FF000000'}; }
+
+      const dr = wsB.addRow(['', row.postDate, row.category, row.description,
+        row.debit != null ? row.debit : '', row.credit != null ? row.credit : '','']);
+      dr.height = 15;
+      [2,3,4,5,6].forEach(c => {
+        const cell = dr.getCell(c);
+        cell.font = { name:'Calibri', size:9, color: fontColor };
+        cell.fill = { type:'pattern', pattern:'solid', fgColor: bg };
+        cell.border = { top:{style:'thin',color:BORDER_C}, bottom:{style:'thin',color:BORDER_C}, left:{style:'thin',color:BORDER_C}, right:{style:'thin',color:BORDER_C} };
+        if (c===2) { cell.numFmt='MM/DD/YYYY'; cell.alignment={horizontal:'center',vertical:'middle'}; }
+        else if (c===4) { cell.alignment={horizontal:'left',vertical:'middle',indent:1}; }
+        else if (c===5||c===6) { cell.numFmt='$#,##0.00'; cell.alignment={horizontal:'right',vertical:'middle'}; }
+        else cell.alignment={horizontal:'center',vertical:'middle'};
+      });
+    });
+
+    // Export
+    const buf = await wb.xlsx.writeBuffer();
+    const blob = new Blob([buf], { type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `Reconciliation_${r.reconMonthStr}.xlsx`;
+    a.click();
+    URL.revokeObjectURL(url);
+
+  } catch(err) {
+    showAlert('error', 'Export failed: ' + err.message);
+    console.error(err);
+  }
+
+  btn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Export to Excel`;
+  btn.disabled = false;
+}
+</script>
+</body>
+</html>

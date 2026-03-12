@@ -1,0 +1,1365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kinective | Revenue Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  :root {
+    --navy: #0F1C2E;
+    --navy-mid: #1A2F4A;
+    --navy-light: #243B55;
+    --cream: #F8F5F0;
+    --cream-dark: #EDE9E2;
+    --gold: #C9A84C;
+    --gold-light: #E8C97A;
+    --sage: #6B8F71;
+    --text-primary: #0F1C2E;
+    --text-secondary: #4A5568;
+    --text-muted: #8A96A3;
+    --white: #FFFFFF;
+    --border: #E2DDD6;
+    --shadow: 0 4px 24px rgba(15,28,46,0.08);
+    --shadow-lg: 0 12px 48px rgba(15,28,46,0.14);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--cream);
+    color: var(--text-primary);
+    min-height: 100vh;
+  }
+
+  /* ── HEADER ── */
+  header {
+    background: var(--navy);
+    padding: 0 48px;
+    height: 72px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    border-bottom: 1px solid rgba(201,168,76,0.25);
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+
+  .logo-mark {
+    width: 36px;
+    height: 36px;
+    background: linear-gradient(135deg, var(--gold) 0%, var(--gold-light) 100%);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Playfair Display', serif;
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--navy);
+  }
+
+  .logo-text {
+    font-family: 'Playfair Display', serif;
+    font-size: 17px;
+    font-weight: 600;
+    color: var(--white);
+    letter-spacing: 0.02em;
+  }
+
+  .logo-sub {
+    font-size: 11px;
+    font-weight: 400;
+    color: rgba(255,255,255,0.45);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin-top: 1px;
+  }
+
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .tab-btn {
+    background: transparent;
+    border: none;
+    color: rgba(255,255,255,0.5);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    padding: 8px 18px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+    letter-spacing: 0.03em;
+  }
+
+  .tab-btn:hover { color: rgba(255,255,255,0.8); background: rgba(255,255,255,0.06); }
+  .tab-btn.active { color: var(--gold); background: rgba(201,168,76,0.12); }
+
+  /* ── MAIN LAYOUT ── */
+  main {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 48px 32px 80px;
+  }
+
+  .view { display: none; }
+  .view.active { display: block; }
+
+  /* ── PAGE TITLE ── */
+  .page-header {
+    margin-bottom: 40px;
+  }
+
+  .page-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 28px;
+    font-weight: 600;
+    color: var(--navy);
+    margin-bottom: 6px;
+  }
+
+  .page-subtitle {
+    font-size: 14px;
+    color: var(--text-muted);
+    font-weight: 400;
+  }
+
+  /* ── UPLOAD ZONE ── */
+  .upload-card {
+    background: var(--white);
+    border-radius: 16px;
+    border: 2px dashed var(--border);
+    padding: 64px 40px;
+    text-align: center;
+    transition: all 0.25s;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .upload-card:hover, .upload-card.dragging {
+    border-color: var(--gold);
+    background: #FDFBF7;
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+  }
+
+  .upload-card.dragging { border-color: var(--gold); background: rgba(201,168,76,0.04); }
+
+  .upload-icon {
+    width: 60px;
+    height: 60px;
+    background: linear-gradient(135deg, rgba(201,168,76,0.15), rgba(201,168,76,0.05));
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 20px;
+  }
+
+  .upload-icon svg { width: 28px; height: 28px; stroke: var(--gold); }
+
+  .upload-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 20px;
+    color: var(--navy);
+    margin-bottom: 8px;
+  }
+
+  .upload-desc {
+    font-size: 14px;
+    color: var(--text-muted);
+    line-height: 1.6;
+    margin-bottom: 24px;
+  }
+
+  .upload-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--navy);
+    color: var(--white);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    padding: 12px 28px;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s;
+    letter-spacing: 0.03em;
+  }
+
+  .upload-btn:hover { background: var(--navy-mid); transform: translateY(-1px); }
+
+  #fileInput { display: none; }
+
+  /* ── PROCESSING STATE ── */
+  .processing-state {
+    display: none;
+    text-align: center;
+    padding: 48px;
+  }
+
+  .spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid var(--border);
+    border-top-color: var(--gold);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin: 0 auto 16px;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── RESULT SECTION ── */
+  .result-section { display: none; }
+
+  .result-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 28px;
+    gap: 20px;
+    flex-wrap: wrap;
+  }
+
+  .result-meta { flex: 1; }
+
+  .result-period {
+    font-family: 'Playfair Display', serif;
+    font-size: 22px;
+    color: var(--navy);
+    margin-bottom: 4px;
+  }
+
+  .result-location {
+    font-size: 13px;
+    color: var(--text-muted);
+    font-family: 'DM Mono', monospace;
+  }
+
+  .result-actions {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    padding: 10px 22px;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s;
+    letter-spacing: 0.02em;
+    text-decoration: none;
+  }
+
+  .btn-primary { background: var(--navy); color: var(--white); }
+  .btn-primary:hover { background: var(--navy-mid); transform: translateY(-1px); box-shadow: var(--shadow); }
+
+  .btn-gold { background: var(--gold); color: var(--navy); }
+  .btn-gold:hover { background: var(--gold-light); transform: translateY(-1px); box-shadow: var(--shadow); }
+
+  .btn-outline {
+    background: transparent;
+    color: var(--text-secondary);
+    border: 1.5px solid var(--border);
+  }
+  .btn-outline:hover { border-color: var(--navy); color: var(--navy); transform: translateY(-1px); }
+
+  /* ── KPI STRIP ── */
+  .kpi-strip {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-bottom: 28px;
+  }
+
+  .kpi-card {
+    background: var(--white);
+    border-radius: 12px;
+    padding: 20px 22px;
+    box-shadow: var(--shadow);
+    border: 1px solid var(--border);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .kpi-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--gold), var(--gold-light));
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+
+  .kpi-card:hover::before { opacity: 1; }
+
+  .kpi-label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+  }
+
+  .kpi-value {
+    font-family: 'Playfair Display', serif;
+    font-size: 24px;
+    color: var(--navy);
+    font-weight: 600;
+  }
+
+  .kpi-sub {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-top: 4px;
+    font-family: 'DM Mono', monospace;
+  }
+
+  /* ── REVENUE TABLE ── */
+  .table-card {
+    background: var(--white);
+    border-radius: 16px;
+    box-shadow: var(--shadow);
+    border: 1px solid var(--border);
+    overflow: hidden;
+  }
+
+  .table-card-header {
+    padding: 20px 28px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .table-card-title {
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  thead th {
+    background: var(--navy);
+    color: rgba(255,255,255,0.7);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 14px 28px;
+    text-align: left;
+  }
+
+  thead th:last-child { text-align: right; }
+
+  tbody tr {
+    border-bottom: 1px solid var(--cream-dark);
+    transition: background 0.15s;
+  }
+
+  tbody tr:last-child { border-bottom: none; }
+  tbody tr:hover { background: #FDFAF5; }
+
+  tbody tr.total-row {
+    background: var(--navy);
+    border-top: 2px solid var(--gold);
+  }
+
+  tbody tr.total-row td {
+    color: var(--white);
+    font-weight: 600;
+    padding: 16px 28px;
+  }
+
+  tbody tr.total-row td:last-child { color: var(--gold-light); }
+
+  tbody td {
+    padding: 14px 28px;
+    font-size: 14px;
+    color: var(--text-primary);
+  }
+
+  tbody td:first-child {
+    font-weight: 500;
+    color: var(--navy);
+  }
+
+  tbody td:last-child {
+    text-align: right;
+    font-family: 'DM Mono', monospace;
+    font-size: 14px;
+    color: var(--text-primary);
+  }
+
+  .bar-cell { width: 180px; }
+
+  .mini-bar-bg {
+    height: 6px;
+    background: var(--cream-dark);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+
+  .mini-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--gold), var(--gold-light));
+    border-radius: 3px;
+    transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .pct-badge {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-bottom: 4px;
+    display: block;
+  }
+
+  /* ── SAVE FORM ── */
+  .save-form {
+    display: none;
+    background: var(--white);
+    border-radius: 16px;
+    border: 1px solid var(--border);
+    padding: 28px;
+    margin-top: 20px;
+    box-shadow: var(--shadow);
+    animation: slideDown 0.2s ease;
+  }
+
+  @keyframes slideDown {
+    from { opacity: 0; transform: translateY(-8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .save-form.open { display: block; }
+
+  .form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr auto;
+    gap: 14px;
+    align-items: end;
+  }
+
+  .form-group { display: flex; flex-direction: column; gap: 6px; }
+
+  .form-label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+
+  .form-input {
+    background: var(--cream);
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    color: var(--text-primary);
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  .form-input:focus { border-color: var(--gold); }
+
+  /* ── SAVED REPORTS ── */
+  .reports-empty {
+    text-align: center;
+    padding: 80px 40px;
+    background: var(--white);
+    border-radius: 16px;
+    border: 1px solid var(--border);
+  }
+
+  .reports-empty-icon {
+    width: 56px;
+    height: 56px;
+    background: var(--cream-dark);
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 16px;
+  }
+
+  .reports-empty-icon svg { width: 26px; height: 26px; stroke: var(--text-muted); }
+
+  .reports-empty h3 {
+    font-family: 'Playfair Display', serif;
+    font-size: 18px;
+    color: var(--navy);
+    margin-bottom: 8px;
+  }
+
+  .reports-empty p { font-size: 14px; color: var(--text-muted); }
+
+  .reports-grid {
+    display: grid;
+    gap: 14px;
+  }
+
+  .report-card {
+    background: var(--white);
+    border-radius: 14px;
+    border: 1px solid var(--border);
+    padding: 22px 28px;
+    display: grid;
+    grid-template-columns: auto 1fr auto auto;
+    align-items: center;
+    gap: 20px;
+    transition: all 0.2s;
+    box-shadow: var(--shadow);
+  }
+
+  .report-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+    border-color: var(--gold);
+  }
+
+  .report-icon {
+    width: 44px;
+    height: 44px;
+    background: linear-gradient(135deg, rgba(201,168,76,0.15), rgba(201,168,76,0.05));
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .report-icon svg { width: 20px; height: 20px; stroke: var(--gold); }
+
+  .report-info { flex: 1; min-width: 0; }
+
+  .report-name {
+    font-weight: 600;
+    font-size: 15px;
+    color: var(--navy);
+    margin-bottom: 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .report-meta {
+    font-size: 12px;
+    color: var(--text-muted);
+    font-family: 'DM Mono', monospace;
+  }
+
+  .report-total {
+    font-family: 'Playfair Display', serif;
+    font-size: 18px;
+    color: var(--navy);
+    font-weight: 600;
+    text-align: right;
+  }
+
+  .report-total-label {
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    text-align: right;
+    margin-top: 2px;
+  }
+
+  .report-actions-cell {
+    display: flex;
+    gap: 6px;
+  }
+
+  .icon-btn {
+    width: 34px;
+    height: 34px;
+    border-radius: 7px;
+    border: 1.5px solid var(--border);
+    background: transparent;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    color: var(--text-muted);
+  }
+
+  .icon-btn:hover { border-color: var(--navy); color: var(--navy); background: var(--cream); }
+  .icon-btn.danger:hover { border-color: #DC2626; color: #DC2626; }
+  .icon-btn svg { width: 15px; height: 15px; stroke: currentColor; }
+
+  /* ── REPORT DETAIL MODAL ── */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(15,28,46,0.6);
+    z-index: 200;
+    backdrop-filter: blur(4px);
+    animation: fadeIn 0.2s ease;
+  }
+
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+  .modal-overlay.open { display: flex; align-items: center; justify-content: center; padding: 24px; }
+
+  .modal {
+    background: var(--cream);
+    border-radius: 20px;
+    max-width: 860px;
+    width: 100%;
+    max-height: 88vh;
+    overflow-y: auto;
+    box-shadow: var(--shadow-lg);
+    animation: modalIn 0.25s cubic-bezier(0.34,1.56,0.64,1);
+  }
+
+  @keyframes modalIn {
+    from { opacity: 0; transform: scale(0.95) translateY(10px); }
+    to { opacity: 1; transform: scale(1) translateY(0); }
+  }
+
+  .modal-header {
+    background: var(--navy);
+    padding: 24px 32px;
+    border-radius: 20px 20px 0 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .modal-title { font-family: 'Playfair Display', serif; font-size: 20px; color: var(--white); }
+  .modal-subtitle { font-size: 12px; color: rgba(255,255,255,0.5); margin-top: 3px; font-family: 'DM Mono', monospace; }
+
+  .modal-close {
+    background: rgba(255,255,255,0.1);
+    border: none;
+    color: var(--white);
+    width: 34px;
+    height: 34px;
+    border-radius: 8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s;
+    flex-shrink: 0;
+  }
+
+  .modal-close:hover { background: rgba(255,255,255,0.2); }
+  .modal-close svg { width: 16px; height: 16px; stroke: white; }
+
+  .modal-body { padding: 28px 32px; }
+
+  /* ── TOAST ── */
+  .toast {
+    position: fixed;
+    bottom: 28px;
+    right: 28px;
+    background: var(--navy);
+    color: var(--white);
+    padding: 14px 22px;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 500;
+    border-left: 4px solid var(--gold);
+    box-shadow: var(--shadow-lg);
+    opacity: 0;
+    transform: translateY(8px);
+    transition: all 0.3s;
+    pointer-events: none;
+    z-index: 300;
+  }
+
+  .toast.show { opacity: 1; transform: translateY(0); }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 768px) {
+    header { padding: 0 20px; }
+    main { padding: 28px 16px 60px; }
+    .kpi-strip { grid-template-columns: repeat(2, 1fr); }
+    .form-row { grid-template-columns: 1fr; }
+    .report-card { grid-template-columns: auto 1fr; }
+    .report-total, .report-actions-cell { grid-column: 2; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-mark">K</div>
+    <div>
+      <div class="logo-text">Kinective Fitness</div>
+      <div class="logo-sub">Revenue Intelligence</div>
+    </div>
+  </div>
+  <div class="header-right">
+    <button class="tab-btn active" onclick="showView('upload')">New Report</button>
+    <button class="tab-btn" onclick="showView('saved')">Saved Reports</button>
+  </div>
+</header>
+
+<main>
+  <!-- ── UPLOAD VIEW ── -->
+  <div class="view active" id="view-upload">
+    <div class="page-header">
+      <div class="page-title">Revenue by Profit Center</div>
+      <div class="page-subtitle">Drop your ABC Revenue export to generate an instant summary</div>
+    </div>
+
+    <!-- Upload zone -->
+    <div id="uploadZone" class="upload-card" onclick="document.getElementById('fileInput').click()"
+         ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event)">
+      <div class="upload-icon">
+        <svg fill="none" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5">
+          <path d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+        </svg>
+      </div>
+      <div class="upload-title">Drop your ABC report here</div>
+      <div class="upload-desc">Drag & drop your Revenue by Profit Center Detail .xlsx export<br>or click to browse files</div>
+      <button class="upload-btn" onclick="event.stopPropagation(); document.getElementById('fileInput').click()">
+        <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+          <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/>
+        </svg>
+        Select File
+      </button>
+      <input type="file" id="fileInput" accept=".xlsx,.xls" onchange="handleFileSelect(event)">
+    </div>
+
+    <!-- Processing -->
+    <div class="processing-state" id="processingState">
+      <div class="spinner"></div>
+      <p style="color: var(--text-muted); font-size: 14px;">Processing your ABC report…</p>
+    </div>
+
+    <!-- Result -->
+    <div class="result-section" id="resultSection">
+      <div class="result-header">
+        <div class="result-meta">
+          <div class="result-period" id="resultPeriod">—</div>
+          <div class="result-location" id="resultLocation">—</div>
+        </div>
+        <div class="result-actions">
+          <button class="btn btn-outline" onclick="resetUpload()">
+            <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 12a9 9 0 109-9M3 3v9h9"/></svg>
+            New File
+          </button>
+          <button class="btn btn-outline" onclick="downloadExcel()">
+            <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+            Export Excel
+          </button>
+          <button class="btn btn-gold" onclick="toggleSaveForm()">
+            <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+            Save Report
+          </button>
+        </div>
+      </div>
+
+      <!-- Save form -->
+      <div class="save-form" id="saveForm">
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Report Name</label>
+            <input type="text" class="form-input" id="reportName" placeholder="e.g. February 2026">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Notes (optional)</label>
+            <input type="text" class="form-input" id="reportNotes" placeholder="e.g. Strong Dues month">
+          </div>
+          <button class="btn btn-primary" onclick="saveReport()">Save</button>
+        </div>
+      </div>
+
+      <!-- KPI strip -->
+      <div class="kpi-strip" id="kpiStrip"></div>
+
+      <!-- Table -->
+      <div class="table-card">
+        <div class="table-card-header">
+          <span class="table-card-title">Revenue by Category</span>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Category</th>
+              <th class="bar-cell">Share</th>
+              <th>Revenue</th>
+            </tr>
+          </thead>
+          <tbody id="revenueTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── SAVED REPORTS VIEW ── -->
+  <div class="view" id="view-saved">
+    <div class="page-header">
+      <div class="page-title">Saved Reports</div>
+      <div class="page-subtitle">All previously saved revenue summaries</div>
+    </div>
+    <div id="savedReportsContainer"></div>
+  </div>
+</main>
+
+<!-- ── MODAL ── -->
+<div class="modal-overlay" id="modalOverlay" onclick="closeModal(event)">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <div>
+        <div class="modal-title" id="modalTitle">—</div>
+        <div class="modal-subtitle" id="modalSubtitle">—</div>
+      </div>
+      <button class="modal-close" onclick="closeModalDirect()">
+        <svg fill="none" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12" stroke-width="2" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+    <div class="modal-body" id="modalBody"></div>
+  </div>
+</div>
+
+<!-- ── TOAST ── -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ── PROFIT CENTER MAP ──
+const PROFIT_CENTER_MAP = {
+  'ABC': 'Dues',
+  'ABC COLLECT @ CLUB': 'Dues',
+  'ABC LATE-SERVICE FEES': 'Dues',
+  'ADDITIONAL SERVICES': 'Dues',
+  'ANN0407': 'Annual Fees',
+  'ANNUALFAO': 'Annual Fees',
+  'ANNUALFEE': 'Annual Fees',
+  'ANNUALMO': 'Annual Fees',
+  'ALO': 'Retail',
+  'BALANCE REFUNDS': 'Dues',
+  'BOOKINGFEE': 'Booking fee',
+  'CANCEL': 'Dues',
+  'CANCELLATION FEE': 'Dues',
+  'CENTRICFIT': 'Retail',
+  'CHARGEBACK': 'Dues',
+  'CHARGEBACK REPOST': 'Dues',
+  'CLUB FEES': 'Dues',
+  'CLUB PASS': 'Dues',
+  'DAYCARE1': 'Kinective Kids',
+  'DAYCARE2': 'Kinective Kids',
+  'DAYCARE3': 'Kinective Kids',
+  'DUES': 'Dues',
+  'ESCAPE ALCOHOL': 'Zest',
+  'EXLOCKER': 'Lockers',
+  'FREEZEFEE': 'Dues',
+  'JRLOCKER': 'Lockers',
+  'KIN DONATIONS': 'Kin Donations',
+  'KINECTIVE MERCHANDISE RETAIL': 'Retail',
+  'KINECTKIDS': 'Kinective Kids',
+  'LATE FEE': 'Dues',
+  'LAUNDRY': 'Laundry',
+  'LULULEMON': 'Retail',
+  'MASSAGE THERAPY SERVICES': 'Massages',
+  'MISC. ITEMS': 'Dues',
+  'MISSED CLASS FEE': 'Missed class fee',
+  'MISSEDFEE': 'Missed class fee',
+  'PERSONAL TRAINING': 'PERSONAL TRAINING',
+  'PILATES': 'Pilates',
+  'PILATES AND YOGA': 'Pilates',
+  'PILATES - YOGA': 'Pilates',
+  'PRE-PAY': 'Dues',
+  'RETURN': 'Dues',
+  'RETAIL': 'Retail',
+  'SERVICE FEE': 'Dues',
+  'SUPPLEMENTS - EUROPA': 'Retail',
+  'SUPPLEMENTS - MOMENTOUS': 'Retail',
+  'SUPPLEMENTS - NAKED NUTRITION': 'Retail',
+  'SUPPLEMENTS - PUORI': 'Retail',
+  'SUPPLEMENTS - THORNE': 'Retail',
+  'TOE SOX': 'Retail',
+  'UNAPPLIED PAYMENT': 'Dues',
+  'ZEST': 'Zest',
+  'CENTRIC': 'Retail',
+  'KKIDS': 'Kinective Kids',
+  'KKLATEFEE': 'Missed class fee',
+};
+
+// Canonical category display order
+const CATEGORY_ORDER = [
+  'Dues', 'Annual Fees', 'PERSONAL TRAINING', 'Retail', 'Zest',
+  'Massages', 'Pilates', 'Kinective Kids', 'Lockers', 'Booking fee',
+  'Missed class fee', 'Laundry', 'Kin Donations'
+];
+
+let currentData = null;
+
+// ── VIEW SWITCHING ──
+function showView(name) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('view-' + name).classList.add('active');
+  document.querySelectorAll('.tab-btn')[name === 'upload' ? 0 : 1].classList.add('active');
+  if (name === 'saved') renderSavedReports();
+}
+
+// ── DRAG & DROP ──
+function handleDragOver(e) {
+  e.preventDefault();
+  document.getElementById('uploadZone').classList.add('dragging');
+}
+function handleDragLeave(e) {
+  document.getElementById('uploadZone').classList.remove('dragging');
+}
+function handleDrop(e) {
+  e.preventDefault();
+  document.getElementById('uploadZone').classList.remove('dragging');
+  const file = e.dataTransfer.files[0];
+  if (file) processFile(file);
+}
+function handleFileSelect(e) {
+  const file = e.target.files[0];
+  if (file) processFile(file);
+}
+
+// ── FILE PROCESSING ──
+function processFile(file) {
+  document.getElementById('uploadZone').style.display = 'none';
+  document.getElementById('processingState').style.display = 'block';
+
+  setTimeout(() => {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      try {
+        const wb = XLSX.read(e.target.result, { type: 'array', cellDates: true });
+
+        // Find the detail sheet
+        const detailSheetName = wb.SheetNames.find(n =>
+          n.toLowerCase().includes('detail') || n.toLowerCase().includes('revenue')
+        ) || wb.SheetNames[0];
+
+        const ws = wb.Sheets[detailSheetName];
+        const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: null });
+
+        // Find header row (contains "Profit Center" and "Payment")
+        let headerRow = -1;
+        for (let i = 0; i < Math.min(20, rows.length); i++) {
+          const rowStr = (rows[i] || []).join('|').toLowerCase();
+          if (rowStr.includes('profit') && rowStr.includes('payment')) {
+            headerRow = i;
+            break;
+          }
+        }
+
+        if (headerRow === -1) throw new Error('Could not find header row');
+
+        const headers = rows[headerRow].map(h => (h || '').toString().replace(/\n/g, ' ').trim().toLowerCase());
+        const profitCenterCol = headers.findIndex(h => h.includes('profit center'));
+        const paymentAmtCol = headers.findIndex(h => h.includes('payment') && h.includes('amount') && !h.includes('excluding'));
+
+        if (profitCenterCol === -1 || paymentAmtCol === -1) throw new Error('Required columns not found');
+
+        // Extract date range and location from header rows
+        let dateRange = '';
+        let location = '';
+        for (let i = 0; i < headerRow; i++) {
+          const row = (rows[i] || []);
+          for (let cell of row) {
+            if (cell && typeof cell === 'string') {
+              const m = cell.match(/Date[:\s]+(\d{2}\/\d{2}\/\d{4})\s*-\s*(\d{2}\/\d{2}\/\d{4})/i);
+              if (m) dateRange = m[1] + ' – ' + m[2];
+              const loc = cell.match(/Location[:\s]+(.+?)(?:\s*\||\s*Date)/i);
+              if (loc) location = loc[1].trim();
+              if (!location && cell.match(/KINECTIVE|CLUB/i)) {
+                const totalMatch = cell.match(/Total Revenue[:\s]+\$[\d,]+\.?\d*/i);
+                if (totalMatch) location = cell.split('|')[0].replace(/^Location[:\s]*/i,'').trim();
+              }
+            }
+          }
+        }
+
+        // Parse location from first info cell
+        if (!location) {
+          for (let i = 0; i < headerRow; i++) {
+            const row = rows[i] || [];
+            for (let cell of row) {
+              if (cell && typeof cell === 'string' && cell.includes('|')) {
+                const parts = cell.split('|');
+                location = parts[0].replace(/^Location[:\s]*/i,'').trim();
+                break;
+              }
+            }
+            if (location) break;
+          }
+        }
+
+        // Aggregate by category
+        const totals = {};
+        for (let i = headerRow + 1; i < rows.length; i++) {
+          const row = rows[i];
+          if (!row) continue;
+          const pc = (row[profitCenterCol] || '').toString().trim().toUpperCase();
+          const amt = parseFloat(row[paymentAmtCol]);
+          if (!pc || isNaN(amt)) continue;
+
+          // Map to category
+          let category = PROFIT_CENTER_MAP[pc] || PROFIT_CENTER_MAP[pc.replace(/\s+/g,'')] || pc;
+
+          // Try partial match
+          if (!PROFIT_CENTER_MAP[pc]) {
+            const key = Object.keys(PROFIT_CENTER_MAP).find(k => pc.includes(k) || k.includes(pc));
+            if (key) category = PROFIT_CENTER_MAP[key];
+          }
+
+          totals[category] = (totals[category] || 0) + amt;
+        }
+
+        // Clean up near-zero / true zero categories
+        const summary = Object.entries(totals)
+          .map(([cat, val]) => ({ cat, val: Math.round(val * 100) / 100 }))
+          .filter(r => Math.abs(r.val) > 0.005);
+
+        // Sort by canonical order then by value
+        summary.sort((a, b) => {
+          const ia = CATEGORY_ORDER.indexOf(a.cat);
+          const ib = CATEGORY_ORDER.indexOf(b.cat);
+          if (ia !== -1 && ib !== -1) return ia - ib;
+          if (ia !== -1) return -1;
+          if (ib !== -1) return 1;
+          return b.val - a.val;
+        });
+
+        const grandTotal = summary.reduce((s, r) => s + r.val, 0);
+
+        currentData = { summary, grandTotal, dateRange, location, fileName: file.name };
+
+        document.getElementById('processingState').style.display = 'none';
+        renderResult(currentData);
+
+      } catch(err) {
+        document.getElementById('processingState').style.display = 'none';
+        document.getElementById('uploadZone').style.display = 'block';
+        showToast('⚠️ Could not parse file: ' + err.message);
+      }
+    };
+    reader.readAsArrayBuffer(file);
+  }, 300);
+}
+
+// ── RENDER RESULT ──
+function renderResult(data) {
+  document.getElementById('resultSection').style.display = 'block';
+
+  // Header
+  document.getElementById('resultPeriod').textContent = data.dateRange || 'Period';
+  document.getElementById('resultLocation').textContent = data.location || data.fileName;
+
+  // KPIs
+  const topCat = [...data.summary].sort((a,b) => b.val - a.val)[0];
+  const positiveTotal = data.summary.filter(r => r.val > 0).reduce((s,r) => s + r.val, 0);
+  const catCount = data.summary.filter(r => r.val > 0).length;
+
+  document.getElementById('kpiStrip').innerHTML = `
+    <div class="kpi-card">
+      <div class="kpi-label">Total Revenue</div>
+      <div class="kpi-value">${fmt(data.grandTotal)}</div>
+      <div class="kpi-sub">Net incl. refunds</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Gross Revenue</div>
+      <div class="kpi-value">${fmt(positiveTotal)}</div>
+      <div class="kpi-sub">Positive only</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Top Category</div>
+      <div class="kpi-value" style="font-size:17px; margin-top:4px">${topCat ? topCat.cat : '—'}</div>
+      <div class="kpi-sub">${topCat ? fmt(topCat.val) : ''}</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Active Categories</div>
+      <div class="kpi-value">${catCount}</div>
+      <div class="kpi-sub">with revenue</div>
+    </div>
+  `;
+
+  // Table
+  const max = Math.max(...data.summary.map(r => Math.abs(r.val)));
+  const tbody = document.getElementById('revenueTableBody');
+  tbody.innerHTML = '';
+
+  data.summary.forEach(row => {
+    const pct = data.grandTotal !== 0 ? (row.val / data.grandTotal * 100) : 0;
+    const barPct = max !== 0 ? (Math.abs(row.val) / max * 100) : 0;
+    const isNeg = row.val < 0;
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${row.cat}</td>
+      <td class="bar-cell">
+        <span class="pct-badge">${pct.toFixed(1)}%</span>
+        <div class="mini-bar-bg">
+          <div class="mini-bar-fill" style="width:${barPct}%; background: ${isNeg ? '#DC2626' : 'linear-gradient(90deg, var(--gold), var(--gold-light))'}"></div>
+        </div>
+      </td>
+      <td style="color:${isNeg ? '#DC2626' : 'inherit'}">${fmt(row.val)}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  // Total row
+  const totalTr = document.createElement('tr');
+  totalTr.className = 'total-row';
+  totalTr.innerHTML = `<td colspan="2">Grand Total</td><td>${fmt(data.grandTotal)}</td>`;
+  tbody.appendChild(totalTr);
+
+  // Pre-fill report name
+  document.getElementById('reportName').value = data.dateRange || '';
+}
+
+// ── SAVE FORM TOGGLE ──
+function toggleSaveForm() {
+  const f = document.getElementById('saveForm');
+  f.classList.toggle('open');
+}
+
+// ── SAVE REPORT ──
+function saveReport() {
+  if (!currentData) return;
+  const name = document.getElementById('reportName').value.trim() || currentData.dateRange || 'Report';
+  const notes = document.getElementById('reportNotes').value.trim();
+
+  const reports = getSavedReports();
+  const report = {
+    id: Date.now(),
+    name,
+    notes,
+    uploadedAt: new Date().toISOString(),
+    dateRange: currentData.dateRange,
+    location: currentData.location,
+    summary: currentData.summary,
+    grandTotal: currentData.grandTotal,
+  };
+  reports.unshift(report);
+  localStorage.setItem('kinective_reports', JSON.stringify(reports));
+
+  document.getElementById('saveForm').classList.remove('open');
+  showToast('✓ Report saved successfully');
+}
+
+// ── STORAGE ──
+function getSavedReports() {
+  try { return JSON.parse(localStorage.getItem('kinective_reports') || '[]'); }
+  catch { return []; }
+}
+
+// ── RENDER SAVED REPORTS ──
+function renderSavedReports() {
+  const reports = getSavedReports();
+  const container = document.getElementById('savedReportsContainer');
+
+  if (reports.length === 0) {
+    container.innerHTML = `
+      <div class="reports-empty">
+        <div class="reports-empty-icon">
+          <svg fill="none" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5">
+            <path d="M9 17H7A5 5 0 017 7h10a5 5 0 010 10h-2M9 12h6M12 9v6"/>
+          </svg>
+        </div>
+        <h3>No saved reports yet</h3>
+        <p>Upload an ABC report and click "Save Report" to build your history.</p>
+      </div>`;
+    return;
+  }
+
+  container.innerHTML = `<div class="reports-grid">${reports.map(r => `
+    <div class="report-card">
+      <div class="report-icon">
+        <svg fill="none" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5">
+          <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
+          <polyline points="14 2 14 8 20 8"/>
+          <line x1="16" y1="13" x2="8" y2="13"/>
+          <line x1="16" y1="17" x2="8" y2="17"/>
+          <polyline points="10 9 9 9 8 9"/>
+        </svg>
+      </div>
+      <div class="report-info">
+        <div class="report-name">${escHtml(r.name)}</div>
+        <div class="report-meta">${r.dateRange ? r.dateRange + ' · ' : ''}Saved ${formatDate(r.uploadedAt)}${r.notes ? ' · ' + escHtml(r.notes) : ''}</div>
+      </div>
+      <div>
+        <div class="report-total">${fmt(r.grandTotal)}</div>
+        <div class="report-total-label">Net Revenue</div>
+      </div>
+      <div class="report-actions-cell">
+        <button class="icon-btn" title="View report" onclick="viewReport(${r.id})">
+          <svg fill="none" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke-width="1.5" stroke-linecap="round"/><circle cx="12" cy="12" r="3" stroke-width="1.5"/></svg>
+        </button>
+        <button class="icon-btn" title="Export Excel" onclick="downloadReportExcel(${r.id})">
+          <svg fill="none" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" stroke-width="1.5" stroke-linecap="round"/></svg>
+        </button>
+        <button class="icon-btn danger" title="Delete" onclick="deleteReport(${r.id})">
+          <svg fill="none" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6" stroke-width="1.5" stroke-linecap="round"/><path d="M19 6l-1 14H6L5 6M10 11v6M14 11v6" stroke-width="1.5" stroke-linecap="round"/></svg>
+        </button>
+      </div>
+    </div>
+  `).join('')}</div>`;
+}
+
+function viewReport(id) {
+  const reports = getSavedReports();
+  const r = reports.find(x => x.id === id);
+  if (!r) return;
+
+  document.getElementById('modalTitle').textContent = r.name;
+  document.getElementById('modalSubtitle').textContent = [r.dateRange, r.location, r.notes].filter(Boolean).join(' · ');
+
+  const max = Math.max(...r.summary.map(x => Math.abs(x.val)));
+  const rows = r.summary.map(row => {
+    const pct = r.grandTotal !== 0 ? (row.val / r.grandTotal * 100) : 0;
+    const barPct = max !== 0 ? (Math.abs(row.val) / max * 100) : 0;
+    const isNeg = row.val < 0;
+    return `<tr style="border-bottom:1px solid var(--cream-dark)">
+      <td style="padding:13px 20px;font-weight:500;color:var(--navy);font-size:14px">${row.cat}</td>
+      <td style="padding:13px 20px;width:160px">
+        <span style="font-family:'DM Mono',monospace;font-size:11px;color:var(--text-muted);display:block;margin-bottom:4px">${pct.toFixed(1)}%</span>
+        <div style="height:5px;background:var(--cream-dark);border-radius:3px;overflow:hidden">
+          <div style="height:100%;width:${barPct}%;background:${isNeg ? '#DC2626' : 'linear-gradient(90deg,var(--gold),var(--gold-light))'};border-radius:3px"></div>
+        </div>
+      </td>
+      <td style="padding:13px 20px;text-align:right;font-family:'DM Mono',monospace;font-size:14px;color:${isNeg ? '#DC2626' : 'var(--text-primary)'}">${fmt(row.val)}</td>
+    </tr>`;
+  }).join('');
+
+  document.getElementById('modalBody').innerHTML = `
+    <div style="background:var(--white);border-radius:12px;overflow:hidden;border:1px solid var(--border)">
+      <table style="width:100%;border-collapse:collapse">
+        <thead><tr style="background:var(--navy)">
+          <th style="padding:12px 20px;text-align:left;font-size:11px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:rgba(255,255,255,0.6)">Category</th>
+          <th style="padding:12px 20px;text-align:left;font-size:11px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:rgba(255,255,255,0.6);width:160px">Share</th>
+          <th style="padding:12px 20px;text-align:right;font-size:11px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:rgba(255,255,255,0.6)">Revenue</th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+        <tfoot><tr style="background:var(--navy)">
+          <td colspan="2" style="padding:14px 20px;color:white;font-weight:600;font-size:14px">Grand Total</td>
+          <td style="padding:14px 20px;text-align:right;color:var(--gold-light);font-family:'DM Mono',monospace;font-size:15px;font-weight:600">${fmt(r.grandTotal)}</td>
+        </tr></tfoot>
+      </table>
+    </div>
+  `;
+  document.getElementById('modalOverlay').classList.add('open');
+}
+
+function closeModal(e) {
+  if (e.target === document.getElementById('modalOverlay')) closeModalDirect();
+}
+function closeModalDirect() {
+  document.getElementById('modalOverlay').classList.remove('open');
+}
+
+function deleteReport(id) {
+  let reports = getSavedReports().filter(r => r.id !== id);
+  localStorage.setItem('kinective_reports', JSON.stringify(reports));
+  renderSavedReports();
+  showToast('Report deleted');
+}
+
+// ── EXCEL EXPORT ──
+function downloadExcel() {
+  if (!currentData) return;
+  exportToExcel(currentData.summary, currentData.grandTotal, currentData.dateRange || 'Revenue Report', currentData.location);
+}
+
+function downloadReportExcel(id) {
+  const r = getSavedReports().find(x => x.id === id);
+  if (!r) return;
+  exportToExcel(r.summary, r.grandTotal, r.name, r.location);
+}
+
+function exportToExcel(summary, grandTotal, title, location) {
+  const wb = XLSX.utils.book_new();
+  const rows = [
+    ['Kinective Fitness — Revenue by Profit Center'],
+    [title],
+    [location || ''],
+    [],
+    ['Category', 'Revenue', '% of Total'],
+    ...summary.map(r => [
+      r.cat,
+      r.val,
+      grandTotal !== 0 ? (r.val / grandTotal) : 0
+    ]),
+    [],
+    ['Grand Total', grandTotal, 1]
+  ];
+  const ws = XLSX.utils.aoa_to_sheet(rows);
+  ws['!cols'] = [{ wch: 30 }, { wch: 16 }, { wch: 14 }];
+  XLSX.utils.book_append_sheet(wb, ws, 'Revenue Summary');
+  XLSX.writeFile(wb, `Kinective_Revenue_${title.replace(/[^a-zA-Z0-9]/g,'_')}.xlsx`);
+  showToast('✓ Excel file downloaded');
+}
+
+// ── RESET ──
+function resetUpload() {
+  currentData = null;
+  document.getElementById('uploadZone').style.display = 'block';
+  document.getElementById('resultSection').style.display = 'none';
+  document.getElementById('saveForm').classList.remove('open');
+  document.getElementById('fileInput').value = '';
+}
+
+// ── HELPERS ──
+function fmt(n) {
+  if (n === undefined || n === null) return '—';
+  return (n < 0 ? '-' : '') + '$' + Math.abs(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function formatDate(iso) {
+  const d = new Date(iso);
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+function escHtml(s) {
+  return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+</script>
+</body>
+</html>

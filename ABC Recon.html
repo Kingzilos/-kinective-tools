@@ -1,0 +1,1783 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Report Viewer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #e4e9f2 100%);
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: #ffffff;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.08);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #0066cc 0%, #0052a3 100%);
+            color: white;
+            padding: 40px 24px 32px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 32px;
+            margin-bottom: 8px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 15px;
+            font-weight: 400;
+        }
+
+        .reconciliation-toggle {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin: 24px auto 0;
+            max-width: 400px;
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 12px;
+            padding: 6px;
+            backdrop-filter: blur(10px);
+        }
+
+        .toggle-btn {
+            flex: 1;
+            padding: 12px 20px;
+            background: transparent;
+            color: rgba(255, 255, 255, 0.8);
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .toggle-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+        }
+
+        .toggle-btn.active {
+            background: rgba(255, 255, 255, 0.95);
+            color: #0066cc;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .saved-reports {
+            padding: 32px;
+            background: #fafbfc;
+        }
+
+        .saved-reports-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+
+        .saved-reports h2 {
+            font-size: 24px;
+            color: #1a1a1a;
+            font-weight: 700;
+            letter-spacing: -0.3px;
+        }
+
+        .group-controls {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .create-group-btn {
+            padding: 10px 20px;
+            background: #0066cc;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .create-group-btn:hover {
+            background: #0052a3;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 102, 204, 0.3);
+        }
+
+        .select-mode-btn {
+            padding: 10px 20px;
+            background: #f3f4f6;
+            color: #1a1a1a;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .select-mode-btn.active {
+            background: #0066cc;
+            color: white;
+        }
+
+        .select-mode-btn:hover {
+            background: #e5e7eb;
+        }
+
+        .select-mode-btn.active:hover {
+            background: #0052a3;
+        }
+
+        .bulk-actions {
+            display: none;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .bulk-actions.active {
+            display: flex;
+        }
+
+        .bulk-actions-text {
+            font-size: 14px;
+            color: #6b7280;
+            font-weight: 500;
+        }
+
+        .bulk-action-btn {
+            padding: 8px 16px;
+            background: #0066cc;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            transition: all 0.2s ease;
+        }
+
+        .bulk-action-btn:hover {
+            background: #0052a3;
+        }
+
+        .bulk-action-btn.secondary {
+            background: #f3f4f6;
+            color: #6b7280;
+        }
+
+        .bulk-action-btn.secondary:hover {
+            background: #e5e7eb;
+            color: #1a1a1a;
+        }
+
+        .group-section {
+            margin-bottom: 24px;
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid #e5e7eb;
+            transition: all 0.3s ease;
+        }
+
+        .group-section:hover {
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        }
+
+        .group-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 20px;
+            background: linear-gradient(to right, #f8f9fa, #ffffff);
+            border-bottom: 1px solid #e5e7eb;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .group-header:hover {
+            background: linear-gradient(to right, #f0f2f5, #f8f9fa);
+        }
+
+        .group-title-section {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex: 1;
+        }
+
+        .group-toggle-icon {
+            font-size: 16px;
+            transition: transform 0.3s ease;
+            color: #6b7280;
+        }
+
+        .group-toggle-icon.collapsed {
+            transform: rotate(-90deg);
+        }
+
+        .group-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #1a1a1a;
+        }
+
+        .group-title input {
+            border: none;
+            background: transparent;
+            font-size: 16px;
+            font-weight: 600;
+            color: #1a1a1a;
+            padding: 4px 8px;
+            border-radius: 4px;
+            outline: none;
+        }
+
+        .group-title input:focus {
+            background: white;
+            box-shadow: 0 0 0 2px #0066cc;
+        }
+
+        .group-count {
+            font-size: 13px;
+            color: #6b7280;
+            font-weight: 500;
+            background: #f3f4f6;
+            padding: 4px 12px;
+            border-radius: 12px;
+        }
+
+        .group-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .group-action-btn {
+            padding: 6px 12px;
+            background: transparent;
+            border: 1px solid #e5e7eb;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 500;
+            color: #6b7280;
+            transition: all 0.2s ease;
+        }
+
+        .group-action-btn:hover {
+            background: #f9fafb;
+            color: #1a1a1a;
+            border-color: #d1d5db;
+        }
+
+        .delete-group-btn {
+            color: #dc2626;
+        }
+
+        .delete-group-btn:hover {
+            background: #fef2f2;
+            border-color: #fecaca;
+        }
+
+        .group-reports {
+            padding: 0;
+        }
+
+        .group-reports.collapsed {
+            display: none;
+        }
+
+        .saved-report-item {
+            background: white;
+            border-bottom: 1px solid #f3f4f6;
+            padding: 16px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.2s ease;
+            position: relative;
+        }
+
+        .saved-report-item:last-child {
+            border-bottom: none;
+        }
+
+        .saved-report-item:hover {
+            background: #f9fafb;
+        }
+
+        .saved-report-item.selected {
+            background: #eff6ff;
+            border-left: 3px solid #0066cc;
+        }
+
+        .report-checkbox {
+            display: none;
+            width: 20px;
+            height: 20px;
+            border: 2px solid #d1d5db;
+            border-radius: 4px;
+            margin-right: 16px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            flex-shrink: 0;
+        }
+
+        .report-checkbox.active {
+            display: block;
+        }
+
+        .report-checkbox.checked {
+            background: #0066cc;
+            border-color: #0066cc;
+            position: relative;
+        }
+
+        .report-checkbox.checked::after {
+            content: '✓';
+            position: absolute;
+            color: white;
+            font-size: 14px;
+            font-weight: bold;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        .saved-report-info {
+            display: flex;
+            gap: 32px;
+            align-items: center;
+            flex: 1;
+        }
+
+        .saved-report-date {
+            font-weight: 600;
+            color: #1a1a1a;
+            min-width: 180px;
+            font-size: 14px;
+        }
+
+        .saved-report-revenue {
+            color: #059669;
+            font-weight: 700;
+            font-size: 16px;
+            letter-spacing: -0.2px;
+        }
+
+        .saved-report-location {
+            color: #6b7280;
+            font-size: 13px;
+        }
+
+        .saved-report-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .view-btn, .delete-btn, .move-to-group-btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            transition: all 0.2s ease;
+        }
+
+        .view-btn {
+            background: #0066cc;
+            color: white;
+        }
+
+        .view-btn:hover {
+            background: #0052a3;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(0, 102, 204, 0.3);
+        }
+
+        .delete-btn {
+            background: #fee;
+            color: #dc2626;
+        }
+
+        .delete-btn:hover {
+            background: #dc2626;
+            color: white;
+            transform: translateY(-1px);
+        }
+
+        .move-to-group-btn {
+            background: #f3f4f6;
+            color: #6b7280;
+        }
+
+        .move-to-group-btn:hover {
+            background: #e5e7eb;
+            color: #1a1a1a;
+        }
+
+        .ungrouped-section {
+            margin-bottom: 24px;
+        }
+
+        .ungrouped-header {
+            padding: 12px 20px;
+            background: #f9fafb;
+            border-bottom: 1px solid #e5e7eb;
+            font-size: 14px;
+            font-weight: 600;
+            color: #6b7280;
+        }
+
+        .report-actions {
+            display: flex;
+            gap: 10px;
+            margin: 20px 30px 30px;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #95a5a6;
+        }
+
+        .empty-state-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+        }
+
+        .drop-zone {
+            border: 2px dashed #cbd5e1;
+            border-radius: 16px;
+            padding: 60px 20px;
+            margin: 32px;
+            text-align: center;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+            background: linear-gradient(135deg, #fafbfc 0%, #f8f9fa 100%);
+        }
+
+        .drop-zone:hover {
+            border-color: #0066cc;
+            background: linear-gradient(135deg, #f0f4ff 0%, #e8f0ff 100%);
+            transform: translateY(-2px);
+        }
+
+        .drop-zone.dragover {
+            border-color: #10b981;
+            background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
+            transform: scale(1.01);
+        }
+
+        .drop-zone-icon {
+            font-size: 56px;
+            margin-bottom: 20px;
+        }
+
+        .drop-zone-text {
+            font-size: 18px;
+            color: #1a1a1a;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+
+        .drop-zone-subtext {
+            font-size: 14px;
+            color: #6b7280;
+        }
+
+        .report-info {
+            display: none;
+            padding: 32px;
+        }
+
+        .report-info.active {
+            display: block;
+        }
+
+        .info-header {
+            background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+            padding: 20px 24px;
+            border-radius: 12px;
+            margin-bottom: 28px;
+            border: 1px solid #e5e7eb;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        }
+
+        .info-row {
+            display: flex;
+            gap: 40px;
+            flex-wrap: wrap;
+            font-size: 14px;
+            align-items: center;
+        }
+
+        .info-item {
+            display: flex;
+            gap: 8px;
+        }
+
+        .info-label {
+            font-weight: 600;
+            color: #6b7280;
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+
+        .info-value {
+            color: #1a1a1a;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .deductions-input-group {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            margin-left: auto;
+            flex-direction: column;
+            align-items: flex-end;
+        }
+
+        .deductions-input-wrapper {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .deductions-input {
+            width: 140px;
+            padding: 10px 14px;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            color: #dc2626;
+            transition: all 0.2s ease;
+        }
+
+        .deductions-input:focus {
+            outline: none;
+            border-color: #0066cc;
+            box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.1);
+        }
+
+        .deductions-error {
+            font-size: 12px;
+            color: #dc2626;
+            margin-top: 4px;
+            min-height: 18px;
+            font-weight: 500;
+        }
+
+        .summary-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        }
+
+        .summary-table th {
+            background: linear-gradient(135deg, #0066cc 0%, #0052a3 100%);
+            color: white;
+            padding: 16px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .summary-table td {
+            padding: 14px 16px;
+            border-bottom: 1px solid #f3f4f6;
+            font-size: 14px;
+            color: #1a1a1a;
+            background: white;
+        }
+
+        .summary-table tr:hover td {
+            background: #f9fafb;
+        }
+
+        .summary-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .summary-table .row-label {
+            font-weight: 600;
+        }
+
+        .summary-table .total-row {
+            background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+            font-weight: 700;
+        }
+
+        .summary-table .total-row td {
+            padding: 16px;
+            border-top: 2px solid #e5e7eb;
+            font-size: 15px;
+        }
+
+        .summary-table .total-row:hover td {
+            background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+        }
+
+        .number {
+            text-align: right;
+            font-variant-numeric: tabular-nums;
+            font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, monospace;
+        }
+
+        .reset-btn {
+            padding: 12px 24px;
+            background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .reset-btn:hover {
+            background: linear-gradient(135deg, #4b5563 0%, #374151 100%);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        /* Modal styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(4px);
+        }
+
+        .modal.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 32px;
+            border-radius: 16px;
+            max-width: 500px;
+            width: 90%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        .modal-header {
+            font-size: 20px;
+            font-weight: 700;
+            color: #1a1a1a;
+            margin-bottom: 20px;
+        }
+
+        .modal-input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 14px;
+            margin-bottom: 20px;
+        }
+
+        .modal-input:focus {
+            outline: none;
+            border-color: #1e3c72;
+            box-shadow: 0 0 0 3px rgba(30, 60, 114, 0.1);
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+        }
+
+        .modal-btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.2s ease;
+        }
+
+        .modal-btn-primary {
+            background: #0066cc;
+            color: white;
+        }
+
+        .modal-btn-primary:hover {
+            background: #0052a3;
+        }
+
+        .modal-btn-secondary {
+            background: #f3f4f6;
+            color: #6b7280;
+        }
+
+        .modal-btn-secondary:hover {
+            background: #e5e7eb;
+        }
+
+        .modal-input:focus {
+            outline: none;
+            border-color: #0066cc;
+            box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.1);
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1 id="pageTitle">Daily Dep Reconciliation</h1>
+            <p>Upload and analyze your reports</p>
+            <div class="reconciliation-toggle">
+                <button class="toggle-btn active" id="dailyDepBtn" onclick="switchReconciliation('dailyDep')">
+                    Daily Dep
+                </button>
+                <button class="toggle-btn" id="abcBillingBtn" onclick="switchReconciliation('abcBilling')">
+                    ABC Billing
+                </button>
+            </div>
+        </div>
+
+        <div class="saved-reports" id="savedReportsSection" style="display: none;">
+            <div class="saved-reports-header">
+                <h2>Saved Reports</h2>
+                <div class="group-controls">
+                    <button class="select-mode-btn" id="selectModeBtn" onclick="toggleSelectMode()">
+                        Select Multiple
+                    </button>
+                    <div class="bulk-actions" id="bulkActions">
+                        <span class="bulk-actions-text"><span id="selectedCount">0</span> selected</span>
+                        <button class="bulk-action-btn" onclick="groupSelectedReports()">
+                            Group Selected
+                        </button>
+                        <button class="bulk-action-btn secondary" onclick="cancelSelectMode()">
+                            Cancel
+                        </button>
+                    </div>
+                    <button class="create-group-btn" id="createGroupBtn" onclick="showCreateGroupModal()">
+                        Create Group
+                    </button>
+                </div>
+            </div>
+            <div id="savedReportsList"></div>
+        </div>
+
+        <!-- Create Group Modal -->
+        <div class="modal" id="createGroupModal">
+            <div class="modal-content">
+                <div class="modal-header">Create New Group</div>
+                <input type="text" class="modal-input" id="groupNameInput" placeholder="Enter group name (e.g., 'December 2025')">
+                <div class="modal-actions">
+                    <button class="modal-btn modal-btn-secondary" onclick="closeCreateGroupModal()">Cancel</button>
+                    <button class="modal-btn modal-btn-primary" onclick="createGroup()">Create</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Move to Group Modal -->
+        <div class="modal" id="moveToGroupModal">
+            <div class="modal-content">
+                <div class="modal-header">Move Report to Group</div>
+                <select class="modal-input" id="groupSelectDropdown">
+                    <option value="">Select a group...</option>
+                </select>
+                <div class="modal-actions">
+                    <button class="modal-btn modal-btn-secondary" onclick="closeMoveToGroupModal()">Cancel</button>
+                    <button class="modal-btn modal-btn-primary" onclick="confirmMoveToGroup()">Move</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="drop-zone" id="dropZone">
+            <div class="drop-zone-icon">
+                <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: #0066cc;">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                    <polyline points="17 8 12 3 7 8"></polyline>
+                    <line x1="12" y1="3" x2="12" y2="15"></line>
+                </svg>
+            </div>
+            <div class="drop-zone-text">Drop your report file here</div>
+            <div class="drop-zone-subtext">or click to browse (Supports Excel, CSV files)</div>
+            <input type="file" id="fileInput" accept=".xlsx,.xls,.csv">
+        </div>
+
+        <div class="report-info" id="reportInfo">
+            <div class="info-header">
+                <div class="info-row">
+                    <div class="info-item">
+                        <span class="info-label">Location:</span>
+                        <span class="info-value" id="location">All Locations</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Date:</span>
+                        <span class="info-value" id="dateRange">11/26/2025 - 11/26/2025</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Total Revenue:</span>
+                        <span class="info-value" id="totalRevenue">$8,442.31</span>
+                    </div>
+                    <div class="deductions-input-group" id="deductionsGroup" style="display: none;">
+                        <div class="deductions-input-wrapper">
+                            <span class="info-label">Deductions:</span>
+                            <input type="text" class="deductions-input" id="deductionsInput" placeholder="=100+100+100">
+                        </div>
+                        <div class="deductions-error" id="deductionsError"></div>
+                    </div>
+                </div>
+            </div>
+
+            <table class="summary-table">
+                <thead>
+                    <tr>
+                        <th>Row Labels</th>
+                        <th class="number">Payment Amount Excluding Tax</th>
+                        <th class="number">Sales Tax</th>
+                        <th class="number">Total Payment Amount</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody">
+                    <tr>
+                        <td class="row-label">Dues</td>
+                        <td class="number">2240.37</td>
+                        <td class="number">184.84</td>
+                        <td class="number">2425.21</td>
+                    </tr>
+                    <tr>
+                        <td class="row-label">Kinective Kids</td>
+                        <td class="number">50</td>
+                        <td class="number">0</td>
+                        <td class="number">50</td>
+                    </tr>
+                    <tr>
+                        <td class="row-label">Missed class fee</td>
+                        <td class="number">55</td>
+                        <td class="number">0</td>
+                        <td class="number">55</td>
+                    </tr>
+                    <tr>
+                        <td class="row-label">PERSONAL TRAINING</td>
+                        <td class="number">1522</td>
+                        <td class="number">0</td>
+                        <td class="number">1522</td>
+                    </tr>
+                    <tr>
+                        <td class="row-label">Retail</td>
+                        <td class="number">3377.7</td>
+                        <td class="number">286.35</td>
+                        <td class="number">3664.05</td>
+                    </tr>
+                    <tr>
+                        <td class="row-label">Zest</td>
+                        <td class="number">572.43</td>
+                        <td class="number">41.07</td>
+                        <td class="number">613.5</td>
+                    </tr>
+                    <tr class="total-row">
+                        <td class="row-label">Grand Total</td>
+                        <td class="number">7817.50</td>
+                        <td class="number">512.26</td>
+                        <td class="number">8329.76</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div class="report-actions">
+                <button class="reset-btn" id="resetBtn">Upload New Report</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script>
+        const dropZone = document.getElementById('dropZone');
+        const fileInput = document.getElementById('fileInput');
+        const reportInfo = document.getElementById('reportInfo');
+        const resetBtn = document.getElementById('resetBtn');
+        const savedReportsSection = document.getElementById('savedReportsSection');
+        const savedReportsList = document.getElementById('savedReportsList');
+        const pageTitle = document.getElementById('pageTitle');
+
+        let currentReportData = null;
+        let currentReconciliationType = 'dailyDep'; // 'dailyDep' or 'abcBilling'
+        let selectedReportForMove = null;
+        let isSelectMode = false;
+        let selectedReports = new Set();
+
+        // Multi-select functions
+        function toggleSelectMode() {
+            isSelectMode = !isSelectMode;
+            const selectModeBtn = document.getElementById('selectModeBtn');
+            const bulkActions = document.getElementById('bulkActions');
+            const createGroupBtn = document.getElementById('createGroupBtn');
+            
+            if (isSelectMode) {
+                selectModeBtn.classList.add('active');
+                selectModeBtn.textContent = 'Cancel Selection';
+                bulkActions.classList.add('active');
+                createGroupBtn.style.display = 'none';
+            } else {
+                selectModeBtn.classList.remove('active');
+                selectModeBtn.textContent = 'Select Multiple';
+                bulkActions.classList.remove('active');
+                createGroupBtn.style.display = 'flex';
+                selectedReports.clear();
+            }
+            
+            loadSavedReports();
+        }
+
+        function cancelSelectMode() {
+            isSelectMode = false;
+            selectedReports.clear();
+            document.getElementById('selectModeBtn').classList.remove('active');
+            document.getElementById('selectModeBtn').textContent = 'Select Multiple';
+            document.getElementById('bulkActions').classList.remove('active');
+            document.getElementById('createGroupBtn').style.display = 'flex';
+            loadSavedReports();
+        }
+
+        function toggleReportSelection(reportId) {
+            if (!isSelectMode) return;
+            
+            if (selectedReports.has(reportId)) {
+                selectedReports.delete(reportId);
+            } else {
+                selectedReports.add(reportId);
+            }
+            
+            document.getElementById('selectedCount').textContent = selectedReports.size;
+            
+            // Update UI
+            const checkbox = document.querySelector(`[data-report-id="${reportId}"]`);
+            if (checkbox) {
+                checkbox.classList.toggle('checked', selectedReports.has(reportId));
+            }
+            
+            const reportItem = checkbox?.closest('.saved-report-item');
+            if (reportItem) {
+                reportItem.classList.toggle('selected', selectedReports.has(reportId));
+            }
+        }
+
+        function groupSelectedReports() {
+            if (selectedReports.size === 0) {
+                alert('Please select at least one report');
+                return;
+            }
+            
+            const groupName = prompt('Enter name for the new group:');
+            if (!groupName || !groupName.trim()) {
+                return;
+            }
+            
+            const groups = getGroups();
+            const newGroup = {
+                id: Date.now(),
+                name: groupName.trim(),
+                reportIds: Array.from(selectedReports),
+                collapsed: false
+            };
+            
+            groups.push(newGroup);
+            saveGroups(groups);
+            cancelSelectMode();
+            loadSavedReports();
+        }
+
+        // Migrate old data from 'abcReports' to 'dailyDepReports' (one-time migration)
+        function migrateOldData() {
+            const oldData = localStorage.getItem('abcReports');
+            const newData = localStorage.getItem('dailyDepReports');
+            
+            // Only migrate if old data exists and new data doesn't
+            if (oldData && !newData) {
+                localStorage.setItem('dailyDepReports', oldData);
+                console.log('Migrated old data to dailyDepReports');
+            }
+        }
+
+        // Group Management Functions
+        function getGroupsStorageKey() {
+            return currentReconciliationType === 'dailyDep' ? 'dailyDepGroups' : 'abcBillingGroups';
+        }
+
+        function getGroups() {
+            const storageKey = getGroupsStorageKey();
+            return JSON.parse(localStorage.getItem(storageKey) || '[]');
+        }
+
+        function saveGroups(groups) {
+            const storageKey = getGroupsStorageKey();
+            localStorage.setItem(storageKey, JSON.stringify(groups));
+        }
+
+        function showCreateGroupModal() {
+            document.getElementById('createGroupModal').classList.add('active');
+            document.getElementById('groupNameInput').focus();
+        }
+
+        function closeCreateGroupModal() {
+            document.getElementById('createGroupModal').classList.remove('active');
+            document.getElementById('groupNameInput').value = '';
+        }
+
+        function createGroup() {
+            const groupName = document.getElementById('groupNameInput').value.trim();
+            if (!groupName) {
+                alert('Please enter a group name');
+                return;
+            }
+
+            const groups = getGroups();
+            const newGroup = {
+                id: Date.now(),
+                name: groupName,
+                reportIds: [],
+                collapsed: false
+            };
+
+            groups.push(newGroup);
+            saveGroups(groups);
+            closeCreateGroupModal();
+            loadSavedReports();
+        }
+
+        function showMoveToGroupModal(reportId) {
+            selectedReportForMove = reportId;
+            const groups = getGroups();
+            const dropdown = document.getElementById('groupSelectDropdown');
+            
+            // Clear existing options except the first one
+            dropdown.innerHTML = '<option value="">Select a group...</option>';
+            
+            // Add group options
+            groups.forEach(group => {
+                const option = document.createElement('option');
+                option.value = group.id;
+                option.textContent = group.name;
+                dropdown.appendChild(option);
+            });
+
+            document.getElementById('moveToGroupModal').classList.add('active');
+        }
+
+        function closeMoveToGroupModal() {
+            document.getElementById('moveToGroupModal').classList.remove('active');
+            selectedReportForMove = null;
+        }
+
+        function confirmMoveToGroup() {
+            const groupId = parseInt(document.getElementById('groupSelectDropdown').value);
+            if (!groupId) {
+                alert('Please select a group');
+                return;
+            }
+
+            const groups = getGroups();
+            const targetGroup = groups.find(g => g.id === groupId);
+            
+            if (targetGroup) {
+                // Remove report from all groups first
+                groups.forEach(group => {
+                    group.reportIds = group.reportIds.filter(id => id !== selectedReportForMove);
+                });
+
+                // Add to target group
+                if (!targetGroup.reportIds.includes(selectedReportForMove)) {
+                    targetGroup.reportIds.push(selectedReportForMove);
+                }
+
+                saveGroups(groups);
+                closeMoveToGroupModal();
+                loadSavedReports();
+            }
+        }
+
+        function removeReportFromGroup(groupId, reportId) {
+            const groups = getGroups();
+            const group = groups.find(g => g.id === groupId);
+            
+            if (group) {
+                group.reportIds = group.reportIds.filter(id => id !== reportId);
+                saveGroups(groups);
+                loadSavedReports();
+            }
+        }
+
+        function toggleGroupCollapse(groupId) {
+            const groups = getGroups();
+            const group = groups.find(g => g.id === groupId);
+            
+            if (group) {
+                group.collapsed = !group.collapsed;
+                saveGroups(groups);
+                loadSavedReports();
+            }
+        }
+
+        function renameGroup(groupId) {
+            const groups = getGroups();
+            const group = groups.find(g => g.id === groupId);
+            
+            if (group) {
+                const newName = prompt('Enter new group name:', group.name);
+                if (newName && newName.trim()) {
+                    group.name = newName.trim();
+                    saveGroups(groups);
+                    loadSavedReports();
+                }
+            }
+        }
+
+        function deleteGroup(groupId) {
+            if (!confirm('Are you sure you want to delete this group? Reports will be moved to ungrouped.')) {
+                return;
+            }
+
+            const groups = getGroups();
+            const filteredGroups = groups.filter(g => g.id !== groupId);
+            saveGroups(filteredGroups);
+            loadSavedReports();
+        }
+
+        // Load saved reports on page load
+        window.addEventListener('DOMContentLoaded', () => {
+            migrateOldData();
+            loadSavedReports();
+        });
+
+        // Switch between reconciliation types
+        function switchReconciliation(type) {
+            currentReconciliationType = type;
+            
+            // Update UI
+            document.getElementById('dailyDepBtn').classList.toggle('active', type === 'dailyDep');
+            document.getElementById('abcBillingBtn').classList.toggle('active', type === 'abcBilling');
+            
+            // Update title
+            if (type === 'dailyDep') {
+                pageTitle.textContent = 'Daily Dep Reconciliation';
+            } else {
+                pageTitle.textContent = 'ABC Billing Reconciliation';
+            }
+            
+            // Hide current report if showing
+            reportInfo.classList.remove('active');
+            dropZone.style.display = 'block';
+            currentReportData = null;
+            
+            // Load reports for selected type
+            loadSavedReports();
+        }
+
+        // Profit Center lookup mapping (from Profit Center WP.xlsx)
+        const profitCenterMapping = {
+            'ABC': 'Dues',
+            'ABC COLLECT @ CLUB': 'Dues',
+            'ABC LATE-SERVICE FEES': 'Dues',
+            'ADDITIONAL SERVICES': 'Dues',
+            'ALO': 'Retail',
+            'ANN0407': 'Annual Fee',
+            'ANNUALFAO': 'Annual Fee',
+            'ANNUALFEE': 'Annual Fee',
+            'BOOKINGFEE': 'Booking fee',
+            'CLUB PASS': 'Dues',
+            'DAYCARE1': 'Kinective Kids',
+            'DAYCARE2': 'Kinective Kids',
+            'DAYCARE3': 'Kinective Kids',
+            'DUES': 'Dues',
+            'ESCAPE ALCOHOL': 'Zest',
+            'EXLOCKER': 'Lockers',
+            'JRLOCKER': 'Lockers',
+            'KINECTIVE MERCHANDISE RETAIL': 'Retail',
+            'KINECTKIDS': 'Kinective Kids',
+            'LATE FEE': 'Dues',
+            'LAUNDRY': 'Laundry',
+            'LULULEMON': 'Retail',
+            'MASSAGE THERAPY SERVICES': 'Massages',
+            'MISC. ITEMS': 'Dues',
+            'MISSED CLASS FEE': 'Missed class fee',
+            'MISSEDFEE': 'Missed class fee',
+            'PERSONAL TRAINING': 'PERSONAL TRAINING',
+            'PILATES': 'Pilates',
+            'PRE-PAY': 'Dues',
+            'SERVICE FEE': 'Dues',
+            'SUPPLEMENTS - EUROPA': 'Retail',
+            'SUPPLEMENTS - NAKED NUTRITION': 'Retail',
+            'SUPPLEMENTS - PUORI': 'Retail',
+            'TOE SOX': 'Retail',
+            'ZEST': 'Zest',
+            'FREEZEFEE': 'Dues',
+            'KIN DONATIONS': 'Kin Donations',
+            'SUPPLEMENTS - MOMENTOUS': 'Retail',
+            'Centric': 'Retail',
+            'CENTRIC': 'Retail',
+            'MERCHANDISE': 'Retail',
+            'BALANCE REFUNDS': 'Dues',
+            'CHARGEBACK': 'Dues',
+            'UNAPPLIED PAYMENT': 'Dues'
+        };
+
+        // Click to upload
+        dropZone.addEventListener('click', () => {
+            fileInput.click();
+        });
+
+        // Drag and drop handlers
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('dragover');
+        });
+
+        dropZone.addEventListener('dragleave', () => {
+            dropZone.classList.remove('dragover');
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('dragover');
+            
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handleFile(files[0]);
+            }
+        });
+
+        // File input change
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                handleFile(e.target.files[0]);
+            }
+        });
+
+        // Reset button
+        resetBtn.addEventListener('click', () => {
+            reportInfo.classList.remove('active');
+            dropZone.style.display = 'block';
+            currentReportData = null;
+            fileInput.value = '';
+        });
+
+        // Deductions input handler - ensure value is always negative
+        document.addEventListener('DOMContentLoaded', () => {
+            const deductionsInput = document.getElementById('deductionsInput');
+            
+            deductionsInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    processDeductionFormula();
+                }
+            });
+            
+            deductionsInput.addEventListener('blur', () => {
+                processDeductionFormula();
+            });
+        });
+
+        function processDeductionFormula() {
+            const deductionsInput = document.getElementById('deductionsInput');
+            const deductionsError = document.getElementById('deductionsError');
+            let inputValue = deductionsInput.value.trim();
+            
+            // Clear previous error
+            deductionsError.textContent = '';
+            
+            if (!inputValue) {
+                updateGrandTotalWithDeduction();
+                return;
+            }
+            
+            // Check if it starts with '=' (Excel-like formula)
+            if (inputValue.startsWith('=')) {
+                try {
+                    // Remove the '=' and evaluate the expression
+                    let formula = inputValue.substring(1);
+                    
+                    // Basic validation - only allow numbers, +, -, *, /, (, ), and spaces
+                    if (!/^[\d+\-*/()\s.]+$/.test(formula)) {
+                        deductionsError.textContent = 'Invalid formula. Only use numbers and operators (+, -, *, /, parentheses)';
+                        return;
+                    }
+                    
+                    // Evaluate the formula
+                    let result = eval(formula);
+                    
+                    // Make it negative
+                    result = -Math.abs(result);
+                    
+                    // Update the input with the calculated result
+                    deductionsInput.value = result.toFixed(2);
+                    
+                } catch (error) {
+                    deductionsError.textContent = 'Invalid formula. Please check your expression.';
+                    return;
+                }
+            } else {
+                // If no formula, just ensure it's negative
+                let value = parseFloat(inputValue);
+                if (!isNaN(value) && value > 0) {
+                    deductionsInput.value = -Math.abs(value).toFixed(2);
+                } else if (!isNaN(value)) {
+                    deductionsInput.value = value.toFixed(2);
+                }
+            }
+            
+            // Update Grand Total with deduction
+            updateGrandTotalWithDeduction();
+            
+            // Save deductions to current report
+            if (currentReportData) {
+                currentReportData.deductions = deductionsInput.value;
+                saveReport(currentReportData);
+            }
+        }
+
+        function updateGrandTotalWithDeduction() {
+            if (currentReconciliationType !== 'abcBilling') return;
+            
+            const deductionsInput = document.getElementById('deductionsInput');
+            const deductionValue = parseFloat(deductionsInput.value) || 0;
+            
+            // Find the Grand Total row
+            const tableBody = document.getElementById('tableBody');
+            const rows = tableBody.querySelectorAll('tr');
+            
+            rows.forEach(row => {
+                if (row.classList.contains('total-row')) {
+                    const cells = row.querySelectorAll('td');
+                    if (cells.length >= 4) {
+                        // Get original grand total from currentReportData
+                        if (currentReportData && currentReportData.data) {
+                            let originalTotal = 0;
+                            Object.values(currentReportData.data).forEach(item => {
+                                originalTotal += item.totalAmount;
+                            });
+                            
+                            // Calculate new total with deduction
+                            const newTotal = originalTotal + deductionValue; // deductionValue is already negative
+                            
+                            // Update the Total Payment Amount cell (4th column)
+                            cells[3].textContent = newTotal.toFixed(2);
+                        }
+                    }
+                }
+            });
+        }
+
+        function handleFile(file) {
+            const reader = new FileReader();
+            
+            reader.onload = function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    
+                    // Process the "Revenue by Profit Center Detail" sheet
+                    const sheetName = 'Revenue by Profit Center Detail';
+                    if (!workbook.SheetNames.includes(sheetName)) {
+                        alert('Sheet "Revenue by Profit Center Detail" not found!');
+                        return;
+                    }
+                    
+                    const worksheet = workbook.Sheets[sheetName];
+                    const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+                    
+                    processReport(jsonData);
+                    
+                } catch (error) {
+                    console.error('Error processing file:', error);
+                    alert('Error processing file. Please make sure it\'s a valid Excel file.');
+                }
+            };
+            
+            reader.readAsArrayBuffer(file);
+        }
+
+        function processReport(data) {
+            // Extract info from row 4 (index 3)
+            const infoRow = data[3] ? data[3][0] : '';
+            const locationMatch = infoRow.match(/Location:\s*([^|]+)/);
+            const dateMatch = infoRow.match(/Date:\s*([^|]+)/);
+            const revenueMatch = infoRow.match(/Total Revenue:\s*\$?([\d,\.]+)/);
+            
+            const location = locationMatch ? locationMatch[1].trim() : 'Unknown';
+            const dateRange = dateMatch ? dateMatch[1].trim() : 'Unknown';
+            const totalRevenue = revenueMatch ? revenueMatch[1].trim() : '0';
+            
+            // Find header row (row 5, index 4)
+            const headers = data[4] || [];
+            const profitCenterIdx = headers.findIndex(h => h && h.toString().includes('Profit Center'));
+            const paymentTypeIdx = headers.findIndex(h => h && h.toString().includes('Payment') && h.toString().includes('Type'));
+            const paymentAmountIdx = headers.findIndex(h => h && h === 'Payment\nAmount');
+            const salesTaxIdx = headers.findIndex(h => h && h === 'Sales Tax');
+            const paymentExcludingIdx = headers.findIndex(h => h && h.toString().includes('Excluding Tax'));
+            
+            // Process data rows (starting from row 6, index 5)
+            const processedData = {};
+            let unappliedPayments = [];
+            
+            for (let i = 5; i < data.length; i++) {
+                const row = data[i];
+                if (!row || row.length === 0) continue;
+                
+                const paymentType = row[paymentTypeIdx];
+                const profitCenter = row[profitCenterIdx];
+                
+                // Skip CASH payments
+                if (paymentType && paymentType.toString().toUpperCase() === 'CASH') continue;
+                
+                // Check for UNAPPLIED PAYMENT
+                if (profitCenter && profitCenter.toString().toUpperCase().includes('UNAPPLIED PAYMENT')) {
+                    unappliedPayments.push({
+                        amount: parseFloat(row[paymentAmountIdx] || 0)
+                    });
+                    continue; // Skip adding to processedData, we'll handle separately
+                }
+                
+                // Map to GL Code
+                const glCode = profitCenterMapping[profitCenter] || profitCenter;
+                if (!glCode) continue;
+                
+                // Aggregate data
+                if (!processedData[glCode]) {
+                    processedData[glCode] = {
+                        excludingTax: 0,
+                        salesTax: 0,
+                        totalAmount: 0
+                    };
+                }
+                
+                processedData[glCode].excludingTax += parseFloat(row[paymentExcludingIdx] || 0);
+                processedData[glCode].salesTax += parseFloat(row[salesTaxIdx] || 0);
+                processedData[glCode].totalAmount += parseFloat(row[paymentAmountIdx] || 0);
+            }
+            
+            // Handle UNAPPLIED PAYMENTS - add to Dues with calculated sales tax
+            if (unappliedPayments.length > 0) {
+                const unappliedTotal = unappliedPayments.reduce((sum, p) => sum + p.amount, 0);
+                
+                // Calculate pre-tax amount (divide by 1.0825)
+                const preTaxAmount = unappliedTotal / 1.0825;
+                
+                // Calculate sales tax amount
+                const salesTaxAmount = unappliedTotal - preTaxAmount;
+                
+                // Add to Dues category
+                if (!processedData['Dues']) {
+                    processedData['Dues'] = {
+                        excludingTax: 0,
+                        salesTax: 0,
+                        totalAmount: 0
+                    };
+                }
+                
+                processedData['Dues'].excludingTax += preTaxAmount;
+                processedData['Dues'].salesTax += salesTaxAmount;
+                processedData['Dues'].totalAmount += unappliedTotal;
+            }
+            
+            // Store current report data
+            currentReportData = {
+                location,
+                dateRange,
+                totalRevenue,
+                data: processedData,
+                unappliedPayments,
+                timestamp: new Date().toISOString()
+            };
+            
+            // Auto-save the report
+            saveReport(currentReportData);
+            loadSavedReports();
+            
+            // Display the report
+            displayReport(location, dateRange, totalRevenue, processedData, unappliedPayments);
+        }
+
+        function displayReport(location, dateRange, totalRevenue, data, unappliedPayments) {
+            // Update header info
+            document.getElementById('location').textContent = location;
+            document.getElementById('dateRange').textContent = dateRange;
+            document.getElementById('totalRevenue').textContent = `$${totalRevenue}`;
+            
+            // Show/hide deductions input based on reconciliation type
+            const deductionsGroup = document.getElementById('deductionsGroup');
+            const deductionsInput = document.getElementById('deductionsInput');
+            if (currentReconciliationType === 'abcBilling') {
+                deductionsGroup.style.display = 'flex';
+                deductionsInput.value = currentReportData.deductions || '';
+            } else {
+                deductionsGroup.style.display = 'none';
+            }
+            
+            // Build table
+            const tableBody = document.getElementById('tableBody');
+            tableBody.innerHTML = '';
+            
+            let grandTotal = { excludingTax: 0, salesTax: 0, totalAmount: 0 };
+            
+            // Sort categories
+            const sortedKeys = Object.keys(data).sort();
+            
+            sortedKeys.forEach(category => {
+                const item = data[category];
+                grandTotal.excludingTax += item.excludingTax;
+                grandTotal.salesTax += item.salesTax;
+                grandTotal.totalAmount += item.totalAmount;
+                
+                // Change "Annual Fees" to "Annual Fee" for display
+                const displayCategory = category === 'Annual Fees' ? 'Annual Fee' : category;
+                
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td class="row-label">${displayCategory}</td>
+                    <td class="number">${item.excludingTax.toFixed(2)}</td>
+                    <td class="number">${item.salesTax.toFixed(2)}</td>
+                    <td class="number">${item.totalAmount.toFixed(2)}</td>
+                `;
+                tableBody.appendChild(row);
+            });
+            
+            // Add grand total row
+            const totalRow = document.createElement('tr');
+            totalRow.className = 'total-row';
+            totalRow.innerHTML = `
+                <td class="row-label">Grand Total</td>
+                <td class="number">${grandTotal.excludingTax.toFixed(2)}</td>
+                <td class="number">${grandTotal.salesTax.toFixed(2)}</td>
+                <td class="number">${grandTotal.totalAmount.toFixed(2)}</td>
+            `;
+            tableBody.appendChild(totalRow);
+            
+            // Show warning if UNAPPLIED PAYMENTS found
+            if (unappliedPayments.length > 0) {
+                const unappliedTotal = unappliedPayments.reduce((sum, p) => sum + parseFloat(p.amount || 0), 0);
+                const warningRow = document.createElement('tr');
+                warningRow.style.backgroundColor = '#fff3cd';
+                warningRow.innerHTML = `
+                    <td colspan="4" style="padding: 16px; color: #856404; font-weight: 600;">
+                        WARNING: ${unappliedPayments.length} UNAPPLIED PAYMENT(S) FOUND - Total: $${unappliedTotal.toFixed(2)}<br>
+                        <span style="font-size: 13px; font-weight: 500;">Sales tax already calculated and applied to Dues.</span>
+                    </td>
+                `;
+                tableBody.appendChild(warningRow);
+            }
+            
+            // Show report
+            dropZone.style.display = 'none';
+            reportInfo.classList.add('active');
+        }
+
+        function saveReport(reportData) {
+            // Get the correct storage key based on reconciliation type
+            const storageKey = currentReconciliationType === 'dailyDep' ? 'dailyDepReports' : 'abcBillingReports';
+            
+            // Get existing reports from localStorage
+            let savedReports = JSON.parse(localStorage.getItem(storageKey) || '[]');
+            
+            // Check if report with same date already exists
+            const existingIndex = savedReports.findIndex(r => r.dateRange === reportData.dateRange);
+            
+            if (existingIndex !== -1) {
+                // Replace existing report
+                reportData.id = savedReports[existingIndex].id;
+                savedReports[existingIndex] = reportData;
+            } else {
+                // Add new report with unique ID
+                reportData.id = Date.now();
+                savedReports.push(reportData);
+            }
+            
+            // Save back to localStorage
+            localStorage.setItem(storageKey, JSON.stringify(savedReports));
+        }
+
+        function loadSavedReports() {
+            // Get the correct storage key based on reconciliation type
+            const storageKey = currentReconciliationType === 'dailyDep' ? 'dailyDepReports' : 'abcBillingReports';
+            const savedReports = JSON.parse(localStorage.getItem(storageKey) || '[]');
+            const groups = getGroups();
+            
+            if (savedReports.length === 0) {
+                savedReportsSection.style.display = 'none';
+                return;
+            }
+            
+            savedReportsSection.style.display = 'block';
+            savedReportsList.innerHTML = '';
+            
+            // Sort by date (oldest first - ascending order)
+            savedReports.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+            
+            // Get all report IDs that are in groups
+            const groupedReportIds = new Set();
+            groups.forEach(group => {
+                group.reportIds.forEach(id => groupedReportIds.add(id));
+            });
+            
+            // Display groups
+            groups.forEach(group => {
+                const groupSection = document.createElement('div');
+                groupSection.className = 'group-section';
+                
+                const groupReports = savedReports.filter(r => group.reportIds.includes(r.id));
+                
+                groupSection.innerHTML = `
+                    <div class="group-header" onclick="toggleGroupCollapse(${group.id})">
+                        <div class="group-title-section">
+                            <span class="group-toggle-icon ${group.collapsed ? 'collapsed' : ''}">▼</span>
+                            <div class="group-title">${group.name}</div>
+                            <span class="group-count">${groupReports.length} reports</span>
+                        </div>
+                        <div class="group-actions" onclick="event.stopPropagation()">
+                            <button class="group-action-btn" onclick="renameGroup(${group.id})">Rename</button>
+                            <button class="group-action-btn delete-group-btn" onclick="deleteGroup(${group.id})">Delete</button>
+                        </div>
+                    </div>
+                    <div class="group-reports ${group.collapsed ? 'collapsed' : ''}" id="group-${group.id}"></div>
+                `;
+                
+                savedReportsList.appendChild(groupSection);
+                
+                // Add reports to this group
+                const groupReportsContainer = document.getElementById(`group-${group.id}`);
+                groupReports.forEach(report => {
+                    const reportItem = document.createElement('div');
+                    reportItem.className = `saved-report-item ${selectedReports.has(report.id) ? 'selected' : ''}`;
+                    
+                    const checkboxHtml = isSelectMode ? 
+                        `<div class="report-checkbox active ${selectedReports.has(report.id) ? 'checked' : ''}" data-report-id="${report.id}" onclick="toggleReportSelection(${report.id})"></div>` : 
+                        '';
+                    
+                    const actionsHtml = isSelectMode ? '' : `
+                        <div class="saved-report-actions">
+                            <button class="view-btn" onclick="viewReport(${report.id})">View</button>
+                            <button class="move-to-group-btn" onclick="removeReportFromGroup(${group.id}, ${report.id})">Ungroup</button>
+                            <button class="delete-btn" onclick="deleteReport(${report.id})">Delete</button>
+                        </div>
+                    `;
+                    
+                    reportItem.innerHTML = `
+                        ${checkboxHtml}
+                        <div class="saved-report-info" ${isSelectMode ? `onclick="toggleReportSelection(${report.id})" style="cursor: pointer; flex: 1;"` : ''}>
+                            <div class="saved-report-date">${report.dateRange}</div>
+                            <div class="saved-report-location">${report.location}</div>
+                            <div class="saved-report-revenue">$${report.totalRevenue}</div>
+                        </div>
+                        ${actionsHtml}
+                    `;
+                    groupReportsContainer.appendChild(reportItem);
+                });
+            });
+            
+            // Display ungrouped reports
+            const ungroupedReports = savedReports.filter(r => !groupedReportIds.has(r.id));
+            
+            if (ungroupedReports.length > 0) {
+                const ungroupedSection = document.createElement('div');
+                ungroupedSection.className = 'ungrouped-section';
+                ungroupedSection.innerHTML = '<div class="ungrouped-header">Ungrouped Reports</div>';
+                
+                ungroupedReports.forEach(report => {
+                    const reportItem = document.createElement('div');
+                    reportItem.className = `saved-report-item ${selectedReports.has(report.id) ? 'selected' : ''}`;
+                    
+                    const checkboxHtml = isSelectMode ? 
+                        `<div class="report-checkbox active ${selectedReports.has(report.id) ? 'checked' : ''}" data-report-id="${report.id}" onclick="toggleReportSelection(${report.id})"></div>` : 
+                        '';
+                    
+                    const actionsHtml = isSelectMode ? '' : `
+                        <div class="saved-report-actions">
+                            <button class="view-btn" onclick="viewReport(${report.id})">View</button>
+                            <button class="move-to-group-btn" onclick="showMoveToGroupModal(${report.id})">Move to Group</button>
+                            <button class="delete-btn" onclick="deleteReport(${report.id})">Delete</button>
+                        </div>
+                    `;
+                    
+                    reportItem.innerHTML = `
+                        ${checkboxHtml}
+                        <div class="saved-report-info" ${isSelectMode ? `onclick="toggleReportSelection(${report.id})" style="cursor: pointer; flex: 1;"` : ''}>
+                            <div class="saved-report-date">${report.dateRange}</div>
+                            <div class="saved-report-location">${report.location}</div>
+                            <div class="saved-report-revenue">$${report.totalRevenue}</div>
+                        </div>
+                        ${actionsHtml}
+                    `;
+                    ungroupedSection.appendChild(reportItem);
+                });
+                
+                savedReportsList.appendChild(ungroupedSection);
+            }
+        }
+
+        function viewReport(reportId) {
+            const storageKey = currentReconciliationType === 'dailyDep' ? 'dailyDepReports' : 'abcBillingReports';
+            const savedReports = JSON.parse(localStorage.getItem(storageKey) || '[]');
+            const report = savedReports.find(r => r.id === reportId);
+            
+            if (report) {
+                currentReportData = report;
+                displayReport(report.location, report.dateRange, report.totalRevenue, report.data, report.unappliedPayments || []);
+            }
+        }
+
+        function deleteReport(reportId) {
+            if (confirm('Are you sure you want to delete this report?')) {
+                const storageKey = currentReconciliationType === 'dailyDep' ? 'dailyDepReports' : 'abcBillingReports';
+                let savedReports = JSON.parse(localStorage.getItem(storageKey) || '[]');
+                savedReports = savedReports.filter(r => r.id !== reportId);
+                localStorage.setItem(storageKey, JSON.stringify(savedReports));
+                loadSavedReports();
+            }
+        }
+    </script>
+</body>
+</html>
