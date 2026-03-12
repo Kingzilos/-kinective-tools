@@ -347,15 +347,8 @@
 <div class="divider"></div>
 
 <div class="config">
-  <div class="config-card">
-    <h3>Cloud Sync Configuration</h3>
-    <p>Enter your Supabase credentials once to enable data sync across all devices. Get these free at supabase.com.</p>
-    <div class="config-row">
-      <input type="text" id="sb-url" placeholder="https://xxxx.supabase.co" />
-      <input type="text" id="sb-key" placeholder="Supabase anon key" />
-      <button class="btn" onclick="saveConfig()">Save</button>
-    </div>
-    <div class="saved-msg" id="saved-msg">Configuration saved. All tools will now sync to the cloud.</div>
+  <div class="config-card" id="config-card">
+    <!-- Filled dynamically by JS -->
   </div>
 </div>
 
@@ -366,16 +359,39 @@
 
 <script>
   window.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('footer-date').textContent = new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+    renderConfig();
+  });
+
+  function renderConfig() {
     const url = localStorage.getItem('sb_url');
     const key = localStorage.getItem('sb_key');
-    if (url) document.getElementById('sb-url').value = url;
-    if (key) document.getElementById('sb-key').value = key;
-    if (!url || !key) {
+    const card = document.getElementById('config-card');
+
+    if (url && key) {
+      // Already configured — show connected state, no button needed
+      card.innerHTML = `
+        <div style="display:flex;align-items:center;gap:10px;">
+          <div style="width:8px;height:8px;border-radius:50%;background:#34c759;flex-shrink:0;"></div>
+          <span style="font-size:0.83rem;color:var(--secondary);">Cloud sync connected — data saves automatically across all devices.</span>
+          <button onclick="resetConfig()" style="margin-left:auto;font-size:0.75rem;color:var(--tertiary);cursor:pointer;text-decoration:underline;background:none;border:none;font-family:inherit;">Change credentials</button>
+        </div>`;
+      document.getElementById('sync-label').textContent = 'Synced';
+      document.querySelector('.sync-dot').style.background = '#34c759';
+    } else {
+      // Not configured — show setup form
+      card.innerHTML = `
+        <h3 style="font-size:1rem;font-weight:600;margin-bottom:4px;">Cloud Sync Setup</h3>
+        <p style="font-size:0.83rem;color:var(--secondary);margin-bottom:20px;line-height:1.5;">Enter your Supabase credentials once. Data will sync automatically after that.</p>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;">
+          <input type="text" id="sb-url" placeholder="https://xxxx.supabase.co" style="flex:1;min-width:200px;padding:9px 14px;background:var(--bg);border:1px solid var(--border);border-radius:10px;font-family:inherit;font-size:0.83rem;color:var(--ink);outline:none;" />
+          <input type="text" id="sb-key" placeholder="Supabase anon key" style="flex:1;min-width:200px;padding:9px 14px;background:var(--bg);border:1px solid var(--border);border-radius:10px;font-family:inherit;font-size:0.83rem;color:var(--ink);outline:none;" />
+          <button onclick="saveConfig()" style="padding:9px 20px;background:var(--blue);color:#fff;border:none;border-radius:10px;font-family:inherit;font-size:0.83rem;font-weight:500;cursor:pointer;">Save</button>
+        </div>`;
       document.getElementById('sync-label').textContent = 'Setup required';
       document.querySelector('.sync-dot').style.background = '#ff9f0a';
     }
-    document.getElementById('footer-date').textContent = new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
-  });
+  }
 
   function saveConfig() {
     const url = document.getElementById('sb-url').value.trim();
@@ -383,11 +399,13 @@
     if (!url || !key) { alert('Please enter both fields.'); return; }
     localStorage.setItem('sb_url', url);
     localStorage.setItem('sb_key', key);
-    document.getElementById('sync-label').textContent = 'Synced';
-    document.querySelector('.sync-dot').style.background = '#34c759';
-    const msg = document.getElementById('saved-msg');
-    msg.style.display = 'block';
-    setTimeout(() => msg.style.display = 'none', 4000);
+    renderConfig();
+  }
+
+  function resetConfig() {
+    localStorage.removeItem('sb_url');
+    localStorage.removeItem('sb_key');
+    renderConfig();
   }
 </script>
 </body>
