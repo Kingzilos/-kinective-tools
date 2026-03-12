@@ -218,6 +218,9 @@
     color: var(--gray-400);
     letter-spacing: 0.1em;
   }
+  /* entity-specific closing bar colours */
+  .closing-bar-kin  { background: var(--navy) !important; }
+  .closing-bar-amd  { background: #1a3a2a !important; }
 
   /* ── TWO-ENTITY GRID ────────────────────────────────── */
   .entity-grid {
@@ -708,6 +711,7 @@
   </div>
 </nav>
 
+
 <!-- ── HERO ───────────────────────────────────────────────────── -->
 <section class="hero" id="hero-drop-zone">
   <div class="hero-grid">
@@ -719,7 +723,7 @@
     </div>
     <div class="hero-kpis">
       <div class="kpi-card">
-        <div class="kpi-label">Combined Closing Balance</div>
+        <div class="kpi-label" id="kpi-balance-label">Combined Closing Balance</div>
         <div class="kpi-value" id="kpi-balance">$8.04M</div>
         <div class="kpi-sub">Across all accounts</div>
       </div>
@@ -796,7 +800,7 @@
       <div class="entity-divider"></div>
       <!-- AMD -->
       <div class="entity-col">
-        <div class="entity-label" >
+        <div class="entity-label">
           AMD Capital
           <span class="total-pill" id="ob-amd-pill">$3,610,400.34</span>
         </div>
@@ -819,7 +823,7 @@
       </div>
     </div>
     <!-- Combined -->
-    <div style="border-top: 2px solid var(--navy); background: var(--navy); padding: 14px 24px; display: flex; justify-content: space-between; align-items: center;">
+    <div id="ob-combined-bar" style="border-top: 2px solid var(--navy); background: var(--navy); padding: 14px 24px; display: flex; justify-content: space-between; align-items: center;">
       <span style="font-family:'DM Mono',monospace; font-size:10px; letter-spacing:0.14em; text-transform:uppercase; color:var(--gray-400);">Combined Opening Balance</span>
       <span style="font-family:'DM Mono',monospace; font-size:18px; font-weight:500; color:var(--white);" id="ob-combined">$8,072,890.09</span>
     </div>
@@ -842,7 +846,7 @@
         <!-- rendered by renderIncome() -->
       </div>
     </div>
-    <div style="border-top: 2px solid var(--green); background: var(--green); padding: 14px 24px; display: flex; justify-content: space-between; align-items: center;">
+    <div id="income-combined-bar" style="border-top: 2px solid var(--green); background: var(--green); padding: 14px 24px; display: flex; justify-content: space-between; align-items: center;">
       <span style="font-family:'DM Mono',monospace; font-size:10px; letter-spacing:0.14em; text-transform:uppercase; color:rgba(255,255,255,0.6);">Combined Weekly Income</span>
       <span style="font-family:'DM Mono',monospace; font-size:18px; font-weight:500; color:var(--white);" id="income-combined-total">$0.00</span>
     </div>
@@ -905,56 +909,104 @@
     </div>
   </div>
 
-  <!-- CARD 4 – CASH FLOW SUMMARY -->
+  <!-- CARD 4 – CASH FLOW SUMMARY (3-entity: Kinective | AMD Capital | Combined) -->
   <div class="card">
     <div class="card-header">
       <div class="card-header-title">Cash Flow Summary</div>
       <div class="card-header-meta" id="cashflow-meta">Week 8 · Feb 13–19, 2026</div>
     </div>
-    <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:1px; background:var(--gray-200);">
-      <div style="background:var(--white); padding:28px 32px;">
-        <div style="font-family:'DM Mono',monospace; font-size:9px; letter-spacing:0.18em; text-transform:uppercase; color:var(--gray-400); margin-bottom:4px;">Total Expenses</div>
-        <div style="font-family:'Syne',sans-serif; font-size:11px; font-weight:600; color:var(--gray-500); margin-bottom:16px;">All accounts · Week 8</div>
-        <div style="font-family:'DM Mono',monospace; font-size:32px; font-weight:500; color:var(--red); letter-spacing:-0.02em; margin-bottom:12px;" id="cf-total-exp">$149,565.69</div>
-        <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px;">
-          <div style="background:var(--red-pale); border-radius:6px; padding:8px 12px;">
-            <div style="font-family:'DM Mono',monospace; font-size:8px; letter-spacing:0.1em; text-transform:uppercase; color:var(--red); opacity:0.8; margin-bottom:3px;">Kinective</div>
-            <div style="font-family:'DM Mono',monospace; font-size:12px; color:var(--red); font-weight:500;" id="cf-kin-exp">$136,880.85</div>
-          </div>
-          <div style="background:var(--red-pale); border-radius:6px; padding:8px 12px;">
-            <div style="font-family:'DM Mono',monospace; font-size:8px; letter-spacing:0.1em; text-transform:uppercase; color:var(--red); opacity:0.8; margin-bottom:3px;">AMD</div>
-            <div style="font-family:'DM Mono',monospace; font-size:12px; color:var(--red); font-weight:500;" id="cf-amd-exp">$12,684.84</div>
-          </div>
-        </div>
+
+    <!-- ── 3-column entity header bar ── -->
+    <div style="display:grid; grid-template-columns:1fr 1px 1fr 1px 1fr; background:#222228; border-bottom:1px solid rgba(255,255,255,0.08);">
+      <div style="padding:10px 24px; display:flex; align-items:center; gap:10px;">
+        <span style="font-family:'Syne',sans-serif; font-size:10px; font-weight:700; letter-spacing:0.12em; text-transform:uppercase; color:var(--gold);">◈ Kinective</span>
       </div>
-      <div style="background:var(--gray-50); padding:28px 32px; border-left:1px solid var(--gray-200);">
-        <div style="font-family:'DM Mono',monospace; font-size:9px; letter-spacing:0.18em; text-transform:uppercase; color:var(--gray-400); margin-bottom:4px;">Free Cash Flow</div>
-        <div style="font-family:'Syne',sans-serif; font-size:11px; font-weight:600; color:var(--gray-500); margin-bottom:16px;">Income − Expenses</div>
-        <div style="font-family:'DM Mono',monospace; font-size:32px; font-weight:500; color:var(--red); letter-spacing:-0.02em;" id="cf-fcf">($34,909.64)</div>
+      <div style="background:rgba(255,255,255,0.08);"></div>
+      <div style="padding:10px 24px; display:flex; align-items:center; gap:10px;">
+        <span style="font-family:'Syne',sans-serif; font-size:10px; font-weight:700; letter-spacing:0.12em; text-transform:uppercase; color:var(--gold);">◆ AMD Capital</span>
       </div>
-      <div style="background:var(--white); padding:28px 32px; border-left:1px solid var(--gray-200);">
-        <div style="font-family:'DM Mono',monospace; font-size:9px; letter-spacing:0.18em; text-transform:uppercase; color:var(--gray-400); margin-bottom:4px;">Operating Cash Flow</div>
-        <div style="font-family:'Syne',sans-serif; font-size:11px; font-weight:600; color:var(--gray-500); margin-bottom:16px;">FCF + Current CAPEX</div>
-        <div style="font-family:'DM Mono',monospace; font-size:32px; font-weight:500; color:var(--red); letter-spacing:-0.02em; margin-bottom:12px;" id="cf-ocf">($27,767.01)</div>
-        <div style="background:var(--gray-100); border-radius:6px; padding:10px 12px; font-family:'DM Mono',monospace; font-size:10px; color:var(--gray-500);" id="cf-ocf-formula">($34,909.64) + $7,142.63</div>
+      <div style="background:rgba(255,255,255,0.08);"></div>
+      <div style="padding:10px 24px; display:flex; align-items:center; gap:10px;">
+        <span style="font-family:'Syne',sans-serif; font-size:10px; font-weight:700; letter-spacing:0.12em; text-transform:uppercase; color:rgba(201,168,76,0.55);">⬡ Combined</span>
       </div>
     </div>
-    <div style="background:var(--gray-50); border-top:1px solid var(--gray-200); padding:18px 32px; display:flex; justify-content:space-between; align-items:center;">
-      <div style="display:flex; align-items:baseline; gap:14px;">
-        <span style="font-family:'DM Mono',monospace; font-size:9px; letter-spacing:0.16em; text-transform:uppercase; color:var(--gray-400);" id="closing-label">Closing Balance — Week 8</span>
-        <span style="font-family:'DM Mono',monospace; font-size:24px; font-weight:600; color:var(--navy);" id="cb-combined">$8,037,980.45</span>
-      </div>
-      <div style="display:flex; gap:28px;">
-        <div style="text-align:right;">
-          <div style="font-family:'DM Mono',monospace; font-size:8px; letter-spacing:0.14em; text-transform:uppercase; color:var(--gray-400); margin-bottom:2px;">Kinective</div>
-          <div style="font-family:'DM Mono',monospace; font-size:14px; font-weight:600; color:var(--char);" id="cb-kin">$4,439,674.91</div>
+
+    <!-- ── 3-column metrics grid ── -->
+    <div style="display:grid; grid-template-columns:1fr 1px 1fr 1px 1fr; gap:0; background:var(--gray-200);">
+
+      <!-- KINECTIVE column -->
+      <div style="background:var(--white); padding:24px 28px; display:flex; flex-direction:column; gap:16px;">
+        <div>
+          <div style="font-family:'DM Mono',monospace; font-size:8px; letter-spacing:0.18em; text-transform:uppercase; color:var(--gray-400); margin-bottom:3px;">Income</div>
+          <div style="font-family:'DM Mono',monospace; font-size:26px; font-weight:500; letter-spacing:-0.02em;" id="cf-kin-inc">$0.00</div>
         </div>
-        <div style="width:1px; background:var(--gray-200);"></div>
-        <div style="text-align:right;">
-          <div style="font-family:'DM Mono',monospace; font-size:8px; letter-spacing:0.14em; text-transform:uppercase; color:var(--gray-400); margin-bottom:2px;">AMD Capital</div>
-          <div style="font-family:'DM Mono',monospace; font-size:14px; font-weight:600; color:var(--char);" id="cb-amd">$3,598,305.54</div>
+        <div>
+          <div style="font-family:'DM Mono',monospace; font-size:8px; letter-spacing:0.18em; text-transform:uppercase; color:var(--gray-400); margin-bottom:3px;">Expenses</div>
+          <div style="font-family:'DM Mono',monospace; font-size:26px; font-weight:500; color:var(--red); letter-spacing:-0.02em;" id="cf-kin-exp">$0.00</div>
+        </div>
+        <div style="border-top:1px solid var(--gray-200); padding-top:14px;">
+          <div style="font-family:'DM Mono',monospace; font-size:8px; letter-spacing:0.18em; text-transform:uppercase; color:var(--gray-400); margin-bottom:3px;">Free Cash Flow</div>
+          <div style="font-family:'DM Mono',monospace; font-size:22px; font-weight:600; letter-spacing:-0.02em;" id="cf-kin-fcf">$0.00</div>
+          <div style="font-family:'DM Mono',monospace; font-size:8px; letter-spacing:0.18em; text-transform:uppercase; color:var(--gray-400); margin-top:12px; margin-bottom:3px;">Operating Cash Flow</div>
+          <div style="font-family:'DM Mono',monospace; font-size:18px; font-weight:500; letter-spacing:-0.02em;" id="cf-kin-ocf">$0.00</div>
+          <div style="background:var(--gray-100); border-radius:5px; padding:6px 10px; font-family:'DM Mono',monospace; font-size:9px; color:var(--gray-500); margin-top:6px;" id="cf-kin-ocf-formula">$0.00 + $0.00</div>
+        </div>
+        <div style="background:var(--gray-50); border-radius:8px; padding:12px 16px; border:1px solid var(--gray-200);">
+          <div style="font-family:'DM Mono',monospace; font-size:8px; letter-spacing:0.14em; text-transform:uppercase; color:var(--gray-400); margin-bottom:4px;" id="closing-label">Closing Balance</div>
+          <div style="font-family:'DM Mono',monospace; font-size:20px; font-weight:700; color:var(--navy);" id="cb-kin">$0.00</div>
         </div>
       </div>
+
+      <div style="background:var(--gray-200);"></div>
+
+      <!-- AMD CAPITAL column -->
+      <div style="background:var(--gray-50); padding:24px 28px; display:flex; flex-direction:column; gap:16px;">
+        <div>
+          <div style="font-family:'DM Mono',monospace; font-size:8px; letter-spacing:0.18em; text-transform:uppercase; color:var(--gray-400); margin-bottom:3px;">Income</div>
+          <div style="font-family:'DM Mono',monospace; font-size:26px; font-weight:500; letter-spacing:-0.02em;" id="cf-amd-inc">$0.00</div>
+        </div>
+        <div>
+          <div style="font-family:'DM Mono',monospace; font-size:8px; letter-spacing:0.18em; text-transform:uppercase; color:var(--gray-400); margin-bottom:3px;">Expenses</div>
+          <div style="font-family:'DM Mono',monospace; font-size:26px; font-weight:500; color:var(--red); letter-spacing:-0.02em;" id="cf-amd-exp">$0.00</div>
+        </div>
+        <div style="border-top:1px solid var(--gray-200); padding-top:14px;">
+          <div style="font-family:'DM Mono',monospace; font-size:8px; letter-spacing:0.18em; text-transform:uppercase; color:var(--gray-400); margin-bottom:3px;">Free Cash Flow</div>
+          <div style="font-family:'DM Mono',monospace; font-size:22px; font-weight:600; letter-spacing:-0.02em;" id="cf-amd-fcf">$0.00</div>
+          <div style="font-family:'DM Mono',monospace; font-size:8px; letter-spacing:0.18em; text-transform:uppercase; color:var(--gray-400); margin-top:12px; margin-bottom:3px;">Operating Cash Flow</div>
+          <div style="font-family:'DM Mono',monospace; font-size:18px; font-weight:500; letter-spacing:-0.02em;" id="cf-amd-ocf">$0.00</div>
+          <div style="background:var(--gray-200); border-radius:5px; padding:6px 10px; font-family:'DM Mono',monospace; font-size:9px; color:var(--gray-500); margin-top:6px;" id="cf-amd-ocf-formula">$0.00 + $0.00</div>
+        </div>
+        <div style="background:var(--white); border-radius:8px; padding:12px 16px; border:1px solid var(--gray-200);">
+          <div style="font-family:'DM Mono',monospace; font-size:8px; letter-spacing:0.14em; text-transform:uppercase; color:var(--gray-400); margin-bottom:4px;">Closing Balance</div>
+          <div style="font-family:'DM Mono',monospace; font-size:20px; font-weight:700; color:var(--navy);" id="cb-amd">$0.00</div>
+        </div>
+      </div>
+
+      <div style="background:var(--gray-200);"></div>
+
+      <!-- COMBINED column -->
+      <div style="background:#2d2d35; padding:24px 28px; display:flex; flex-direction:column; gap:16px;">
+        <div>
+          <div style="font-family:'DM Mono',monospace; font-size:8px; letter-spacing:0.18em; text-transform:uppercase; color:rgba(255,255,255,0.4); margin-bottom:3px;">Income</div>
+          <div style="font-family:'DM Mono',monospace; font-size:26px; font-weight:500; color:var(--white); letter-spacing:-0.02em;" id="cf-comb-inc">$0.00</div>
+        </div>
+        <div>
+          <div style="font-family:'DM Mono',monospace; font-size:8px; letter-spacing:0.18em; text-transform:uppercase; color:rgba(255,255,255,0.4); margin-bottom:3px;">Expenses</div>
+          <div style="font-family:'DM Mono',monospace; font-size:26px; font-weight:500; color:#FCA5A5; letter-spacing:-0.02em;" id="cf-total-exp">$0.00</div>
+        </div>
+        <div style="border-top:1px solid rgba(255,255,255,0.12); padding-top:14px;">
+          <div style="font-family:'DM Mono',monospace; font-size:8px; letter-spacing:0.18em; text-transform:uppercase; color:rgba(255,255,255,0.4); margin-bottom:3px;">Free Cash Flow</div>
+          <div style="font-family:'DM Mono',monospace; font-size:22px; font-weight:600; color:var(--white); letter-spacing:-0.02em;" id="cf-fcf">$0.00</div>
+          <div style="font-family:'DM Mono',monospace; font-size:8px; letter-spacing:0.18em; text-transform:uppercase; color:rgba(255,255,255,0.4); margin-top:12px; margin-bottom:3px;">Operating Cash Flow</div>
+          <div style="font-family:'DM Mono',monospace; font-size:18px; font-weight:500; color:var(--white); letter-spacing:-0.02em;" id="cf-ocf">$0.00</div>
+          <div style="background:rgba(255,255,255,0.08); border-radius:5px; padding:6px 10px; font-family:'DM Mono',monospace; font-size:9px; color:rgba(255,255,255,0.5); margin-top:6px;" id="cf-ocf-formula">$0.00 + $0.00</div>
+        </div>
+        <div style="background:rgba(201,168,76,0.12); border-radius:8px; padding:12px 16px; border:1px solid rgba(201,168,76,0.3);">
+          <div style="font-family:'DM Mono',monospace; font-size:8px; letter-spacing:0.14em; text-transform:uppercase; color:var(--gold); margin-bottom:4px;">Combined Closing</div>
+          <div style="font-family:'DM Mono',monospace; font-size:20px; font-weight:700; color:var(--gold-light);" id="cb-combined">$0.00</div>
+        </div>
+      </div>
+
     </div>
   </div>
 
@@ -994,7 +1046,8 @@
       <!-- CAPEX BLOCK -->
       <div class="analytic-block" id="capex-block">
         <div class="analytic-title">Capital Expenditures (CAPEX)</div>
-        <div style="display:flex; justify-content:flex-end; gap:8px; margin-bottom:8px;">
+        <div style="display:flex; justify-content:flex-end; gap:8px; margin-bottom:8px; align-items:center;">
+          <span style="font-family:'DM Mono',monospace; font-size:8px; letter-spacing:0.1em; text-transform:uppercase; color:var(--gray-400); margin-right:4px;">Entity</span>
           <span class="analytic-col-hdr">2026 YTD</span>
           <span style="width:28px;"></span>
         </div>
@@ -1002,7 +1055,8 @@
 
           <div class="analytic-row capex-item">
             <span class="analytic-name editable" contenteditable="true">Construction — Plano (AMD)</span>
-            <div class="analytic-vals" style="gap:8px;">
+            <div class="analytic-vals" style="gap:8px; align-items:center;">
+              <span class="capex-entity-toggle" data-entity="amd" onclick="toggleCapexEntity(this)" title="Click to switch entity">AMD</span>
               <span class="analytic-val capex-amount editable" contenteditable="true" data-comment="" oninput="recalcCapex()" onblur="capexBlur(this)">—</span>
               <span class="comment-btn" title="Add comment" onclick="openComment(this)">💬</span>
             </div>
@@ -1010,7 +1064,8 @@
 
           <div class="analytic-row capex-item">
             <span class="analytic-name editable" contenteditable="true">Fitness Equipment (El Paso)</span>
-            <div class="analytic-vals" style="gap:8px;">
+            <div class="analytic-vals" style="gap:8px; align-items:center;">
+              <span class="capex-entity-toggle" data-entity="kin" onclick="toggleCapexEntity(this)" title="Click to switch entity">KIN</span>
               <span class="analytic-val capex-amount editable" contenteditable="true" data-comment="" oninput="recalcCapex()" onblur="capexBlur(this)">—</span>
               <span class="comment-btn" title="Add comment" onclick="openComment(this)">💬</span>
             </div>
@@ -1018,7 +1073,8 @@
 
           <div class="analytic-row capex-item">
             <span class="analytic-name editable" contenteditable="true">Sauna Equipment (El Paso)</span>
-            <div class="analytic-vals" style="gap:8px;">
+            <div class="analytic-vals" style="gap:8px; align-items:center;">
+              <span class="capex-entity-toggle" data-entity="kin" onclick="toggleCapexEntity(this)" title="Click to switch entity">KIN</span>
               <span class="analytic-val capex-amount editable" contenteditable="true" data-comment="" oninput="recalcCapex()" onblur="capexBlur(this)">—</span>
               <span class="comment-btn" title="Add comment" onclick="openComment(this)">💬</span>
             </div>
@@ -1026,7 +1082,8 @@
 
           <div class="analytic-row capex-item">
             <span class="analytic-name editable" contenteditable="true">Land — Plano (AMD)</span>
-            <div class="analytic-vals" style="gap:8px;">
+            <div class="analytic-vals" style="gap:8px; align-items:center;">
+              <span class="capex-entity-toggle" data-entity="amd" onclick="toggleCapexEntity(this)" title="Click to switch entity">AMD</span>
               <span class="analytic-val capex-amount editable" contenteditable="true" data-comment="" oninput="recalcCapex()" onblur="capexBlur(this)">—</span>
               <span class="comment-btn" title="Add comment" onclick="openComment(this)">💬</span>
             </div>
@@ -1034,9 +1091,23 @@
 
         </div>
 
-        <!-- Total row -->
+        <!-- Total rows by entity -->
+        <div class="analytic-row" style="margin-top:4px; border-top:1px solid var(--gray-200); padding-top:8px;">
+          <span class="analytic-name" style="font-size:10px; color:var(--gray-500);">Kinective CAPEX</span>
+          <div class="analytic-vals" style="gap:8px;">
+            <span class="analytic-val" style="font-weight:600; min-width:120px; text-align:right; font-size:11px;" id="capex-kin-display">—</span>
+            <span style="width:28px;"></span>
+          </div>
+        </div>
+        <div class="analytic-row" style="margin-top:2px;">
+          <span class="analytic-name" style="font-size:10px; color:var(--gray-500);">AMD Capital CAPEX</span>
+          <div class="analytic-vals" style="gap:8px;">
+            <span class="analytic-val" style="font-weight:600; min-width:120px; text-align:right; font-size:11px;" id="capex-amd-display">—</span>
+            <span style="width:28px;"></span>
+          </div>
+        </div>
         <div class="analytic-row total-row" style="margin-top:4px;">
-          <span class="analytic-name">Weekly CAPEX</span>
+          <span class="analytic-name">Total CAPEX</span>
           <div class="analytic-vals" style="gap:8px;">
             <span class="analytic-val" style="font-weight:700; min-width:120px; text-align:right;" id="capex-total-display">—</span>
             <span style="width:28px;"></span>
@@ -1061,6 +1132,38 @@
 
 
 <style>
+
+  /* ── CAPEX ENTITY TOGGLE PILL ─────────────────────── */
+  .capex-entity-toggle {
+    font-family: 'DM Mono', monospace;
+    font-size: 8px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    padding: 3px 8px;
+    border-radius: 10px;
+    cursor: pointer;
+    user-select: none;
+    transition: background 0.15s, color 0.15s;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .capex-entity-toggle[data-entity="kin"] {
+    background: rgba(201,168,76,0.15);
+    color: var(--gold);
+    border: 1px solid rgba(201,168,76,0.35);
+  }
+  .capex-entity-toggle[data-entity="kin"]:hover {
+    background: rgba(201,168,76,0.28);
+  }
+  .capex-entity-toggle[data-entity="amd"] {
+    background: rgba(59,130,246,0.12);
+    color: #60a5fa;
+    border: 1px solid rgba(59,130,246,0.3);
+  }
+  .capex-entity-toggle[data-entity="amd"]:hover {
+    background: rgba(59,130,246,0.22);
+  }
+
   /* GROUP HEADERS */
   .group-header { cursor:pointer; user-select:none; background:var(--gray-100); border-top:2px solid var(--gray-200); transition:background 0.12s; }
   .group-header:hover { background:var(--gray-200); }
@@ -1215,6 +1318,7 @@ function makeRow(item, group, idx) {
   return tr;
 }
 
+
 function renderIncome() {
   const kinCol = document.getElementById('income-kin-col');
   const amdCol = document.getElementById('income-amd-col');
@@ -1365,39 +1469,87 @@ function updateTotals() {
   const kinTotal = kinExpenses.reduce((s, x) => s + x.amount, 0);
   const amdTotal = amdExpenses.reduce((s, x) => s + x.amount, 0);
   const expTotal = kinTotal + amdTotal;
-  const fcf = INCOME_TOTAL - expTotal;
-  // current week CAPEX = whatever is in capex2026 that was added THIS WEEK
-  // we track additions via capexThisWeek
-  const ocf = fcf + capex2026;
 
-  document.getElementById('kin-count').textContent = kinExpenses.length + ' transactions';
-  document.getElementById('amd-count').textContent = amdExpenses.length + ' transactions';
+  // Expense table subtotals
+  document.getElementById('kin-count').textContent    = kinExpenses.length + ' transactions';
+  document.getElementById('amd-count').textContent    = amdExpenses.length + ' transactions';
   document.getElementById('kin-subtotal').textContent = fmt(kinTotal);
   document.getElementById('amd-subtotal').textContent = fmt(amdTotal);
-  document.getElementById('total-exp-display').textContent = fmt(expTotal);
-  document.getElementById('cf-total-exp').textContent = fmt(expTotal);
-  document.getElementById('cf-kin-exp').textContent = fmt(kinTotal);
-  document.getElementById('cf-amd-exp').textContent = fmt(amdTotal);
-  document.getElementById('cf-fcf').textContent = fmt(fcf);
-  document.getElementById('cf-ocf').textContent = fmt(ocf);
-  document.getElementById('cf-ocf-formula').textContent = fmt(fcf) + ' + ' + fmt(capex2026);
-  // capex-total-display is managed solely by recalcCapex()
 
-  // Recalc closing balances live: opening + income - expenses per entity
+  // Income totals
+  const kinInc = Object.values(incomeData.kin).reduce((s,x)=>s+x.amount,0);
+  const amdInc = Object.values(incomeData.amd).reduce((s,x)=>s+x.amount,0);
+  const combInc = kinInc + amdInc;
+
+  // FCF per entity
+  const kinFCF  = kinInc - kinTotal;
+  const amdFCF  = amdInc - amdTotal;
+  const combFCF = combInc - expTotal;
+
+  // OCF — each entity adds its own assigned CAPEX
+  const capKin  = window.capexKin || 0;
+  const capAmd  = window.capexAmd || 0;
+  const kinOCF  = kinFCF  + capKin;
+  const amdOCF  = amdFCF  + capAmd;
+  const combOCF = combFCF + capex2026;
+
+  // Closing balances per entity
   const week = allWeeks[currentWeekNum];
+  let cbKin = 0, cbAmd = 0;
   if (week) {
-    const ob     = week.openingBalances || {};
-    const kinOB  = (ob['8152']||0)+(ob['2213']||0)+(ob['9753']||0)+(ob['0211']||0)+(ob['3472']||0);
-    const amdOB  = (ob['3775']||0)+(ob['7698']||0)+(ob['amd-inv']||0);
-    const kinInc = Object.values(incomeData.kin).reduce((s,x)=>s+x.amount,0);
-    const amdInc = Object.values(incomeData.amd).reduce((s,x)=>s+x.amount,0);
-    const cbKin  = kinOB + kinInc - kinTotal;
-    const cbAmd  = amdOB + amdInc - amdTotal;
-    const cbComb = cbKin + cbAmd;
-    document.getElementById('cb-kin').textContent      = fmt(cbKin);
-    document.getElementById('cb-amd').textContent      = fmt(cbAmd);
-    document.getElementById('cb-combined').textContent = fmt(cbComb);
+    const ob = week.openingBalances || {};
+    const kinOB = (ob['8152']||0)+(ob['2213']||0)+(ob['9753']||0)+(ob['0211']||0)+(ob['3472']||0);
+    const amdOB = (ob['3775']||0)+(ob['7698']||0)+(ob['amd-inv']||0);
+    cbKin = kinOB + kinInc - kinTotal;
+    cbAmd = amdOB + amdInc - amdTotal;
   }
+  const cbComb = cbKin + cbAmd;
+
+  // Helper: colour a value element green/red based on sign
+  function setVal(id, n) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.textContent = fmt(n);
+    if (id.includes('fcf') || id.includes('ocf') || id.includes('inc')) {
+      el.style.color = n < 0 ? 'var(--red)' : n === 0 ? 'inherit' : 'var(--green, #16a34a)';
+    }
+  }
+
+  // ── Kinective column ──
+  setVal('cf-kin-inc',         kinInc);
+  setVal('cf-kin-exp',         kinTotal);
+  setVal('cf-kin-fcf',         kinFCF);
+  setVal('cf-kin-ocf',         kinOCF);
+  const kinOcfEl = document.getElementById('cf-kin-ocf-formula');
+  if (kinOcfEl) kinOcfEl.textContent = fmt(kinFCF) + ' + ' + fmt(capKin);
+  const cbKinEl = document.getElementById('cb-kin');
+  if (cbKinEl) cbKinEl.textContent = fmt(cbKin);
+
+  // ── AMD Capital column ──
+  setVal('cf-amd-inc',         amdInc);
+  setVal('cf-amd-exp',         amdTotal);
+  setVal('cf-amd-fcf',         amdFCF);
+  setVal('cf-amd-ocf',         amdOCF);
+  const amdOcfEl = document.getElementById('cf-amd-ocf-formula');
+  if (amdOcfEl) amdOcfEl.textContent = fmt(amdFCF) + ' + ' + fmt(capAmd);
+  const cbAmdEl = document.getElementById('cb-amd');
+  if (cbAmdEl) cbAmdEl.textContent = fmt(cbAmd);
+
+  // ── Combined column ──
+  setVal('cf-comb-inc',        combInc);
+  const combExpEl = document.getElementById('cf-total-exp');
+  if (combExpEl) combExpEl.textContent = fmt(expTotal);
+  setVal('cf-fcf',             combFCF);
+  setVal('cf-ocf',             combOCF);
+  const combOcfEl = document.getElementById('cf-ocf-formula');
+  if (combOcfEl) combOcfEl.textContent = fmt(combFCF) + ' + ' + fmt(capex2026);
+  const cbCombEl = document.getElementById('cb-combined');
+  if (cbCombEl) cbCombEl.textContent = fmt(cbComb);
+
+  // Keep expense table total in sync
+  const expDispEl = document.getElementById('total-exp-display');
+  if (expDispEl) expDispEl.textContent = fmt(expTotal);
+
   updateHeroKPIs();
 }
 
@@ -1425,17 +1577,43 @@ function capexBlur(el) {
   recalcCapex();
 }
 
+function toggleCapexEntity(pill) {
+  const current = pill.dataset.entity;
+  pill.dataset.entity = current === 'kin' ? 'amd' : 'kin';
+  pill.textContent    = pill.dataset.entity === 'kin' ? 'KIN' : 'AMD';
+  recalcCapex();
+}
+
 function recalcCapex() {
-  let total = 0, hasAny = false;
-  document.querySelectorAll(".capex-amount").forEach(el => {
-    const raw = el.textContent.replace(/[$,()]/g, "").trim();
-    const n = parseFloat(raw);
-    if (!isNaN(n) && n > 0) { total += n; hasAny = true; }
+  let kinTotal = 0, amdTotal = 0;
+
+  document.querySelectorAll(".capex-item").forEach(row => {
+    const amtEl    = row.querySelector('.capex-amount');
+    const entityEl = row.querySelector('.capex-entity-toggle');
+    if (!amtEl) return;
+    const raw = amtEl.textContent.replace(/[$,()]/g, '').trim();
+    const n   = parseFloat(raw);
+    if (isNaN(n) || n <= 0) return;
+    const entity = entityEl ? entityEl.dataset.entity : 'kin';
+    if (entity === 'amd') amdTotal += n;
+    else                  kinTotal += n;
   });
-  capex2026 = hasAny ? total : 0;
-  const display = document.getElementById("capex-total-display");
-  if (display) display.textContent = hasAny ? fmt(total) : "—";
-  // update OCF, closing balances, hero KPIs
+
+  const total    = kinTotal + amdTotal;
+  const hasAny   = total > 0;
+  capex2026      = total; // combined — used by hero / combined OCF
+
+  // Store per-entity for updateTotals()
+  window.capexKin = kinTotal;
+  window.capexAmd = amdTotal;
+
+  const dispTotal = document.getElementById('capex-total-display');
+  const dispKin   = document.getElementById('capex-kin-display');
+  const dispAmd   = document.getElementById('capex-amd-display');
+  if (dispTotal) dispTotal.textContent = hasAny          ? fmt(total)    : '—';
+  if (dispKin)   dispKin.textContent   = kinTotal > 0    ? fmt(kinTotal) : '—';
+  if (dispAmd)   dispAmd.textContent   = amdTotal > 0    ? fmt(amdTotal) : '—';
+
   updateTotals();
 }
 
@@ -2383,10 +2561,28 @@ function applyToReport(acctNum, expenses, incomeItems, transfers, filename) {
 function updateHeroKPIs() {
   const kinExp  = kinExpenses.reduce((s,x)=>s+x.amount,0);
   const amdExp  = amdExpenses.reduce((s,x)=>s+x.amount,0);
-  const expTotal= kinExp + amdExp;
-  const incTotal= INCOME_TOTAL;
-  const fcf     = incTotal - expTotal;
-  const closing = parseFmt(document.getElementById('cb-combined')?.textContent || '0');
+  const kinInc  = Object.values(incomeData.kin).reduce((s,x)=>s+x.amount,0);
+  const amdInc  = Object.values(incomeData.amd).reduce((s,x)=>s+x.amount,0);
+  const view    = activeView || 'combined';
+
+  // Compute entity-specific values
+  const week = allWeeks[currentWeekNum];
+  let cbKin = 0, cbAmd = 0;
+  if (week) {
+    const ob = week.openingBalances || {};
+    cbKin = (ob['8152']||0)+(ob['2213']||0)+(ob['9753']||0)+(ob['0211']||0)+(ob['3472']||0) + kinInc - kinExp;
+    cbAmd = (ob['3775']||0)+(ob['7698']||0)+(ob['amd-inv']||0) + amdInc - amdExp;
+  }
+
+  let incTotal, expTotal, fcf, closing;
+  if (view === 'kin') {
+    incTotal = kinInc; expTotal = kinExp; fcf = kinInc - kinExp; closing = cbKin;
+  } else if (view === 'amd') {
+    incTotal = amdInc; expTotal = amdExp; fcf = amdInc - amdExp; closing = cbAmd;
+  } else {
+    incTotal = kinInc + amdInc; expTotal = kinExp + amdExp; fcf = incTotal - expTotal; closing = cbKin + cbAmd;
+  }
+
   function fmtK(n) {
     const abs = Math.abs(n);
     let s = abs >= 1000000 ? '$'+(abs/1000000).toFixed(2)+'M' : abs >= 1000 ? '$'+(abs/1000).toFixed(1)+'K' : '$'+abs.toFixed(0);
@@ -2400,6 +2596,12 @@ function updateHeroKPIs() {
   if (kpiInc)     kpiInc.textContent     = fmtK(incTotal);
   if (kpiExp)     kpiExp.textContent     = fmtK(expTotal);
   if (kpiFcf)   { kpiFcf.textContent    = fmtK(fcf); kpiFcf.style.color = fcf < 0 ? '#FCA5A5' : '#86EFAC'; }
+
+  // Update hero closing label and KPI label
+  const kpiBalLabel = document.getElementById('kpi-balance-label');
+  if (kpiBalLabel) {
+    kpiBalLabel.textContent = view === 'kin' ? 'Kinective Closing' : view === 'amd' ? 'AMD Capital Closing' : 'Combined Closing Balance';
+  }
 }
 
 function addUploadPill(acctNum, filename, txCount) {
