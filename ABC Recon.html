@@ -1057,7 +1057,60 @@
         function saveGroups(groups) {
             const storageKey = getGroupsStorageKey();
             localStorage.setItem(storageKey, JSON.stringify(groups));
+            cloudSync(storageKey, groups);
         }
+
+        // ── CLOUD SYNC (Supabase) ──────────────────────────────────────────
+        function getCloudCreds() {
+            return {
+                url: localStorage.getItem('sb_url'),
+                key: localStorage.getItem('sb_key')
+            };
+        }
+
+        async function cloudSync(key, data) {
+            const { url, key: apiKey } = getCloudCreds();
+            if (!url || !apiKey) return;
+            try {
+                await fetch(`${url}/rest/v1/kinective_data`, {
+                    method: 'POST',
+                    headers: {
+                        'apikey': apiKey,
+                        'Authorization': `Bearer ${apiKey}`,
+                        'Content-Type': 'application/json',
+                        'Prefer': 'resolution=merge-duplicates'
+                    },
+                    body: JSON.stringify({ key, value: JSON.stringify(data), updated_at: new Date().toISOString() })
+                });
+            } catch(e) { console.warn('Cloud sync failed:', e); }
+        }
+
+        async function loadFromCloud() {
+            const { url, key: apiKey } = getCloudCreds();
+            if (!url || !apiKey) return;
+            try {
+                const keys = ['dailyDepGroups','abcBillingGroups','dailyDepReports','abcBillingReports'];
+                for (const k of keys) {
+                    const res = await fetch(`${url}/rest/v1/kinective_data?key=eq.${k}&select=value`, {
+                        headers: { 'apikey': apiKey, 'Authorization': `Bearer ${apiKey}` }
+                    });
+                    const rows = await res.json();
+                    if (rows && rows[0]) localStorage.setItem(k, rows[0].value);
+                }
+            } catch(e) { console.warn('Cloud load failed:', e); }
+        }
+
+        async function ensureCloudTable() {
+            const { url, key: apiKey } = getCloudCreds();
+            if (!url || !apiKey) return;
+            // Table must be created manually in Supabase — see setup guide
+        }
+
+        // Load cloud data on startup
+        loadFromCloud().then(() => {
+            if (typeof renderGroups === 'function') renderGroups();
+        });
+        // ─────────────────────────────────────────────────────────────────────
 
         function showCreateGroupModal() {
             document.getElementById('createGroupModal').classList.add('active');
@@ -1636,8 +1689,9 @@
                 savedReports.push(reportData);
             }
             
-            // Save back to localStorage
+            // Save back to localStorage + cloud
             localStorage.setItem(storageKey, JSON.stringify(savedReports));
+            cloudSync(storageKey, savedReports);
         }
 
         function loadSavedReports() {

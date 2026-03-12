@@ -1173,6 +1173,7 @@ function saveReport() {
   };
   reports.unshift(report);
   localStorage.setItem('kinective_reports', JSON.stringify(reports));
+  cloudSync('kinective_reports', reports);
 
   document.getElementById('saveForm').classList.remove('open');
   showToast('✓ Report saved successfully');
@@ -1183,6 +1184,46 @@ function getSavedReports() {
   try { return JSON.parse(localStorage.getItem('kinective_reports') || '[]'); }
   catch { return []; }
 }
+
+// ── CLOUD SYNC (Supabase) ─────────────────────────────────────────────────
+function getCloudCreds() {
+  return { url: localStorage.getItem('sb_url'), key: localStorage.getItem('sb_key') };
+}
+
+async function cloudSync(key, data) {
+  const { url, key: apiKey } = getCloudCreds();
+  if (!url || !apiKey) return;
+  try {
+    await fetch(`${url}/rest/v1/kinective_data`, {
+      method: 'POST',
+      headers: {
+        'apikey': apiKey,
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+        'Prefer': 'resolution=merge-duplicates'
+      },
+      body: JSON.stringify({ key, value: JSON.stringify(data), updated_at: new Date().toISOString() })
+    });
+  } catch(e) { console.warn('Cloud sync failed:', e); }
+}
+
+async function loadFromCloud() {
+  const { url, key: apiKey } = getCloudCreds();
+  if (!url || !apiKey) return;
+  try {
+    const res = await fetch(`${url}/rest/v1/kinective_data?key=eq.kinective_reports&select=value`, {
+      headers: { 'apikey': apiKey, 'Authorization': `Bearer ${apiKey}` }
+    });
+    const rows = await res.json();
+    if (rows && rows[0]) localStorage.setItem('kinective_reports', rows[0].value);
+  } catch(e) { console.warn('Cloud load failed:', e); }
+}
+
+// Load from cloud on startup
+loadFromCloud().then(() => {
+  if (typeof renderSavedReports === 'function') renderSavedReports();
+});
+// ──────────────────────────────────────────────────────────────────────────
 
 // ── RENDER SAVED REPORTS ──
 function renderSavedReports() {
