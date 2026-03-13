@@ -2296,49 +2296,25 @@ function snapshotCurrentUI() {
   };
   week.openingBalances = readOpeningBalancesFromDOM();
 
-  // Closing balances — read from display
+  // Closing balances — read directly from the DOM cells that updateTotals already computed.
+  // This is the single source of truth; we never re-derive from scratch here.
   const cbKin  = parseFmt(document.getElementById('cb-kin')?.textContent);
   const cbAmd  = parseFmt(document.getElementById('cb-amd')?.textContent);
   const cbComb = parseFmt(document.getElementById('cb-combined')?.textContent);
 
-  // Per-account closing: opening + net activity for that account
-  const ob = week.openingBalances || {};
-  const allExp = [...(week.expenses?.kin||[]), ...(week.expenses?.amd||[])];
-
-  function isTransferName(name) {
-    const n = (name||'').toUpperCase();
-    return n.includes('TRANSFER FROM') || n.includes('TRANSFER TO') ||
-           n.includes('TRANSIT DEBIT') || n.includes('TRANSIT CREDIT');
-  }
-  function expForAcct(acctPrefix) {
-    return allExp
-      .filter(e => (e.account||'').startsWith(acctPrefix) && !isTransferName(e.name))
-      .reduce((s,x)=>s+x.amount,0);
-  }
-  function transferAdjForAcct(acctKey) {
-    return (window.transferAdjustments || {})[acctKey] || 0;
-  }
-  function incForAcct(acctKey) {
-    return (incomeData.kin[acctKey]?.amount || 0) + (incomeData.amd[acctKey]?.amount || 0);
-  }
-
   const acctClose = {};
-  // closing = opening + income - expenses + transfer net (transfers move real cash)
-  ['8152','2213','9753','0211'].forEach(k => {
-    acctClose[k] = (ob[k]||0) + incForAcct(k) - expForAcct(k) + transferAdjForAcct(k);
+  ['8152','2213','9753','0211','3472','3775','7698','amd-inv'].forEach(k => {
+    const el = document.getElementById('acct-close-' + k);
+    acctClose[k] = el ? parseFmt(el.textContent) : 0;
   });
-  // Investment 3472 unchanged
-  acctClose['3472'] = ob['3472'] || 0;
-  // AMD accounts
-  ['3775','7698'].forEach(k => {
-    acctClose[k] = (ob[k]||0) + incForAcct(k) - expForAcct(k) + transferAdjForAcct(k);
-  });
-  acctClose['amd-inv'] = ob['amd-inv'] || 0;
 
   week.closingBalances = {
     kin: cbKin, amd: cbAmd, combined: cbComb,
     accounts: acctClose
   };
+
+  // Persist transfer adjustments so closing balances survive reload without re-uploading XLS
+  week.transferAdjustments = JSON.parse(JSON.stringify(window.transferAdjustments || {}));
 
   // CAPEX items
   week.capexItems = [];
@@ -2551,6 +2527,13 @@ function loadWeekIntoUI(weekNum, readOnly) {
   setEl('accum-2026', fmt(week.accumFlow || 0));
   setEl('accum-2025', fmt(week.accumFlow2025 || 285205.35));
   recalcVariance();
+
+  // Restore transfer adjustments so closing balances are correct without re-uploading XLS
+  if (week.transferAdjustments) {
+    window.transferAdjustments = JSON.parse(JSON.stringify(week.transferAdjustments));
+  } else {
+    window.transferAdjustments = {};
+  }
 
   // Closing balances
   const cb = week.closingBalances || {};
@@ -2768,7 +2751,7 @@ function parseXLS(buffer, filename) {
                        (isTransitDebit  && !hasCheck) ||   // no check = real inter-account transfer
                        (isTransitCredit && !hasCheck) ||
                        (descUp.includes('TRANSIT') && !hasCheck && (debit > 50000 || credit > 50000)) ||
-                       // Internal wire: "Requested by: ... Approved by: ..." — inter-account movement
+                       // Internal wire: "Requested by: ... Approved by: ..." — both fields required
                        (descUp.includes('REQUESTED BY') && descUp.includes('APPROVED BY'));
 
     // Transit Debit WITH check number → treat as regular expense (a check written out)
