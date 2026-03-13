@@ -1242,6 +1242,8 @@
 
 <script>
 // ── INCOME DATA — always has all 4 KIN accounts + 1 AMD ──
+const activeView = 'combined'; // always combined — single-page layout
+
 let incomeData = {
   kin: {
     '8152': { label: '8152 WestStar — Weekly Receipts', amount: 113935.39 },
@@ -2451,6 +2453,13 @@ if (document.readyState === 'loading') {
 </script>
 
 <!-- ── XLS PARSER ────────────────────────────── -->
+<!-- Standard SheetJS — for READING bank XLS files -->
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script>
+  // Save the read-capable instance before xlsx-style overwrites the global
+  window.XLSXread = window.XLSX;
+</script>
+<!-- xlsx-style — for WRITING styled Excel exports (overwrites XLSX global) -->
 <script src="https://cdn.jsdelivr.net/npm/xlsx-style@0.8.13/dist/xlsx.full.min.js"></script>
 <script>
 
@@ -2488,9 +2497,10 @@ function handleFileSelect(files) {
 }
 
 function parseXLS(buffer, filename) {
-  const wb = XLSX.read(buffer, { type: 'array' });
+  const reader = window.XLSXread || window.XLSX;
+  const wb = reader.read(buffer, { type: 'array' });
   const ws = wb.Sheets[wb.SheetNames[0]];
-  const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+  const rows = reader.utils.sheet_to_json(ws, { header: 1, defval: '' });
   if (rows.length < 2) return;
 
   const acctRaw = String(rows[1][0] || '').trim();
@@ -2499,23 +2509,41 @@ function parseXLS(buffer, filename) {
 
   const expenses = [], income = [], transfers = [];
   for (let i = 1; i < rows.length; i++) {
-    const row    = rows[i];
-    const desc   = String(row[3] || '').trim();
-    const debit  = parseFloat(row[4]) || 0;
-    const credit = parseFloat(row[5]) || 0;
-    const descUp = desc.toUpperCase();
-    // Transfer = real cash movement between accounts
-    // Affects each account's BALANCE but never P&L income/expenses
+    const row     = rows[i];
+    const desc    = String(row[3] || '').trim();
+    const checkNo = String(row[2] || '').trim(); // column C — check number
+    const debit   = parseFloat(row[4]) || 0;
+    const credit  = parseFloat(row[5]) || 0;
+    const descUp  = desc.toUpperCase();
+    const hasCheck = checkNo.length > 0 && /\d/.test(checkNo); // has a numeric check number
+
+    // "Transit Debit" WITH a check number = a real check payment → expense, not a transfer
+    // "Transit Debit" WITHOUT a check number = internal account-to-account move → wash it
+    const isTransitDebit  = descUp.includes('TRANSIT DEBIT');
+    const isTransitCredit = descUp.includes('TRANSIT CREDIT');
+
+    // Transfer = real cash movement between accounts (balance-only, never P&L)
     const isTransfer = descUp.includes('TRANSFER FROM') || descUp.includes('TRANSFER TO') ||
-                       descUp.includes('TRANSIT DEBIT') || descUp.includes('TRANSIT CREDIT') ||
-                       (descUp.includes('TRANSIT') && (debit > 50000 || credit > 50000));
+                       (isTransitDebit  && !hasCheck) ||   // no check = real inter-account transfer
+                       (isTransitCredit && !hasCheck) ||
+                       (descUp.includes('TRANSIT') && !hasCheck && (debit > 50000 || credit > 50000)) ||
+                       // Internal wire: "Requested by: ... Approved by: ..." — inter-account movement
+                       (descUp.includes('REQUESTED BY') && descUp.includes('APPROVED BY'));
+
+    // Transit Debit WITH check number → treat as regular expense (a check written out)
+    // Fall through to normal debit/credit handling below
     if (isTransfer) {
       if (credit > 0) transfers.push(+credit);   // money received into this account
       if (debit  > 0) transfers.push(-debit);    // money sent out of this account
       continue;
     }
-    if (debit  > 0) expenses.push({ name: desc.replace(/\s+/g,' '), amount: debit,  account: acctNum + ' WestStar' });
-    if (credit > 0) income.push  ({ name: desc.replace(/\s+/g,' '), amount: credit, account: acctNum + ' WestStar' });
+    // For Transit Debit/Credit with a check number, prefix name with check# so it's identifiable
+    const cleanDesc = desc.replace(/\s+/g,' ');
+    const expName   = (isTransitDebit || isTransitCredit) && hasCheck
+                        ? 'Check #' + checkNo + ' — ' + cleanDesc
+                        : cleanDesc;
+    if (debit  > 0) expenses.push({ name: expName, amount: debit,  account: acctNum + ' WestStar' });
+    if (credit > 0) income.push  ({ name: expName, amount: credit, account: acctNum + ' WestStar' });
   }
   applyToReport(acctNum, mergeUtil(expenses), income, transfers, filename);
 }
@@ -2554,7 +2582,7 @@ function applyToReport(acctNum, expenses, incomeItems, transfers, filename) {
 
   renderIncome();
   renderExpenses();
-  updateHeroKPIs();
+  updateTotals();      // repopulates all 3 Cash Flow Summary columns
   addUploadPill(acctNum, filename, expenses.length + incomeItems.length);
 }
 
