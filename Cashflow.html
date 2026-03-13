@@ -2242,40 +2242,43 @@ function buildWeek11Snapshot() {
 // This file works identically on ANY machine — no IndexedDB dependency
 // for historical data. New entries (Week 12+) save locally as normal.
 async function initWeekSystem() {
-  // Load any locally-saved weeks (Week 12+ entries made on this machine)
+  // ── Step 1: Hardcode weeks 8–10 (PDF-verified, never overwritten) ──
+  allWeeks[8]  = buildWeek8Snapshot();
+  allWeeks[9]  = buildWeek9Snapshot();
+  allWeeks[10] = buildWeek10Snapshot();
+
+  // ── Step 2: Load ALL saved weeks from IndexedDB ──
+  // Week 11 saved data takes priority over the hardcoded seed.
+  // Weeks 8–10 remain hardcoded regardless.
   try {
     const rows = await dbLoadAll();
     rows.forEach(w => {
-      // Only restore weeks BEYOND the hardcoded ones
-      if (w.weekNum > 11) allWeeks[w.weekNum] = w;
+      if (w.weekNum >= 11) allWeeks[w.weekNum] = w;  // 11+ can be restored from DB
     });
   } catch(e) {
     console.warn('IndexedDB load failed, starting fresh:', e);
   }
 
-  // ALWAYS override weeks 8–11 with PDF-verified hardcoded data
-  allWeeks[8]  = buildWeek8Snapshot();
-  allWeeks[9]  = buildWeek9Snapshot();
-  allWeeks[10] = buildWeek10Snapshot();
-
-  // Week 11: use locally-saved version if it exists (has been worked on),
-  // otherwise seed from PDF opening balances
-  if (!allWeeks[11] || !allWeeks[11].saved) {
+  // ── Step 3: If Week 11 was never saved, seed from hardcoded snapshot ──
+  if (!allWeeks[11]) {
     allWeeks[11] = buildWeek11Snapshot();
   }
-  // Always enforce correct Week 11 opening balances (= Week 10 closing)
+
+  // ── Step 4: Always enforce correct Week 11 opening balances (= Week 10 closing) ──
+  // This protects against stale openings if Week 10 hardcode ever changes.
   allWeeks[11].openingBalances = {
     '8152': 244153.71, '2213': 100795.01, '9753': 18079.05,
     '0211': 45758.66,  '3472': 4122772.25,
     '3775': 46290.25,  '7698': 26057.89,  'amd-inv': 3526172.68
   };
 
-  // Open on the latest available week
+  // ── Step 5: Open on the latest available week ──
   const allNums = Object.keys(allWeeks).map(Number);
   currentWeekNum = Math.max(...allNums);
   rebuildWeekDropdown();
   loadWeekIntoUI(currentWeekNum, false);
-  setStatusBadge('unsaved');
+  // Don't override the saved badge if week was already saved
+  if (!allWeeks[currentWeekNum]?.saved) setStatusBadge('unsaved');
 }
 
 // ── SNAPSHOT CURRENT UI → DATA ────────────────────
