@@ -952,8 +952,18 @@
           <div style="background:var(--gray-100); border-radius:5px; padding:6px 10px; font-family:'DM Mono',monospace; font-size:9px; color:var(--gray-500); margin-top:6px;" id="cf-kin-ocf-formula">$0.00 + $0.00</div>
         </div>
         <div style="background:var(--gray-50); border-radius:8px; padding:12px 16px; border:1px solid var(--gray-200);">
-          <div style="font-family:'DM Mono',monospace; font-size:8px; letter-spacing:0.14em; text-transform:uppercase; color:var(--gray-400); margin-bottom:4px;" id="closing-label">Closing Balance</div>
-          <div style="font-family:'DM Mono',monospace; font-size:20px; font-weight:700; color:var(--navy);" id="cb-kin">$0.00</div>
+          <div style="font-family:'DM Mono',monospace; font-size:8px; letter-spacing:0.14em; text-transform:uppercase; color:var(--gray-400); margin-bottom:8px;" id="closing-label">Closing Balance — Per Account</div>
+          <table class="acct-close-table" id="acct-close-kin-table">
+            <tr><td class="acct-close-name">8152 WestStar — Income</td><td class="acct-close-val" id="acct-close-8152">$0.00</td></tr>
+            <tr><td class="acct-close-name">2213 WestStar — Expenses</td><td class="acct-close-val" id="acct-close-2213">$0.00</td></tr>
+            <tr><td class="acct-close-name">9753 Wells Fargo — Income</td><td class="acct-close-val" id="acct-close-9753">$0.00</td></tr>
+            <tr><td class="acct-close-name">0211 Wells Fargo — Exp.</td><td class="acct-close-val" id="acct-close-0211">$0.00</td></tr>
+            <tr><td class="acct-close-name">3472 Investment</td><td class="acct-close-val" id="acct-close-3472">$0.00</td></tr>
+            <tr style="border-top:2px solid var(--gray-200);">
+              <td class="acct-close-name" style="font-weight:700; color:var(--navy);">Kinective Total</td>
+              <td class="acct-close-val" style="font-size:13px; color:var(--navy);" id="cb-kin">$0.00</td>
+            </tr>
+          </table>
         </div>
       </div>
 
@@ -977,8 +987,16 @@
           <div style="background:var(--gray-200); border-radius:5px; padding:6px 10px; font-family:'DM Mono',monospace; font-size:9px; color:var(--gray-500); margin-top:6px;" id="cf-amd-ocf-formula">$0.00 + $0.00</div>
         </div>
         <div style="background:var(--white); border-radius:8px; padding:12px 16px; border:1px solid var(--gray-200);">
-          <div style="font-family:'DM Mono',monospace; font-size:8px; letter-spacing:0.14em; text-transform:uppercase; color:var(--gray-400); margin-bottom:4px;">Closing Balance</div>
-          <div style="font-family:'DM Mono',monospace; font-size:20px; font-weight:700; color:var(--navy);" id="cb-amd">$0.00</div>
+          <div style="font-family:'DM Mono',monospace; font-size:8px; letter-spacing:0.14em; text-transform:uppercase; color:var(--gray-400); margin-bottom:8px;">Closing Balance — Per Account</div>
+          <table class="acct-close-table" id="acct-close-amd-table">
+            <tr><td class="acct-close-name">3775 WestStar</td><td class="acct-close-val" id="acct-close-3775">$0.00</td></tr>
+            <tr><td class="acct-close-name">7698 Wells Fargo</td><td class="acct-close-val" id="acct-close-7698">$0.00</td></tr>
+            <tr><td class="acct-close-name">AMD Investment</td><td class="acct-close-val" id="acct-close-amd-inv">$0.00</td></tr>
+            <tr style="border-top:2px solid var(--gray-200);">
+              <td class="acct-close-name" style="font-weight:700; color:var(--navy);">AMD Total</td>
+              <td class="acct-close-val" style="font-size:13px; color:var(--navy);" id="cb-amd">$0.00</td>
+            </tr>
+          </table>
         </div>
       </div>
 
@@ -1002,8 +1020,15 @@
           <div style="background:rgba(255,255,255,0.08); border-radius:5px; padding:6px 10px; font-family:'DM Mono',monospace; font-size:9px; color:rgba(255,255,255,0.5); margin-top:6px;" id="cf-ocf-formula">$0.00 + $0.00</div>
         </div>
         <div style="background:rgba(201,168,76,0.12); border-radius:8px; padding:12px 16px; border:1px solid rgba(201,168,76,0.3);">
-          <div style="font-family:'DM Mono',monospace; font-size:8px; letter-spacing:0.14em; text-transform:uppercase; color:var(--gold); margin-bottom:4px;">Combined Closing</div>
-          <div style="font-family:'DM Mono',monospace; font-size:20px; font-weight:700; color:var(--gold-light);" id="cb-combined">$0.00</div>
+          <div style="font-family:'DM Mono',monospace; font-size:8px; letter-spacing:0.14em; text-transform:uppercase; color:var(--gold); margin-bottom:8px;">All Accounts — Closing</div>
+          <table class="acct-close-table">
+            <tr><td class="acct-close-name" style="color:rgba(255,255,255,0.5);">Kinective</td><td class="acct-close-val" style="color:rgba(255,255,255,0.85); font-size:12px;" id="cb-comb-kin-sub">$0.00</td></tr>
+            <tr><td class="acct-close-name" style="color:rgba(255,255,255,0.5);">AMD Capital</td><td class="acct-close-val" style="color:rgba(255,255,255,0.85); font-size:12px;" id="cb-comb-amd-sub">$0.00</td></tr>
+            <tr style="border-top:1px solid rgba(255,255,255,0.15);">
+              <td class="acct-close-name" style="font-weight:700; color:var(--gold);">Combined Total</td>
+              <td class="acct-close-val" style="font-size:16px; color:var(--gold-light); font-weight:700;" id="cb-combined">$0.00</td>
+            </tr>
+          </table>
         </div>
       </div>
 
@@ -1164,6 +1189,107 @@
     background: rgba(59,130,246,0.22);
   }
 
+
+  /* ── ACCOUNT PICKER PILL ─────────────────────────────── */
+  .acct-picker {
+    position: relative;
+    display: inline-block;
+  }
+  .acct-pill {
+    font-family: 'DM Mono', monospace;
+    font-size: 9px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    padding: 3px 8px 3px 7px;
+    border-radius: 10px;
+    cursor: pointer;
+    user-select: none;
+    white-space: nowrap;
+    border: 1px solid transparent;
+    transition: background 0.12s;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .acct-pill::after { content: ' ▾'; font-size: 8px; opacity: 0.7; }
+  .acct-pill.kin-acct {
+    background: rgba(201,168,76,0.12);
+    color: var(--gold);
+    border-color: rgba(201,168,76,0.3);
+  }
+  .acct-pill.kin-acct:hover { background: rgba(201,168,76,0.22); }
+  .acct-pill.amd-acct {
+    background: rgba(59,130,246,0.1);
+    color: #60a5fa;
+    border-color: rgba(59,130,246,0.25);
+  }
+  .acct-pill.amd-acct:hover { background: rgba(59,130,246,0.2); }
+  .acct-pill.blank-acct {
+    background: rgba(201,168,76,0.08);
+    color: var(--gold);
+    border-color: rgba(201,168,76,0.4);
+    border-style: dashed;
+    animation: pulse-border 1.5s ease infinite;
+  }
+  @keyframes pulse-border {
+    0%,100% { border-color: rgba(201,168,76,0.4); }
+    50%      { border-color: rgba(201,168,76,0.9); }
+  }
+  .acct-dropdown {
+    position: absolute;
+    top: calc(100% + 4px);
+    right: 0;
+    background: var(--white);
+    border: 1px solid var(--gray-200);
+    border-radius: 8px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+    z-index: 200;
+    min-width: 200px;
+    overflow: hidden;
+    display: none;
+  }
+  .acct-dropdown.open { display: block; }
+  .acct-dropdown-item {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    padding: 9px 14px;
+    cursor: pointer;
+    color: var(--char);
+    border-bottom: 1px solid var(--gray-100);
+    transition: background 0.1s;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .acct-dropdown-item:last-child { border-bottom: none; }
+  .acct-dropdown-item:hover { background: var(--gray-50); }
+  .acct-dropdown-item .acct-dd-tag {
+    font-size: 8px;
+    padding: 1px 6px;
+    border-radius: 8px;
+    font-weight: 700;
+  }
+  .acct-dropdown-item .kin-tag { background: rgba(201,168,76,0.15); color: var(--gold); }
+  .acct-dropdown-item .amd-tag { background: rgba(59,130,246,0.12); color: #60a5fa; }
+
+  /* ── PER-ACCOUNT CLOSING BALANCE TABLE ───────────────── */
+  .acct-close-table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+  .acct-close-table td {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    padding: 7px 12px;
+    border-bottom: 1px solid var(--gray-100);
+  }
+  .acct-close-table tr:last-child td { border-bottom: none; }
+  .acct-close-table .acct-close-name { color: var(--gray-500); font-size: 10px; }
+  .acct-close-table .acct-close-val  { text-align: right; font-weight: 600; color: var(--navy); }
+  .acct-close-table .acct-close-entity {
+    font-size: 8px; font-weight: 700; padding: 1px 6px;
+    border-radius: 8px; letter-spacing: 0.08em;
+  }
+  .acct-close-kin { background: rgba(201,168,76,0.12); color: var(--gold); }
+  .acct-close-amd { background: rgba(59,130,246,0.12); color: #60a5fa; }
+
   /* GROUP HEADERS */
   .group-header { cursor:pointer; user-select:none; background:var(--gray-100); border-top:2px solid var(--gray-200); transition:background 0.12s; }
   .group-header:hover { background:var(--gray-200); }
@@ -1299,23 +1425,97 @@ function fmt(n) {
   return n < 0 ? '(' + abs + ')' : '$' + abs;
 }
 
+// All 8 accounts available for assignment
+const ACCT_OPTIONS = [
+  { key: '8152', label: '8152 WestStar — Income',    entity: 'kin' },
+  { key: '2213', label: '2213 WestStar — Expenses',  entity: 'kin' },
+  { key: '9753', label: '9753 Wells Fargo — Income', entity: 'kin' },
+  { key: '0211', label: '0211 Wells Fargo — Exp.',   entity: 'kin' },
+  { key: '3472', label: '3472 Investment — 4.09%',   entity: 'kin' },
+  { key: '3775', label: '3775 WestStar (AMD)',        entity: 'amd' },
+  { key: '7698', label: '7698 Wells Fargo (AMD)',     entity: 'amd' },
+  { key: 'amd-inv', label: 'AMD Investment — 4.09%', entity: 'amd' },
+];
+
+function acctPillClass(acct) {
+  if (!acct) return 'blank-acct';
+  const opt = ACCT_OPTIONS.find(o => acct.startsWith(o.key));
+  return opt ? (opt.entity === 'kin' ? 'kin-acct' : 'amd-acct') : 'kin-acct';
+}
+
+function acctPillLabel(acct) {
+  if (!acct) return 'Select Account';
+  const opt = ACCT_OPTIONS.find(o => acct.startsWith(o.key));
+  return opt ? opt.key : acct.split(' ')[0];
+}
+
+function openAcctDropdown(pill, group, idx) {
+  // Close any other open dropdowns first
+  document.querySelectorAll('.acct-dropdown.open').forEach(d => d.classList.remove('open'));
+  const dd = pill.nextElementSibling;
+  if (dd) dd.classList.toggle('open');
+  // Close on outside click
+  setTimeout(() => {
+    document.addEventListener('click', function closeDD(e) {
+      if (!pill.parentElement.contains(e.target)) {
+        if (dd) dd.classList.remove('open');
+        document.removeEventListener('click', closeDD);
+      }
+    });
+  }, 10);
+}
+
+function selectAcct(ddItem, group, idx, acctKey, acctLabel) {
+  const arr  = group === 'kin' ? kinExpenses : amdExpenses;
+  if (arr[idx]) arr[idx].account = acctKey;
+  // Update the pill
+  const dd   = ddItem.closest('.acct-dropdown');
+  const pill = dd ? dd.previousElementSibling : null;
+  if (pill) {
+    pill.textContent = acctKey;
+    pill.className   = 'acct-pill ' + acctPillClass(acctKey);
+    // Re-add the ▾ via CSS ::after — just ensure text is key only
+  }
+  if (dd) dd.classList.remove('open');
+  updateTotals();
+}
+
 function makeRow(item, group, idx) {
   const tr = document.createElement('tr');
   tr.className = 'exp-row' + (idx % 2 === 1 ? ' alt' : '') + ' ' + group + '-row';
   tr.style.display = 'none';
   tr.dataset.amount = item.amount;
-  tr.dataset.group = group;
+  tr.dataset.group  = group;
+
+  const pillClass = acctPillClass(item.account);
+  const pillLabel = acctPillLabel(item.account);
+
+  // Build dropdown items
+  const ddItems = ACCT_OPTIONS.map(o => `
+    <div class="acct-dropdown-item" onclick="selectAcct(this,'${group}',${idx},'${o.key}','${o.label}')">
+      <span>${o.label}</span>
+      <span class="acct-dd-tag ${o.entity}-tag">${o.entity.toUpperCase()}</span>
+    </div>`).join('');
+
   tr.innerHTML = `
     <td style="width:20px;text-align:center;">
       <span onclick="deleteExpenseRow(this,'${group}',${idx})" title="Delete"
-        style="cursor:pointer;color:var(--gray-400);font-size:11px;line-height:1;" onmouseover="this.style.color='var(--red)'" onmouseout="this.style.color='var(--gray-400)'">✕</span>
+        style="cursor:pointer;color:var(--gray-400);font-size:11px;line-height:1;"
+        onmouseover="this.style.color='var(--red)'" onmouseout="this.style.color='var(--gray-400)'">✕</span>
     </td>
-    <td class="exp-name-cell" contenteditable="true" onblur="syncExpenseEdit(this,'name','${group}',${idx})">${item.name}</td>
+    <td class="exp-name-cell" contenteditable="true"
+      onblur="syncExpenseEdit(this,'name','${group}',${idx})">${item.name}</td>
     <td class="exp-amount-cell" contenteditable="true"
       onblur="syncExpenseAmount(this,'${group}',${idx})"
       onfocus="this._prev=this.textContent;this.textContent=String(parseFloat(this.textContent.replace(/[^0-9.-]/g,''))||0);document.execCommand('selectAll',false,null);"
     >${fmt(item.amount)}</td>
-    <td class="exp-account-cell" contenteditable="true" onblur="syncExpenseEdit(this,'account','${group}',${idx})">${item.account}</td>
+    <td style="padding:6px 10px;">
+      <div class="acct-picker">
+        <span class="acct-pill ${pillClass}"
+          onclick="openAcctDropdown(this,'${group}',${idx})">${pillLabel}</span>
+        <div class="acct-dropdown">${ddItems}</div>
+      </div>
+    </td>
   `;
   return tr;
 }
@@ -1439,8 +1639,7 @@ function deleteExpenseRow(btn, group, idx) {
 
 function addExpenseRow(group) {
   const arr = group==='kin' ? kinExpenses : amdExpenses;
-  const defaultAcct = group==='kin' ? '0211 Wells Fargo' : '7698 Wells Fargo';
-  arr.push({ name: 'New Expense', amount: 0, account: defaultAcct });
+  arr.push({ name: 'New Expense', amount: 0, account: '' }); // blank — force manual account selection
   // Expand the group if collapsed
   const chev = document.getElementById('chev-'+group);
   if (!chev.classList.contains('open')) toggleGroup(group);
@@ -1495,17 +1694,51 @@ function updateTotals() {
   const amdOCF  = amdFCF  + capAmd;
   const combOCF = combFCF + capex2026;
 
-  // Closing balances per entity
+  // Closing balances — per account, then roll up to entity totals
   const week = allWeeks[currentWeekNum];
   let cbKin = 0, cbAmd = 0;
+
+  function expForAcct(acctKey) {
+    return [...kinExpenses, ...amdExpenses]
+      .filter(e => (e.account||'').startsWith(acctKey))
+      .reduce((s,x) => s + x.amount, 0);
+  }
+  function incForAcct(acctKey) {
+    return (incomeData.kin[acctKey]?.amount || 0) + (incomeData.amd[acctKey]?.amount || 0);
+  }
+  function xferForAcct(acctKey) {
+    return (window.transferAdjustments || {})[acctKey] || 0;
+  }
+
+  const acctClose = {};
   if (week) {
     const ob = week.openingBalances || {};
-    const kinOB = (ob['8152']||0)+(ob['2213']||0)+(ob['9753']||0)+(ob['0211']||0)+(ob['3472']||0);
-    const amdOB = (ob['3775']||0)+(ob['7698']||0)+(ob['amd-inv']||0);
-    cbKin = kinOB + kinInc - kinTotal;
-    cbAmd = amdOB + amdInc - amdTotal;
+    ['8152','2213','9753','0211'].forEach(k => {
+      acctClose[k] = (ob[k]||0) + incForAcct(k) - expForAcct(k) + xferForAcct(k);
+    });
+    acctClose['3472']    = ob['3472']    || 0; // investment — balance only
+    ['3775','7698'].forEach(k => {
+      acctClose[k] = (ob[k]||0) + incForAcct(k) - expForAcct(k) + xferForAcct(k);
+    });
+    acctClose['amd-inv'] = (ob['amd-inv']||0) + incForAcct('amd-inv') + xferForAcct('amd-inv');
+
+    cbKin = (acctClose['8152']||0)+(acctClose['2213']||0)+(acctClose['9753']||0)
+           +(acctClose['0211']||0)+(acctClose['3472']||0);
+    cbAmd = (acctClose['3775']||0)+(acctClose['7698']||0)+(acctClose['amd-inv']||0);
+
+    // Populate per-account closing cells
+    ['8152','2213','9753','0211','3472','3775','7698','amd-inv'].forEach(k => {
+      const el = document.getElementById('acct-close-' + k);
+      if (el) el.textContent = fmt(acctClose[k] || 0);
+    });
   }
   const cbComb = cbKin + cbAmd;
+
+  // Combined subtotals
+  const combKinSub = document.getElementById('cb-comb-kin-sub');
+  const combAmdSub = document.getElementById('cb-comb-amd-sub');
+  if (combKinSub) combKinSub.textContent = fmt(cbKin);
+  if (combAmdSub) combAmdSub.textContent = fmt(cbAmd);
 
   // Helper: colour a value element green/red based on sign
   function setVal(id, n) {
