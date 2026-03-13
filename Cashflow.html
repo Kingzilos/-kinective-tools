@@ -813,7 +813,7 @@
           <span class="acct-amount" id="ob-7698">$25,467.65</span>
         </div>
         <div class="account-row alt">
-          <span class="acct-name"><strong>Investment</strong> — 4.09% Interest</span>
+          <span class="acct-name"><strong>2085</strong> Money Market — Interest</span>
           <span class="acct-amount large" id="ob-amd-inv">$3,516,613.27</span>
         </div>
         <div class="account-row total-row">
@@ -991,7 +991,7 @@
           <table class="acct-close-table" id="acct-close-amd-table">
             <tr><td class="acct-close-name">3775 WestStar</td><td class="acct-close-val" id="acct-close-3775">$0.00</td></tr>
             <tr><td class="acct-close-name">7698 Wells Fargo</td><td class="acct-close-val" id="acct-close-7698">$0.00</td></tr>
-            <tr><td class="acct-close-name">AMD Investment</td><td class="acct-close-val" id="acct-close-amd-inv">$0.00</td></tr>
+            <tr><td class="acct-close-name">2085 Money Market</td><td class="acct-close-val" id="acct-close-amd-inv">$0.00</td></tr>
             <tr style="border-top:2px solid var(--gray-200);">
               <td class="acct-close-name" style="font-weight:700; color:var(--navy);">AMD Total</td>
               <td class="acct-close-val" style="font-size:13px; color:var(--navy);" id="cb-amd">$0.00</td>
@@ -1381,7 +1381,7 @@ let incomeData = {
   amd: {
     '3775': { label: '3775 WestStar — Credit',          amount: 0 },
     '7698': { label: '7698 Wells Fargo — Credit',       amount: 590.04 },
-    'amd-mm': { label: 'AMD Money Market — Interest',       amount: 0 },
+    'amd-mm': { label: '2085 Money Market — Interest',      amount: 0 },
   }
 };
 
@@ -1434,7 +1434,7 @@ const ACCT_OPTIONS = [
   { key: '3472', label: '3472 Investment — 4.09%',   entity: 'kin' },
   { key: '3775', label: '3775 WestStar (AMD)',        entity: 'amd' },
   { key: '7698', label: '7698 Wells Fargo (AMD)',     entity: 'amd' },
-  { key: 'amd-inv', label: 'AMD Investment — 4.09%', entity: 'amd' },
+  { key: 'amd-inv', label: '2085 Money Market',      entity: 'amd' },
 ];
 
 function acctPillClass(acct) {
@@ -1707,7 +1707,12 @@ function updateTotals() {
     return (incomeData.kin[acctKey]?.amount || 0) + (incomeData.amd[acctKey]?.amount || 0);
   }
   function xferForAcct(acctKey) {
-    return (window.transferAdjustments || {})[acctKey] || 0;
+    const adj = window.transferAdjustments || {};
+    // For amd-inv, aggregate all known money-market suffixes
+    if (acctKey === 'amd-inv') {
+      return (adj['amd-inv'] || 0);  // normalizeAcctNum already merged 2085 into amd-inv
+    }
+    return adj[acctKey] || 0;
   }
 
   const acctClose = {};
@@ -2036,7 +2041,7 @@ function buildWeek8Snapshot() {
         amd: {
           '3775':   { label: '3775 WestStar — Credit',        amount: 0 },
           '7698':   { label: '7698 Wells Fargo — Credit',     amount: 590.04 },
-          'amd-mm': { label: 'AMD Money Market — Interest',   amount: 0 },
+          'amd-mm': { label: '2085 Money Market — Interest',  amount: 0 },
         }
       }
     },
@@ -2091,7 +2096,7 @@ function buildWeek9Snapshot() {
         amd: {
           '3775':   { label: '3775 WestStar — Credit',        amount: 0 },
           '7698':   { label: '7698 Wells Fargo — Credit',     amount: 0 },
-          'amd-mm': { label: 'AMD Money Market — Interest',   amount: 0 },
+          'amd-mm': { label: '2085 Money Market — Interest',  amount: 0 },
         }
       }
     },
@@ -2147,7 +2152,7 @@ function buildWeek10Snapshot() {
         amd: {
           '3775':   { label: '3775 WestStar — Credit',        amount: 114996.21 },
           '7698':   { label: '7698 Wells Fargo — Credit',     amount: 0.20 },
-          'amd-mm': { label: 'AMD Money Market — Interest',   amount: 9559.41 },
+          'amd-mm': { label: '2085 Money Market — Interest',  amount: 9559.41 },
         }
       }
     },
@@ -2202,7 +2207,7 @@ function buildWeek11Snapshot() {
         amd: {
           '3775':   { label: '3775 WestStar — Credit',        amount: 0 },
           '7698':   { label: '7698 Wells Fargo — Credit',     amount: 0 },
-          'amd-mm': { label: 'AMD Money Market — Interest',   amount: 0 },
+          'amd-mm': { label: '2085 Money Market — Interest',  amount: 0 },
         }
       }
     },
@@ -2508,7 +2513,7 @@ function loadWeekIntoUI(weekNum, readOnly) {
   const defaultAmd = {
     '3775':   { label: '3775 WestStar — Credit',        amount: 0 },
     '7698':   { label: '7698 Wells Fargo — Credit',     amount: 0 },
-    'amd-mm': { label: 'AMD Money Market — Interest',   amount: 0 },
+    'amd-mm': { label: '2085 Money Market — Interest',  amount: 0 },
   };
   Object.keys(defaultKin).forEach(k => { if (!incomeData.kin[k]) incomeData.kin[k] = defaultKin[k]; });
   Object.keys(defaultAmd).forEach(k => { if (!incomeData.amd[k]) incomeData.amd[k] = defaultAmd[k]; });
@@ -2792,10 +2797,25 @@ function mergeUtil(expenses) {
   return merged;
 }
 
+// Known money-market / investment account suffixes → map to internal key
+const AMD_INV_SUFFIXES = ['2085','amd-inv'];
+const KIN_INV_SUFFIXES = ['3472'];
+
+function normalizeAcctNum(raw) {
+  if (AMD_INV_SUFFIXES.includes(raw)) return 'amd-inv';
+  return raw;
+}
+
 function applyToReport(acctNum, expenses, incomeItems, transfers, filename) {
-  // Store transfer net for this account so closing balance calc can use it
+  // Normalize: money market account (2085) → 'amd-inv'
+  const normAcct = normalizeAcctNum(acctNum);
+  // Store transfer net under normalized key
   if (!window.transferAdjustments) window.transferAdjustments = {};
-  window.transferAdjustments[acctNum] = (transfers||[]).reduce((s,x)=>s+x, 0);
+  const xferNet = (transfers||[]).reduce((s,x)=>s+x, 0);
+  window.transferAdjustments[normAcct] = (window.transferAdjustments[normAcct] || 0) + xferNet;
+  // Also store under raw key for reference
+  window.transferAdjustments[acctNum]  = xferNet;
+
   const isKin = ['2213','8152','9753','0211'].includes(acctNum);
   const arr = isKin ? kinExpenses : amdExpenses;
   for (let i = arr.length-1; i >= 0; i--) {
