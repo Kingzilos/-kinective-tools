@@ -1928,58 +1928,41 @@ attachCapexListeners();
 <!-- ── MULTI-WEEK ENGINE ─────────────────────────── -->
 <script>
 // ═══════════════════════════════════════════════════════════════
-//  STORAGE: IndexedDB (works across devices if served from same
-//  origin; falls back to localStorage for local file usage)
+//  STORAGE: localStorage — works reliably on file:// and intranet
+//  URLs without any server or origin restrictions.
 // ═══════════════════════════════════════════════════════════════
 
-const DB_NAME    = 'cashflow_db';
-const DB_VERSION = 1;
-const STORE_NAME = 'weeks';
-let   db         = null;
-
-function openDB() {
-  return new Promise((resolve, reject) => {
-    if (db) { resolve(db); return; }
-    const req = indexedDB.open(DB_NAME, DB_VERSION);
-    req.onupgradeneeded = e => {
-      const d = e.target.result;
-      if (!d.objectStoreNames.contains(STORE_NAME)) {
-        d.createObjectStore(STORE_NAME, { keyPath: 'weekNum' });
-      }
-    };
-    req.onsuccess = e => { db = e.target.result; resolve(db); };
-    req.onerror   = e => reject(e.target.error);
-  });
-}
+const LS_PREFIX = 'cashflow_week_';
 
 async function dbSave(weekData) {
-  const d = await openDB();
-  return new Promise((resolve, reject) => {
-    const tx = d.transaction(STORE_NAME, 'readwrite');
-    tx.objectStore(STORE_NAME).put(weekData);
-    tx.oncomplete = () => resolve();
-    tx.onerror    = e => reject(e.target.error);
-  });
+  try {
+    localStorage.setItem(LS_PREFIX + weekData.weekNum, JSON.stringify(weekData));
+  } catch(e) {
+    throw new Error('localStorage save failed: ' + e.message);
+  }
 }
 
 async function dbLoad(weekNum) {
-  const d = await openDB();
-  return new Promise((resolve, reject) => {
-    const tx  = d.transaction(STORE_NAME, 'readonly');
-    const req = tx.objectStore(STORE_NAME).get(weekNum);
-    req.onsuccess = e => resolve(e.target.result || null);
-    req.onerror   = e => reject(e.target.error);
-  });
+  try {
+    const raw = localStorage.getItem(LS_PREFIX + weekNum);
+    return raw ? JSON.parse(raw) : null;
+  } catch(e) { return null; }
 }
 
 async function dbLoadAll() {
-  const d = await openDB();
-  return new Promise((resolve, reject) => {
-    const tx  = d.transaction(STORE_NAME, 'readonly');
-    const req = tx.objectStore(STORE_NAME).getAll();
-    req.onsuccess = e => resolve(e.target.result || []);
-    req.onerror   = e => reject(e.target.error);
-  });
+  const results = [];
+  try {
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith(LS_PREFIX)) {
+        try {
+          const w = JSON.parse(localStorage.getItem(key));
+          if (w && w.weekNum) results.push(w);
+        } catch(e) {}
+      }
+    }
+  } catch(e) {}
+  return results;
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -2264,13 +2247,15 @@ async function initWeekSystem() {
     allWeeks[11] = buildWeek11Snapshot();
   }
 
-  // ── Step 4: Always enforce correct Week 11 opening balances (= Week 10 closing) ──
-  // This protects against stale openings if Week 10 hardcode ever changes.
-  allWeeks[11].openingBalances = {
-    '8152': 244153.71, '2213': 100795.01, '9753': 18079.05,
-    '0211': 45758.66,  '3472': 4122772.25,
-    '3775': 46290.25,  '7698': 26057.89,  'amd-inv': 3526172.68
-  };
+  // ── Step 4: Only enforce Week 11 opening balances if it was never saved ──
+  // If user has saved Week 11, trust the saved opening balances.
+  if (!allWeeks[11].saved) {
+    allWeeks[11].openingBalances = {
+      '8152': 244153.71, '2213': 100795.01, '9753': 18079.05,
+      '0211': 45758.66,  '3472': 4122772.25,
+      '3775': 46290.25,  '7698': 26057.89,  'amd-inv': 3526172.68
+    };
+  }
 
   // ── Step 5: Open on the latest available week ──
   const allNums = Object.keys(allWeeks).map(Number);
