@@ -687,6 +687,10 @@
       <span style="position:absolute;right:10px;top:50%;transform:translateY(-50%);color:var(--gray-400);font-size:9px;pointer-events:none;">▼</span>
     </div>
     <span id="week-status-badge" class="badge badge-gold">UNSAVED</span>
+    <span id="cloud-sync-badge" style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:0.08em;display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;background:rgba(52,199,89,0.12);border:1px solid rgba(52,199,89,0.3);color:#34c759;opacity:0;" title="Cloud sync status">
+      <span id="cloud-sync-dot" style="width:5px;height:5px;border-radius:50%;background:#34c759;display:inline-block;"></span>
+      <span id="cloud-sync-label">SYNCED</span>
+    </span>
     <button onclick="saveCurrentWeek()"
       style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:0.1em;text-transform:uppercase;
              padding:6px 14px;border-radius:20px;border:1px solid rgba(255,255,255,0.2);
@@ -1695,6 +1699,7 @@ function updateTotals() {
   const combOCF = combFCF + capex2026;
 
   // Closing balances — per account, then roll up to entity totals
+  if (typeof allWeeks === 'undefined') return; // guard: called before multi-week engine loaded
   const week = allWeeks[currentWeekNum];
   let cbKin = 0, cbAmd = 0;
 
@@ -1917,7 +1922,7 @@ document.getElementById('comment-modal').addEventListener('click', function(e) {
   if (e.target === this) closeComment(false);
 });
 
-// INIT
+// INIT — render UI structure only; updateTotals runs properly after initWeekSystem loads
 renderIncome();
 renderExpenses();
 attachCapexListeners();
@@ -1928,41 +1933,107 @@ attachCapexListeners();
 <!-- ── MULTI-WEEK ENGINE ─────────────────────────── -->
 <script>
 // ═══════════════════════════════════════════════════════════════
-//  STORAGE: localStorage — works reliably on file:// and intranet
-//  URLs without any server or origin restrictions.
+//  STORAGE: Supabase (cloud) with localStorage fallback
+//  Credentials read from localStorage keys set by index.html:
+//    sb_url → Supabase project URL
+//    sb_key → Supabase anon key
+//  Table: cashflow_weeks  columns: week_num (int PK), data (jsonb)
 // ═══════════════════════════════════════════════════════════════
 
-const LS_PREFIX = 'cashflow_week_';
+const LS_PREFIX    = 'cashflow_week_';
+const SB_TABLE     = 'cashflow_weeks';
 
+// Supabase credentials — hardcoded as defaults, overridable via index.html config
+const SB_URL_DEFAULT = 'https://jbqvtnukspnlpxgosmhp.supabase.co';
+const SB_KEY_DEFAULT = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpicXZ0bnVrc3BubHB4Z29zbWhwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyNzU0NjcsImV4cCI6MjA4ODg1MTQ2N30.0EvUKNrSbH2UkQPEkTWXKS8PGNVr4G0dvWoJp9HBROs';
+
+function getSBCreds() {
+  return {
+    url: localStorage.getItem('sb_url') || SB_URL_DEFAULT,
+    key: localStorage.getItem('sb_key') || SB_KEY_DEFAULT
+  };
+}
+
+function sbHeaders(key) {
+  return {
+    'Content-Type':  'application/json',
+    'apikey':        key,
+    'Authorization': 'Bearer ' + key,
+    'Prefer':        'resolution=merge-duplicates'
+  };
+}
+
+// ── SAVE ─────────────────────────────────────────────
 async function dbSave(weekData) {
+  // Always write to localStorage as instant local backup
   try {
     localStorage.setItem(LS_PREFIX + weekData.weekNum, JSON.stringify(weekData));
-  } catch(e) {
-    throw new Error('localStorage save failed: ' + e.message);
+  } catch(e) {}
+
+  // Then sync to Supabase if credentials available
+  const { url, key } = getSBCreds();
+  if (!url || !key) return; // no cloud creds — localStorage only
+
+  const res = await fetch(`${url}/rest/v1/${SB_TABLE}`, {
+    method:  'POST',
+    headers: { ...sbHeaders(key), 'Prefer': 'resolution=merge-duplicates' },
+    body:    JSON.stringify({ week_num: weekData.weekNum, data: weekData })
+  });
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error('Supabase save failed: ' + err);
   }
 }
 
-async function dbLoad(weekNum) {
-  try {
-    const raw = localStorage.getItem(LS_PREFIX + weekNum);
-    return raw ? JSON.parse(raw) : null;
-  } catch(e) { return null; }
+// ── LOAD ALL ─────────────────────────────────────────
+async function dbLoadAll() {
+  const { url, key } = getSBCreds();
+
+  // Try Supabase first
+  if (url && key) {
+    try {
+      const res = await fetch(`${url}/rest/v1/${SB_TABLE}?select=data&order=week_num.asc`, {
+        headers: {
+          'apikey':        key,
+          'Authorization': 'Bearer ' + key
+        }
+      });
+      if (res.ok) {
+        const rows = await res.json();
+        if (Array.isArray(rows) && rows.length > 0) {
+          console.log('[CLOUD] Loaded', rows.length, 'weeks from Supabase');
+          // Also refresh localStorage cache
+          rows.forEach(r => {
+            if (r.data?.weekNum) {
+              localStorage.setItem(LS_PREFIX + r.data.weekNum, JSON.stringify(r.data));
+            }
+          });
+          return rows.map(r => r.data).filter(Boolean);
+        }
+      }
+    } catch(e) {
+      console.warn('[CLOUD] Supabase load failed, falling back to localStorage:', e.message);
+    }
+  }
+
+  // Fallback: localStorage
+  const results = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const k = localStorage.key(i);
+    if (k && k.startsWith(LS_PREFIX)) {
+      try {
+        const w = JSON.parse(localStorage.getItem(k));
+        if (w?.weekNum) results.push(w);
+      } catch(e) {}
+    }
+  }
+  console.log('[LOCAL] Loaded', results.length, 'weeks from localStorage');
+  return results;
 }
 
-async function dbLoadAll() {
-  const results = [];
-  try {
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i);
-      if (key && key.startsWith(LS_PREFIX)) {
-        try {
-          const w = JSON.parse(localStorage.getItem(key));
-          if (w && w.weekNum) results.push(w);
-        } catch(e) {}
-      }
-    }
-  } catch(e) {}
-  return results;
+async function dbLoad(weekNum) {
+  const all = await dbLoadAll();
+  return all.find(w => w.weekNum === weekNum) || null;
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -2264,6 +2335,10 @@ async function initWeekSystem() {
   loadWeekIntoUI(currentWeekNum, false);
   // Don't override the saved badge if week was already saved
   if (!allWeeks[currentWeekNum]?.saved) setStatusBadge('unsaved');
+
+  // Show cloud sync badge if credentials are configured
+  const { url } = getSBCreds();
+  if (url) setSyncBadge('cloud');
 }
 
 // ── SNAPSHOT CURRENT UI → DATA ────────────────────
@@ -2334,9 +2409,13 @@ async function saveCurrentWeek() {
   const week  = allWeeks[currentWeekNum];
   week.saved  = true;
 
+  // Show syncing state
+  setSyncBadge('syncing');
+
   try {
     await dbSave(week);
     setStatusBadge('saved');
+    setSyncBadge('synced');
 
     // Ripple if historical edit
     const maxWeek = Math.max(...Object.keys(allWeeks).map(Number));
@@ -2345,9 +2424,46 @@ async function saveCurrentWeek() {
     }
 
     rebuildWeekDropdown();
-    showToast('Week ' + currentWeekNum + ' saved ✓');
+    const { url } = getSBCreds();
+    showToast('Week ' + currentWeekNum + (url ? ' saved ✓ — synced to cloud' : ' saved ✓ — local only'));
   } catch(e) {
+    setSyncBadge('error');
     showToast('Save failed: ' + e.message, true);
+  }
+}
+
+function setSyncBadge(state) {
+  const badge = document.getElementById('cloud-sync-badge');
+  const dot   = document.getElementById('cloud-sync-dot');
+  const label = document.getElementById('cloud-sync-label');
+  if (!badge) return;
+  const { url } = getSBCreds ? getSBCreds() : {};
+  if (!url) { badge.style.opacity = '0'; return; }
+  badge.style.opacity = '1';
+  if (state === 'syncing') {
+    badge.style.background = 'rgba(255,159,10,0.12)';
+    badge.style.borderColor = 'rgba(255,159,10,0.3)';
+    badge.style.color = '#ff9f0a';
+    dot.style.background = '#ff9f0a';
+    label.textContent = 'SYNCING…';
+  } else if (state === 'synced') {
+    badge.style.background = 'rgba(52,199,89,0.12)';
+    badge.style.borderColor = 'rgba(52,199,89,0.3)';
+    badge.style.color = '#34c759';
+    dot.style.background = '#34c759';
+    label.textContent = 'SYNCED';
+  } else if (state === 'error') {
+    badge.style.background = 'rgba(220,38,38,0.12)';
+    badge.style.borderColor = 'rgba(220,38,38,0.3)';
+    badge.style.color = '#dc2626';
+    dot.style.background = '#dc2626';
+    label.textContent = 'SYNC ERROR';
+  } else if (state === 'cloud') {
+    badge.style.background = 'rgba(52,199,89,0.12)';
+    badge.style.borderColor = 'rgba(52,199,89,0.3)';
+    badge.style.color = '#34c759';
+    dot.style.background = '#34c759';
+    label.textContent = 'CLOUD';
   }
 }
 
@@ -2818,7 +2934,7 @@ function updateHeroKPIs() {
   const view    = activeView || 'combined';
 
   // Compute entity-specific values
-  const week = allWeeks[currentWeekNum];
+  const week = (typeof allWeeks !== 'undefined') ? allWeeks[currentWeekNum] : null;
   let cbKin = 0, cbAmd = 0;
   if (week) {
     const ob = week.openingBalances || {};
