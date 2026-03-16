@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kinective — Consolidated Budget 2026</title>
+<style>
+  /* ── Reset & Base ─────────────────────────────────────────────────── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --dark-blue:  #1F3864;
+    --mid-blue:   #2F5496;
+    --light-blue: #BDD7EE;
+    --lightest:   #DEEAF1;
+    --yellow:     #FFF2CC;
+    --green:      #E2EFDA;
+    --red-bg:     #FCE4D6;
+    --white:      #FFFFFF;
+    --gray-50:    #F8F9FA;
+    --gray-100:   #F1F3F5;
+    --gray-200:   #E9ECEF;
+    --gray-400:   #ADB5BD;
+    --gray-600:   #6C757D;
+    --gray-800:   #343A40;
+    --positive:   #1A6B2A;
+    --negative:   #C0392B;
+    --pos-bg:     #D4EDDA;
+    --neg-bg:     #FADBD8;
+    --shadow:     0 2px 12px rgba(0,0,0,0.08);
+    --radius:     10px;
+    --font:       'Segoe UI', system-ui, -apple-system, sans-serif;
+  }
+  body {
+    font-family: var(--font);
+    background: var(--gray-100);
+    color: var(--gray-800);
+    min-height: 100vh;
+  }
+
+  /* ── Top Header ───────────────────────────────────────────────────── */
+  .top-header {
+    background: var(--dark-blue);
+    color: white;
+    padding: 0 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px;
+    min-height: 60px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  }
+  .top-header h1 {
+    font-size: 1.1rem;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+  }
+  .top-header h1 span { color: var(--light-blue); }
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .last-updated {
+    font-size: 0.75rem;
+    color: var(--light-blue);
+    opacity: 0.85;
+  }
+  .refresh-btn {
+    background: var(--mid-blue);
+    border: none;
+    color: white;
+    padding: 6px 14px;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .refresh-btn:hover { background: #4169B0; }
+
+  /* ── View Toggle ──────────────────────────────────────────────────── */
+  .controls-bar {
+    background: white;
+    border-bottom: 1px solid var(--gray-200);
+    padding: 10px 20px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+    position: sticky;
+    top: 60px;
+    z-index: 99;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+  }
+  .view-toggle {
+    display: flex;
+    background: var(--gray-100);
+    border-radius: 8px;
+    padding: 3px;
+    gap: 3px;
+  }
+  .view-btn {
+    padding: 6px 14px;
+    border: none;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    background: transparent;
+    color: var(--gray-600);
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+  .view-btn.active {
+    background: var(--dark-blue);
+    color: white;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+  }
+  .tab-toggle {
+    display: flex;
+    background: var(--gray-100);
+    border-radius: 8px;
+    padding: 3px;
+    gap: 3px;
+  }
+  .tab-btn {
+    padding: 6px 14px;
+    border: none;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    background: transparent;
+    color: var(--gray-600);
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+  .tab-btn.active {
+    background: var(--mid-blue);
+    color: white;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+  }
+  .controls-spacer { flex: 1; }
+  .search-box {
+    padding: 6px 12px;
+    border: 1px solid var(--gray-200);
+    border-radius: 6px;
+    font-size: 0.8rem;
+    width: 180px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .search-box:focus { border-color: var(--mid-blue); }
+
+  /* ── Summary Cards ────────────────────────────────────────────────── */
+  .summary-section {
+    padding: 16px 20px 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 12px;
+  }
+  .summary-card {
+    background: white;
+    border-radius: var(--radius);
+    padding: 14px 18px;
+    box-shadow: var(--shadow);
+    border-left: 4px solid var(--mid-blue);
+  }
+  .summary-card.positive { border-left-color: var(--positive); }
+  .summary-card.negative { border-left-color: var(--negative); }
+  .summary-card h3 {
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: var(--gray-600);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 6px;
+  }
+  .summary-card .amount {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: var(--gray-800);
+  }
+  .summary-card .sublabel {
+    font-size: 0.72rem;
+    color: var(--gray-600);
+    margin-top: 3px;
+  }
+  .var-badge {
+    display: inline-block;
+    padding: 2px 7px;
+    border-radius: 20px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    margin-top: 4px;
+  }
+  .var-badge.pos { background: var(--pos-bg); color: var(--positive); }
+  .var-badge.neg { background: var(--neg-bg); color: var(--negative); }
+  .var-badge.neu { background: var(--gray-100); color: var(--gray-600); }
+
+  /* ── Table Container ──────────────────────────────────────────────── */
+  .table-container {
+    padding: 16px 20px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    overflow: hidden;
+    font-size: 0.82rem;
+    min-width: 900px;
+  }
+  thead tr th {
+    background: var(--dark-blue);
+    color: white;
+    padding: 10px 8px;
+    text-align: center;
+    font-weight: 600;
+    font-size: 0.75rem;
+    white-space: nowrap;
+    position: sticky;
+    top: 0;
+  }
+  thead tr:first-child th { font-size: 0.8rem; }
+  thead tr:first-child th:first-child { text-align: left; padding-left: 14px; }
+  thead tr:last-child th { background: var(--mid-blue); font-size: 0.72rem; }
+  th.label-col { text-align: left; padding-left: 14px; width: 220px; min-width: 180px; }
+
+  /* ── Section Rows ─────────────────────────────────────────────────── */
+  tr.sec {
+    background: var(--dark-blue);
+    color: white;
+  }
+  tr.sec td {
+    padding: 9px 14px;
+    font-weight: 700;
+    font-size: 0.85rem;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    user-select: none;
+  }
+  tr.sec td:first-child::before {
+    content: '▾ ';
+    font-size: 0.8rem;
+    opacity: 0.7;
+  }
+  tr.sec.collapsed td:first-child::before { content: '▸ '; }
+
+  tr.sub td:first-child {
+    font-weight: 600;
+    background: var(--light-blue);
+  }
+  tr.sub td { background: var(--lightest); }
+
+  tr.tot td {
+    background: var(--yellow);
+    font-weight: 700;
+    border-top: 2px solid var(--dark-blue);
+  }
+
+  /* ── Data Rows ────────────────────────────────────────────────────── */
+  tr.dat:nth-child(even) td { background: var(--gray-50); }
+  tr.dat:nth-child(odd)  td { background: white; }
+  tr.dat:hover td { background: var(--lightest) !important; }
+
+  td {
+    padding: 7px 8px;
+    text-align: right;
+    border-bottom: 1px solid var(--gray-200);
+    white-space: nowrap;
+  }
+  td.label {
+    text-align: left;
+    padding-left: 14px;
+    font-weight: 500;
+    max-width: 220px;
+    white-space: normal;
+    word-break: break-word;
+  }
+  td.var {
+    font-weight: 600;
+    font-size: 0.78rem;
+  }
+  td.var.pos { color: var(--positive); }
+  td.var.neg { color: var(--negative); }
+  td.var.neu { color: var(--gray-600); }
+
+  /* indent levels */
+  .level-1 td.label { padding-left: 20px; }
+  .level-2 td.label { padding-left: 32px; }
+  .level-3 td.label { padding-left: 44px; }
+
+  /* Month group header */
+  th.month-group { background: var(--mid-blue); }
+  th.summary-group { background: var(--dark-blue); }
+  th.bud { color: white; }
+  th.real { color: #FFFF99; }
+  th.var-h { color: #FFDD88; }
+
+  /* ── Loading / Error ──────────────────────────────────────────────── */
+  .status-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(255,255,255,0.92);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 999;
+    gap: 16px;
+  }
+  .spinner {
+    width: 44px;
+    height: 44px;
+    border: 4px solid var(--gray-200);
+    border-top-color: var(--dark-blue);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .status-text { font-size: 1rem; color: var(--gray-600); font-weight: 500; }
+  .error-box {
+    background: var(--neg-bg);
+    border: 1px solid var(--negative);
+    color: var(--negative);
+    padding: 16px 24px;
+    border-radius: 8px;
+    max-width: 440px;
+    text-align: center;
+    font-size: 0.9rem;
+  }
+  .hidden { display: none !important; }
+
+  /* ── Countdown ────────────────────────────────────────────────────── */
+  .countdown { font-size: 0.72rem; color: var(--gray-400); margin-left: 8px; }
+
+  /* ── Responsive ───────────────────────────────────────────────────── */
+  @media (max-width: 640px) {
+    .top-header h1 { font-size: 0.95rem; }
+    .summary-section { grid-template-columns: 1fr 1fr; padding: 10px 12px 0; }
+    .table-container { padding: 10px 12px; }
+    .controls-bar { padding: 8px 12px; gap: 10px; }
+    .search-box { width: 130px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ── Loading overlay ──────────────────────────────────────────────────── -->
+<div class="status-overlay" id="loadingOverlay">
+  <div class="spinner"></div>
+  <div class="status-text" id="statusText">Loading budget data…</div>
+  <div class="error-box hidden" id="errorBox"></div>
+</div>
+
+<!-- ── Header ───────────────────────────────────────────────────────────── -->
+<header class="top-header">
+  <h1>KINECTIVE <span>Consolidated Budget 2026</span></h1>
+  <div class="header-right">
+    <span class="last-updated" id="lastUpdated">—</span>
+    <span class="countdown" id="countdown"></span>
+    <button class="refresh-btn" onclick="fetchData()">⟳ Refresh</button>
+  </div>
+</header>
+
+<!-- ── Controls ─────────────────────────────────────────────────────────── -->
+<div class="controls-bar">
+  <div class="view-toggle">
+    <button class="view-btn active" id="v1btn" onclick="setView('ep_plano')">EP + Plano</button>
+    <button class="view-btn" id="v2btn" onclick="setView('all')">EP + Plano + AMD</button>
+  </div>
+  <div class="tab-toggle">
+    <button class="tab-btn active" id="tabMonthly" onclick="setTab('monthly')">Monthly</button>
+    <button class="tab-btn" id="tabYTD"     onclick="setTab('ytd')">YTD</button>
+    <button class="tab-btn" id="tabFY"      onclick="setTab('fy')">Full Year</button>
+  </div>
+  <div class="controls-spacer"></div>
+  <input class="search-box" type="text" id="searchBox" placeholder="🔍 Search line items…" oninput="applySearch()">
+</div>
+
+<!-- ── Summary Cards ────────────────────────────────────────────────────── -->
+<div class="summary-section" id="summarySection"></div>
+
+<!-- ── Table ────────────────────────────────────────────────────────────── -->
+<div class="table-container">
+  <table id="mainTable">
+    <thead id="tableHead"></thead>
+    <tbody id="tableBody"></tbody>
+  </table>
+</div>
+
+<script>
+// ── Config — UPDATE THIS URL after deploying your Supabase Edge Function ──────
+const EDGE_FUNCTION_URL = "https://jbqvtnukspnlpxgosmhp.supabase.co/functions/v1/budget-data";
+
+// ── State ──────────────────────────────────────────────────────────────────────
+let allData       = null;
+let currentView   = "ep_plano";   // "ep_plano" | "all"
+let currentTab    = "monthly";    // "monthly" | "ytd" | "fy"
+let refreshTimer  = null;
+let countdownSecs = 60;
+
+const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+
+// ── Fetch data from edge function ─────────────────────────────────────────────
+async function fetchData() {
+  showLoading("Loading budget data…");
+  clearInterval(refreshTimer);
+  try {
+    const res = await fetch(EDGE_FUNCTION_URL);
+    if (!res.ok) throw new Error(`HTTP ${res.status}: ${await res.text()}`);
+    allData = await res.json();
+    if (allData.error) throw new Error(allData.error);
+    hideLoading();
+    document.getElementById("lastUpdated").textContent =
+      "Updated: " + new Date(allData.lastUpdated).toLocaleTimeString();
+    renderSummary();
+    renderTable();
+    startCountdown();
+  } catch (err) {
+    showError(err.message);
+  }
+}
+
+// ── Auto-refresh countdown ─────────────────────────────────────────────────────
+function startCountdown() {
+  countdownSecs = 60;
+  clearInterval(refreshTimer);
+  refreshTimer = setInterval(() => {
+    countdownSecs--;
+    document.getElementById("countdown").textContent =
+      countdownSecs > 0 ? `(refresh in ${countdownSecs}s)` : "";
+    if (countdownSecs <= 0) fetchData();
+  }, 1000);
+}
+
+// ── View / Tab switchers ───────────────────────────────────────────────────────
+function setView(v) {
+  currentView = v;
+  document.getElementById("v1btn").classList.toggle("active", v === "ep_plano");
+  document.getElementById("v2btn").classList.toggle("active", v === "all");
+  if (allData) { renderSummary(); renderTable(); }
+}
+function setTab(t) {
+  currentTab = t;
+  ["Monthly","YTD","FY"].forEach(x =>
+    document.getElementById("tab"+x).classList.toggle("active", t === x.toLowerCase()));
+  if (allData) { renderTable(); }
+}
+
+// ── Format helpers ─────────────────────────────────────────────────────────────
+function fmt(n) {
+  if (n === null || n === undefined) return "—";
+  const abs = Math.abs(n);
+  const s = abs.toLocaleString("en-US", { maximumFractionDigits: 0 });
+  return n < 0 ? `(${s})` : s;
+}
+function fmtPct(real, budget) {
+  if (!budget) return { text: "—", cls: "neu" };
+  const pct = ((real - budget) / Math.abs(budget)) * 100;
+  if (!isFinite(pct)) return { text: "—", cls: "neu" };
+  const sign = pct >= 0 ? "+" : "";
+  return {
+    text: `${sign}${pct.toFixed(1)}%`,
+    cls:  pct >= 0 ? "pos" : "neg"
+  };
+}
+function getKey(suffix) {
+  return currentView === "ep_plano" ? `ep_plano_${suffix}` : `all_${suffix}`;
+}
+
+// ── Summary cards ──────────────────────────────────────────────────────────────
+function renderSummary() {
+  const rows = allData.rows;
+  const cm   = allData.currentMonth;
+
+  function findRow(label) {
+    return rows.find(r => r.label === label);
+  }
+
+  const revRow    = findRow("TOTAL REVENUES");
+  const expRow    = findRow("TOTAL EXPENSES");
+  const netRow    = findRow("NET PROFIT");
+
+  const cards = [
+    { title: "Total Revenue YTD",  row: revRow,  key: "ytd"      },
+    { title: "Total Expenses YTD", row: expRow,  key: "ytd"      },
+    { title: "Net Profit YTD",     row: netRow,  key: "ytd"      },
+    { title: "Net Profit Full Year", row: netRow, key: "fullYear" },
+  ];
+
+  const html = cards.map(c => {
+    if (!c.row || !c.row[c.key]) return "";
+    const d = c.row[c.key][currentView === "ep_plano" ? "ep_plano" : "all"];
+    const v = fmtPct(d.real, d.budget);
+    const isPos = c.title.includes("Profit") ? d.real >= 0 : true;
+    return `
+      <div class="summary-card ${c.title.includes("Net") ? (d.real >= 0 ? "positive" : "negative") : ""}">
+        <h3>${c.title}</h3>
+        <div class="amount">$${fmt(d.real)}</div>
+        <div class="sublabel">Budget: $${fmt(d.budget)}</div>
+        <span class="var-badge ${v.cls}">${v.text} vs budget</span>
+      </div>`;
+  }).join("");
+
+  document.getElementById("summarySection").innerHTML = html;
+}
+
+// ── Main table ─────────────────────────────────────────────────────────────────
+function renderTable() {
+  const cm = allData.currentMonth;
+  renderHead(cm);
+  renderBody(cm);
+}
+
+function renderHead(cm) {
+  const head = document.getElementById("tableHead");
+
+  if (currentTab === "monthly") {
+    let row1 = `<tr><th class="label-col" rowspan="2">Line Item</th>`;
+    MONTHS.forEach((m, i) => {
+      const isCurrent = i === cm;
+      row1 += `<th colspan="3" class="month-group" style="${isCurrent ? 'background:#1a5276' : ''}">${m}</th>`;
+    });
+    row1 += `<th colspan="3" class="summary-group">YTD</th><th colspan="3" class="summary-group">Full Year</th></tr>`;
+
+    let row2 = `<tr>`;
+    MONTHS.forEach(() => {
+      row2 += `<th class="bud">Bud</th><th class="real">Real</th><th class="var-h">Var%</th>`;
+    });
+    row2 += `<th class="bud">Bud</th><th class="real">Real</th><th class="var-h">Var%</th>`;
+    row2 += `<th class="bud">Bud</th><th class="real">Real</th><th class="var-h">Var%</th></tr>`;
+
+    head.innerHTML = row1 + row2;
+  } else {
+    const label = currentTab === "ytd" ? "Year-to-Date" : "Full Year";
+    head.innerHTML = `
+      <tr>
+        <th class="label-col" rowspan="2">Line Item</th>
+        <th colspan="3" class="summary-group">${label}</th>
+      </tr>
+      <tr>
+        <th class="bud">Budget</th>
+        <th class="real">Real</th>
+        <th class="var-h">Var %</th>
+      </tr>`;
+  }
+}
+
+function renderBody(cm) {
+  const body    = document.getElementById("tableBody");
+  const rows    = allData.rows;
+  const search  = document.getElementById("searchBox").value.toLowerCase().trim();
+  let   html    = "";
+  let   sectionCollapsed = false;
+
+  rows.forEach(row => {
+    if (row.type === "sec") {
+      sectionCollapsed = false;
+      const id = "sec_" + row.label.replace(/\W+/g,"_");
+      html += `<tr class="sec" id="${id}" onclick="toggleSection('${id}')">
+        <td colspan="100">${row.label}</td></tr>`;
+      return;
+    }
+
+    // search filter
+    if (search && !row.label.toLowerCase().includes(search)) return;
+
+    const levelCls = row.level > 0 ? `level-${row.level}` : "";
+    const trCls    = `${row.type} ${levelCls}`;
+    const indent   = "&nbsp;".repeat(row.level * 3);
+
+    if (currentTab === "monthly" && row.monthly) {
+      let cells = "";
+      row.monthly.forEach((m, i) => {
+        const bud  = currentView === "ep_plano" ? m.ep_plano_budget : m.all_budget;
+        const real = currentView === "ep_plano" ? m.ep_plano_real   : m.all_real;
+        const v    = fmtPct(real, bud);
+        cells += `<td>${fmt(bud)}</td><td>${fmt(real)}</td>
+                  <td class="var ${v.cls}">${v.text}</td>`;
+      });
+      // YTD
+      if (row.ytd) {
+        const d = row.ytd[currentView === "ep_plano" ? "ep_plano" : "all"];
+        const v = fmtPct(d.real, d.budget);
+        cells += `<td><b>${fmt(d.budget)}</b></td><td><b>${fmt(d.real)}</b></td>
+                  <td class="var ${v.cls}"><b>${v.text}</b></td>`;
+      }
+      // Full Year
+      if (row.fullYear) {
+        const d = row.fullYear[currentView === "ep_plano" ? "ep_plano" : "all"];
+        const v = fmtPct(d.real, d.budget);
+        cells += `<td><b>${fmt(d.budget)}</b></td><td><b>${fmt(d.real)}</b></td>
+                  <td class="var ${v.cls}"><b>${v.text}</b></td>`;
+      }
+      html += `<tr class="${trCls}"><td class="label">${indent}${row.label}</td>${cells}</tr>`;
+
+    } else {
+      const src = currentTab === "ytd" ? row.ytd : row.fullYear;
+      if (!src) { html += `<tr class="${trCls}"><td class="label" colspan="4">${indent}${row.label}</td></tr>`; return; }
+      const d = src[currentView === "ep_plano" ? "ep_plano" : "all"];
+      const v = fmtPct(d.real, d.budget);
+      html += `<tr class="${trCls}">
+        <td class="label">${indent}${row.label}</td>
+        <td>${fmt(d.budget)}</td>
+        <td>${fmt(d.real)}</td>
+        <td class="var ${v.cls}">${v.text}</td>
+      </tr>`;
+    }
+  });
+
+  body.innerHTML = html;
+}
+
+// ── Collapse/expand section ────────────────────────────────────────────────────
+function toggleSection(id) {
+  const secRow  = document.getElementById(id);
+  if (!secRow) return;
+  const collapsed = secRow.classList.toggle("collapsed");
+  let sib = secRow.nextElementSibling;
+  while (sib && !sib.classList.contains("sec")) {
+    sib.style.display = collapsed ? "none" : "";
+    sib = sib.nextElementSibling;
+  }
+}
+
+// ── Search ─────────────────────────────────────────────────────────────────────
+function applySearch() { if (allData) renderBody(allData.currentMonth); }
+
+// ── Loading helpers ────────────────────────────────────────────────────────────
+function showLoading(msg) {
+  document.getElementById("loadingOverlay").classList.remove("hidden");
+  document.getElementById("statusText").textContent = msg;
+  document.getElementById("errorBox").classList.add("hidden");
+}
+function showError(msg) {
+  document.getElementById("statusText").textContent = "Failed to load data";
+  document.getElementById("errorBox").textContent = "Error: " + msg;
+  document.getElementById("errorBox").classList.remove("hidden");
+}
+function hideLoading() {
+  document.getElementById("loadingOverlay").classList.add("hidden");
+}
+
+// ── Boot ───────────────────────────────────────────────────────────────────────
+fetchData();
+</script>
+</body>
+</html>
