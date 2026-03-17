@@ -83,6 +83,9 @@
     min-width:220px; max-width:220px; width:220px;
     text-align:left !important;
     border-right:2px solid var(--border-dark) !important;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
   }
   thead tr:first-child  th.lc { z-index:60; padding-left:12px; }
   thead tr:nth-child(2) th.lc { z-index:60; padding-left:12px; font-size:0.63rem; color:rgba(255,255,255,0.55); }
@@ -363,12 +366,12 @@ function renderBody(){
 
     // Section / sub-header rows span all columns
     if(isSec||isSub){
-      html+=`<tr class="${rtype}${lv}" data-ri="${ri}" onclick="rowClick(${ri},event)"><td class="lc" colspan="100">${label.trim()}</td></tr>`;
+      html+=`<tr class="${rtype}${lv}" data-ri="${ri}" onclick="rowClick(${ri},event)"><td class="lc" title="${label.trim()}" colspan="100">${label.trim()}</td></tr>`;
       return;
     }
 
     // Build cells — NO checkbox column in the data, it's injected via JS overlay
-    let cells=`<td class="lc">${label.trim()}</td>`;
+    let cells=`<td class="lc" title="${label.trim()}">${label.trim()}</td>`;
     const $=isTot;
 
     if(tab==="monthly"&&row.monthly){
