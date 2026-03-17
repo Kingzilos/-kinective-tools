@@ -80,7 +80,7 @@
   /* Sticky label column */
   th.lc, td.lc {
     position:sticky; left:0; z-index:40;
-    min-width:220px; max-width:220px; width:220px;
+    min-width:300px; max-width:300px; width:300px;
     text-align:left !important;
     border-right:2px solid var(--border-dark) !important;
     overflow:hidden;
@@ -340,12 +340,28 @@ function renderBody(){
   const inGrp=new Set(); cg.forEach(g=>g.ri.forEach(i=>inGrp.add(i)));
   const doneG=new Set();
   let html="";
+  let inExpenses=false; // flip variance colors when in expenses section
 
   rows.forEach((row,ri)=>{
     if(!row?.label)return;
     const{label,type,level}=row;
     const ln=label.trim().toLowerCase();
     if(EXCLUDE.has(ln))return;
+
+    // Track whether we're in the expenses section
+    if(type==="sec"&&ln==="expenses") inExpenses=true;
+    if(ln==="total expenses") inExpenses=false;
+
+    // Variance function — flipped for expenses (over budget = red, under = green)
+    const vpE=(r,b)=>{
+      if(!b)return{t:"—",c:"neu"};
+      if(r===0&&b!==0)return{t:"—",c:"neu"};
+      const p=((r-b)/Math.abs(b))*100;
+      if(!isFinite(p))return{t:"—",c:"neu"};
+      // For expenses: higher real vs budget is BAD (red), lower is GOOD (green)
+      const cls=inExpenses?(p>=0?"neg":"pos"):(p>=0?"pos":"neg");
+      return{t:(p>=0?"+":"")+p.toFixed(1)+"%",c:cls};
+    };
 
     // Custom group: render header once, skip members if collapsed
     const og=cg.find(g=>g.ri.includes(ri));
@@ -370,23 +386,23 @@ function renderBody(){
       return;
     }
 
-    // Build cells — NO checkbox column in the data, it's injected via JS overlay
+    // Build cells
     let cells=`<td class="lc" title="${label.trim()}">${label.trim()}</td>`;
     const $=isTot;
 
     if(tab==="monthly"&&row.monthly){
       const mo=gm_r(row);
       mo.forEach((m,i)=>{
-        const v=vp(m.r,m.b);
+        const v=vpE(m.r,m.b);
         cells+=`<td>${fmt(m.b,$)}</td><td>${fmt(m.r,$)}</td><td class="vc ${v.c} me">${v.t}</td>`;
       });
       const y=gYTD(row);
-      if(y){const v=vp(y.real,y.budget);cells+=`<td><b>${fmt(y.budget,$)}</b></td><td><b>${fmt(y.real,$)}</b></td><td class="vc ${v.c} me"><b>${v.t}</b></td>`;}
+      if(y){const v=vpE(y.real,y.budget);cells+=`<td><b>${fmt(y.budget,$)}</b></td><td><b>${fmt(y.real,$)}</b></td><td class="vc ${v.c} me"><b>${v.t}</b></td>`;}
       const f=gFY(row);
-      if(f){const v=vp(f.real,f.budget);cells+=`<td><b>${fmt(f.budget,$)}</b></td><td><b>${fmt(f.real,$)}</b></td><td class="vc ${v.c}"><b>${v.t}</b></td>`;}
+      if(f){const v=vpE(f.real,f.budget);cells+=`<td><b>${fmt(f.budget,$)}</b></td><td><b>${fmt(f.real,$)}</b></td><td class="vc ${v.c}"><b>${v.t}</b></td>`;}
     }else{
       const d=tab==="ytd"?gYTD(row):gFY(row);
-      if(d){const v=vp(d.real,d.budget);cells+=`<td>${fmt(d.budget,$)}</td><td>${fmt(d.real,$)}</td><td class="vc ${v.c}">${v.t}</td>`;}
+      if(d){const v=vpE(d.real,d.budget);cells+=`<td>${fmt(d.budget,$)}</td><td>${fmt(d.real,$)}</td><td class="vc ${v.c}">${v.t}</td>`;}
       else  cells+=`<td>—</td><td>—</td><td class="vc neu">—</td>`;
     }
 
