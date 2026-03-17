@@ -6,711 +6,487 @@
 <title>Kinective — Consolidated Budget 2026</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
+  *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
   :root {
-    --bg:          #f5f5f7;
-    --surface:     #ffffff;
-    --ink:         #1d1d1f;
-    --secondary:   #6e6e73;
-    --tertiary:    #aeaeb2;
-    --border:      #d2d2d7;
-    --border-dark: #b0b0b8;
-    --blue:        #0071e3;
-    --dark-blue:   #1F3864;
-    --mid-blue:    #2F5496;
-    --light-blue:  #deeaf1;
-    --yellow:      #fff9e6;
-    --yellow-dark: #ffe066;
-    --green-bg:    #f0faf3;
-    --green:       #1a6b2a;
-    --red-bg:      #fff0ee;
-    --red:         #c0392b;
-    --font:        'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    --bg:#f5f5f7; --surface:#fff; --ink:#1d1d1f; --secondary:#6e6e73;
+    --tertiary:#aeaeb2; --border:#d2d2d7; --border-dark:#8a8a95;
+    --bmonth:#1F3864; --blue:#0071e3; --db:#1F3864;
+    --mb:#2F5496; --lb:#deeaf1; --vbg:#f0f0f3;
+    --yel:#fff9e6; --ybd:#e6c800; --grn:#1a6b2a; --red:#c0392b;
+    --fn:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;
   }
+  body { font-family:var(--fn); background:var(--bg); color:var(--ink); overflow:hidden; }
 
-  body {
-    font-family: var(--font);
-    background: var(--bg);
-    color: var(--ink);
-    min-height: 100vh;
-    overflow: hidden; /* we control scroll ourselves */
-  }
+  /* Topbar */
+  .topbar { height:52px; background:rgba(245,245,247,0.97); backdrop-filter:blur(20px); border-bottom:1px solid var(--border); display:flex; align-items:center; padding:0 16px; gap:8px; position:fixed; top:0; left:0; right:0; z-index:300; }
+  a.back { font-size:0.8rem; color:var(--blue); text-decoration:none; white-space:nowrap; }
+  .ttl { font-size:0.9rem; font-weight:600; flex:1; }
+  .lu  { font-size:0.71rem; color:var(--secondary); white-space:nowrap; }
+  .btn { padding:6px 12px; border:none; border-radius:8px; font-family:var(--fn); font-size:0.76rem; font-weight:500; cursor:pointer; white-space:nowrap; }
+  .btn-b { background:var(--blue); color:#fff; } .btn-b:hover{background:#0077ed;} .btn-b:disabled{background:var(--tertiary);cursor:default;}
+  .btn-o { background:#e8f0fe; color:var(--mb); border:1px solid #c5d8f8; } .btn-o.on{background:var(--mb);color:#fff;border-color:var(--mb);}
+  .btn-g { background:#34c759; color:#fff; display:none; } .btn-g.show{display:inline-block;}
+  .btn-r { background:#ff3b30; color:#fff; display:none; } .btn-r.show{display:inline-block;}
 
-  /* ── Top nav ──────────────────────────────────────────────────────── */
-  .topbar {
-    height: 52px;
-    background: rgba(245,245,247,0.95);
-    backdrop-filter: blur(20px);
-    border-bottom: 1px solid var(--border);
-    display: flex;
-    align-items: center;
-    padding: 0 20px;
-    gap: 14px;
-    position: fixed;
-    top: 0; left: 0; right: 0;
-    z-index: 200;
-  }
-  .topbar-back {
-    font-size: 0.8rem;
-    color: var(--blue);
-    text-decoration: none;
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    white-space: nowrap;
-  }
-  .topbar-title {
-    font-size: 0.9rem;
-    font-weight: 600;
-    color: var(--ink);
-    letter-spacing: -0.01em;
-    flex: 1;
-  }
-  .topbar-right {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
-  .last-updated {
-    font-size: 0.72rem;
-    color: var(--secondary);
-    white-space: nowrap;
-  }
-  .btn-refresh {
-    padding: 6px 14px;
-    background: var(--blue);
-    color: white;
-    border: none;
-    border-radius: 8px;
-    font-family: var(--font);
-    font-size: 0.78rem;
-    font-weight: 500;
-    cursor: pointer;
-    transition: background 0.2s;
-    white-space: nowrap;
-  }
-  .btn-refresh:hover { background: #0077ed; }
-  .btn-refresh:disabled { background: var(--tertiary); cursor: default; }
+  /* Controls */
+  .ctrl { height:44px; background:var(--surface); border-bottom:1px solid var(--border); display:flex; align-items:center; padding:0 16px; gap:10px; position:fixed; top:52px; left:0; right:0; z-index:299; overflow:hidden; }
+  .tg  { display:flex; background:var(--bg); border-radius:7px; padding:2px; gap:2px; }
+  .tb  { padding:4px 10px; border:none; border-radius:5px; font-family:var(--fn); font-size:0.73rem; font-weight:500; cursor:pointer; background:transparent; color:var(--secondary); }
+  .tb.on { background:var(--db); color:#fff; }
+  .sep { width:1px; height:20px; background:var(--border); flex-shrink:0; }
+  .sp2 { flex:1; }
+  .ypill { font-size:0.7rem; color:#7a6000; background:var(--yel); border:1px solid var(--ybd); padding:3px 9px; border-radius:20px; font-weight:500; white-space:nowrap; }
+  .hpill { font-size:0.7rem; color:var(--mb); background:#e8f0fe; padding:3px 9px; border-radius:20px; display:none; white-space:nowrap; }
+  .hpill.show{display:inline-block;}
+  .srch { padding:5px 10px; border:1px solid var(--border); border-radius:7px; font-family:var(--fn); font-size:0.73rem; outline:none; width:140px; background:var(--bg); }
+  .srch:focus{border-color:var(--blue);background:#fff;}
 
-  /* ── Controls bar ────────────────────────────────────────────────── */
-  .controls {
-    height: 44px;
-    background: var(--surface);
-    border-bottom: 1px solid var(--border);
-    display: flex;
-    align-items: center;
-    padding: 0 20px;
-    gap: 12px;
-    position: fixed;
-    top: 52px; left: 0; right: 0;
-    z-index: 199;
-  }
-  .toggle-group {
-    display: flex;
-    background: var(--bg);
-    border-radius: 7px;
-    padding: 2px;
-    gap: 2px;
-  }
-  .toggle-btn {
-    padding: 4px 12px;
-    border: none;
-    border-radius: 5px;
-    font-family: var(--font);
-    font-size: 0.75rem;
-    font-weight: 500;
-    cursor: pointer;
-    background: transparent;
-    color: var(--secondary);
-    transition: all 0.15s;
-    white-space: nowrap;
-  }
-  .toggle-btn.active {
-    background: var(--dark-blue);
-    color: white;
-  }
-  .controls-sep {
-    width: 1px;
-    height: 20px;
-    background: var(--border);
-  }
-  .search-input {
-    padding: 5px 11px;
-    border: 1px solid var(--border);
-    border-radius: 7px;
-    font-family: var(--font);
-    font-size: 0.75rem;
-    color: var(--ink);
-    background: var(--bg);
-    outline: none;
-    width: 160px;
-    transition: border-color 0.2s;
-  }
-  .search-input:focus { border-color: var(--blue); background: white; }
-  .controls-spacer { flex: 1; }
-  .ytd-label {
-    font-size: 0.72rem;
-    color: var(--secondary);
-    background: var(--yellow);
-    border: 1px solid var(--yellow-dark);
-    padding: 3px 10px;
-    border-radius: 20px;
-    white-space: nowrap;
-  }
+  /* KPI */
+  .kbar { height:78px; background:var(--surface); border-bottom:1px solid var(--border); display:flex; align-items:center; padding:0 16px; gap:10px; overflow-x:auto; position:fixed; top:96px; left:0; right:0; z-index:298; }
+  .kc  { flex-shrink:0; background:var(--bg); border-radius:10px; padding:10px 14px; min-width:165px; border-left:3px solid var(--mb); }
+  .kc.pos{border-left-color:var(--grn);} .kc.neg{border-left-color:var(--red);}
+  .kl  { font-size:0.61rem; font-weight:600; text-transform:uppercase; letter-spacing:0.07em; color:var(--secondary); margin-bottom:3px; }
+  .kv  { font-size:1.02rem; font-weight:700; line-height:1; }
+  .kb  { font-size:0.65rem; color:var(--secondary); margin-top:2px; }
+  .kvar{ display:inline-block; font-size:0.65rem; font-weight:600; padding:1px 6px; border-radius:10px; margin-top:2px; }
+  .kvar.pos{background:#d4edda;color:var(--grn);} .kvar.neg{background:#fadbd8;color:var(--red);} .kvar.neu{background:var(--border);color:var(--secondary);}
 
-  /* ── Summary cards ───────────────────────────────────────────────── */
-  .summary-bar {
-    position: fixed;
-    top: 96px; left: 0; right: 0;
-    height: 80px;
-    background: var(--surface);
-    border-bottom: 1px solid var(--border);
-    display: flex;
-    align-items: center;
-    padding: 0 20px;
-    gap: 12px;
-    z-index: 198;
-    overflow-x: auto;
-  }
-  .summary-card {
-    flex-shrink: 0;
-    background: var(--bg);
-    border-radius: 10px;
-    padding: 10px 16px;
-    min-width: 160px;
-    border-left: 3px solid var(--mid-blue);
-  }
-  .summary-card.profit { border-left-color: var(--green); }
-  .summary-card.loss   { border-left-color: var(--red);   }
-  .sc-label { font-size: 0.65rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--secondary); margin-bottom: 4px; }
-  .sc-value { font-size: 1.05rem; font-weight: 700; color: var(--ink); line-height: 1; }
-  .sc-sub   { font-size: 0.68rem; color: var(--secondary); margin-top: 3px; }
-  .sc-var   { display: inline-block; font-size: 0.68rem; font-weight: 600; padding: 1px 6px; border-radius: 10px; margin-top: 3px; }
-  .sc-var.pos { background: #d4edda; color: var(--green); }
-  .sc-var.neg { background: #fadbd8; color: var(--red);   }
-  .sc-var.neu { background: var(--border); color: var(--secondary); }
+  /* Table wrapper — top = topbar(52) + ctrl(44) + kpi(78) = 174 */
+  .tw { position:fixed; top:174px; left:0; right:0; bottom:0; overflow:auto; -webkit-overflow-scrolling:touch; }
 
-  /* ── Main table wrapper ──────────────────────────────────────────── */
-  .table-wrapper {
-    position: fixed;
-    top: 176px; /* topbar(52) + controls(44) + summary(80) */
-    left: 0; right: 0; bottom: 0;
-    overflow: auto;
-    -webkit-overflow-scrolling: touch;
-  }
-
-  /* ── Table ───────────────────────────────────────────────────────── */
-  table {
-    border-collapse: separate;
-    border-spacing: 0;
-    font-size: 0.8rem;
-    min-width: max-content;
-    width: 100%;
-  }
+  /* ── TABLE ── */
+  table { border-collapse:separate; border-spacing:0; font-size:0.79rem; min-width:max-content; }
 
   /* Sticky header rows */
   thead tr:first-child th {
-    position: sticky;
-    top: 0;
-    z-index: 50;
-    background: var(--dark-blue);
-    color: white;
-    padding: 9px 10px;
-    text-align: center;
-    font-weight: 600;
-    font-size: 0.72rem;
-    white-space: nowrap;
-    border-right: 1px solid rgba(255,255,255,0.15);
-    border-bottom: 1px solid rgba(255,255,255,0.1);
+    position:sticky; top:0; z-index:50;
+    background:var(--db); color:#fff;
+    padding:8px 6px; text-align:center; font-weight:600; font-size:0.71rem;
+    white-space:nowrap; border-bottom:1px solid rgba(255,255,255,0.1);
   }
-  thead tr:last-child th {
-    position: sticky;
-    top: 36px;
-    z-index: 50;
-    background: var(--mid-blue);
-    color: white;
-    padding: 6px 10px;
-    text-align: center;
-    font-weight: 500;
-    font-size: 0.68rem;
-    white-space: nowrap;
-    border-right: 1px solid rgba(255,255,255,0.12);
-    border-bottom: 2px solid var(--border-dark);
+  thead tr:nth-child(2) th {
+    position:sticky; top:33px; z-index:50;
+    background:var(--mb); color:#fff;
+    padding:5px 8px; text-align:center; font-weight:500; font-size:0.67rem;
+    white-space:nowrap; border-bottom:2px solid var(--border-dark);
   }
-  thead tr:last-child th.th-real  { color: #ffff99; }
-  thead tr:last-child th.th-var   { color: #ffdd88; background: #243e6e; }
+  thead .hv  { background:#243e6e !important; color:#ffdd88; font-size:0.63rem; }
+  thead .hsg { background:#162a50 !important; }
+  thead .hss { background:#1e3a6e !important; }
+  thead .hsv { background:#162a50 !important; color:#ffdd88; font-size:0.63rem; }
+  thead .me  { border-right:3px solid rgba(255,255,255,0.45) !important; }
+  thead tr:nth-child(2) .me { border-right:3px solid rgba(255,255,255,0.35) !important; }
 
   /* Sticky label column */
-  th.col-label, td.col-label {
-    position: sticky;
-    left: 0;
-    z-index: 40;
-    min-width: 220px;
-    max-width: 220px;
-    width: 220px;
-    text-align: left !important;
-    border-right: 2px solid var(--border-dark) !important;
+  th.lc, td.lc {
+    position:sticky; left:0; z-index:40;
+    min-width:220px; max-width:220px; width:220px;
+    text-align:left !important;
+    border-right:2px solid var(--border-dark) !important;
   }
-  thead tr:first-child th.col-label { z-index: 60; }
-  thead tr:last-child  th.col-label { z-index: 60; text-align: left !important; padding-left: 14px; }
-
-  /* Summary cols sticky right-ish — just style differently */
-  th.th-summary { background: #162a50 !important; }
-  th.th-summary-sub { background: #1e3a6e !important; }
+  thead tr:first-child  th.lc { z-index:60; padding-left:12px; }
+  thead tr:nth-child(2) th.lc { z-index:60; padding-left:12px; font-size:0.63rem; color:rgba(255,255,255,0.55); }
 
   /* Data cells */
-  td {
-    padding: 6px 10px;
-    text-align: right;
-    border-right: 1px solid var(--border);
-    border-bottom: 1px solid var(--border);
-    white-space: nowrap;
-  }
-  td.col-label {
-    text-align: left;
-    padding-left: 14px;
-    font-weight: 400;
-    background: white;
-    border-right: 2px solid var(--border-dark) !important;
-  }
+  td { padding:5px 8px; text-align:right; border-right:1px solid var(--border); border-bottom:1px solid var(--border); white-space:nowrap; }
+  td.lc { text-align:left; padding-left:12px; background:#fff; }
 
-  /* ── Row types ───────────────────────────────────────────────────── */
-  tr.row-sec td {
-    background: var(--dark-blue);
-    color: white;
-    font-weight: 700;
-    font-size: 0.8rem;
-    letter-spacing: 0.03em;
-    border-bottom: 1px solid rgba(255,255,255,0.1);
-  }
-  tr.row-sec td.col-label {
-    background: var(--dark-blue);
-    color: white;
-    cursor: pointer;
-    user-select: none;
-    padding-left: 14px;
-  }
+  /* Var cell */
+  td.vc { background:var(--vbg) !important; font-size:0.71rem; font-weight:600; min-width:58px; max-width:58px; }
+  td.vc.pos{color:var(--grn);} td.vc.neg{color:var(--red);} td.vc.neu{color:var(--tertiary);font-weight:400;}
+  td.me { border-right:3px solid var(--bmonth) !important; }
 
-  tr.row-sub td {
-    background: var(--light-blue);
-    font-weight: 600;
-    border-bottom: 1px solid #b8cfe0;
-  }
-  tr.row-sub td.col-label {
-    background: var(--light-blue);
-    cursor: pointer;
-    user-select: none;
-  }
+  /* Row types */
+  tr.sec td { background:var(--db) !important; color:#fff; font-weight:700; font-size:0.79rem; border-bottom:1px solid rgba(255,255,255,0.08); }
+  tr.sec td.lc { background:var(--db) !important; padding-left:12px; }
+  tr.sec td.vc { background:var(--db) !important; color:rgba(255,255,255,0.3); }
 
-  tr.row-tot td {
-    background: var(--yellow);
-    font-weight: 700;
-    border-top: 2px solid var(--dark-blue);
-    border-bottom: 2px solid var(--dark-blue);
-  }
-  tr.row-tot td.col-label { background: var(--yellow); }
+  tr.sub td { background:var(--lb) !important; font-weight:600; border-bottom:1px solid #b8cfe0; }
+  tr.sub td.lc { background:var(--lb) !important; }
+  tr.sub td.vc { background:#ccdde8 !important; }
 
-  tr.row-dat:nth-child(even) td            { background: #fafafa; }
-  tr.row-dat:nth-child(odd)  td            { background: white; }
-  tr.row-dat:nth-child(even) td.col-label  { background: #fafafa; }
-  tr.row-dat:nth-child(odd)  td.col-label  { background: white; }
-  tr.row-dat:hover td { background: #eef4fb !important; }
+  tr.tot td { background:var(--yel) !important; font-weight:700; border-top:2px solid var(--db); border-bottom:2px solid var(--db); }
+  tr.tot td.lc { background:var(--yel) !important; }
+  tr.tot td.vc { background:#f5e87a !important; }
 
-  /* Indent levels */
-  tr.level-1 td.col-label { padding-left: 22px; }
-  tr.level-2 td.col-label { padding-left: 34px; }
-  tr.level-3 td.col-label { padding-left: 46px; }
+  tr.dat:nth-child(even) td    { background:#fafafa; }
+  tr.dat:nth-child(odd)  td    { background:#fff; }
+  tr.dat:nth-child(even) td.lc { background:#fafafa; }
+  tr.dat:nth-child(odd)  td.lc { background:#fff; }
+  tr.dat:hover td { background:#eef4fb !important; }
+  tr.dat:hover td.vc { background:#dde8f2 !important; }
 
-  /* Variance cells */
-  td.var-pos { color: var(--green); font-weight: 600; }
-  td.var-neg { color: var(--red);   font-weight: 600; }
-  td.var-neu { color: var(--tertiary); }
+  /* Custom group */
+  tr.cg td    { background:#f0f4ff !important; font-weight:600; border-top:2px solid #a0b4e0; border-bottom:2px solid #a0b4e0; cursor:pointer; }
+  tr.cg td.lc { background:#f0f4ff !important; color:var(--mb); }
+  tr.cg td.vc { background:#dce8f8 !important; }
+  .cgico { margin-right:5px; font-size:0.67rem; }
+  .cgdel { margin-left:8px; font-size:0.62rem; color:#bbb; }
+  .cgdel:hover { color:var(--red); }
 
-  /* Collapse toggle */
-  .toggle-icon {
-    display: inline-block;
-    margin-right: 6px;
-    font-size: 0.65rem;
-    opacity: 0.7;
-    transition: transform 0.15s;
-  }
-  tr.collapsed .toggle-icon { transform: rotate(-90deg); }
+  /* Selected rows in group mode */
+  tr.sel td    { background:#ddeeff !important; outline:2px solid #4488ff; outline-offset:-2px; }
+  tr.sel td.lc { background:#ddeeff !important; }
 
-  /* Hidden rows */
-  tr.group-hidden { display: none; }
+  /* Indent */
+  tr.l1 td.lc{padding-left:20px;} tr.l2 td.lc{padding-left:32px;} tr.l3 td.lc{padding-left:44px;}
 
-  /* ── Loading overlay ─────────────────────────────────────────────── */
-  .overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(245,245,247,0.94);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    z-index: 999;
-    gap: 14px;
-  }
-  .overlay.hidden { display: none; }
-  .spinner {
-    width: 36px; height: 36px;
-    border: 3px solid var(--border);
-    border-top-color: var(--dark-blue);
-    border-radius: 50%;
-    animation: spin 0.7s linear infinite;
-  }
-  @keyframes spin { to { transform: rotate(360deg); } }
-  .overlay-text  { font-size: 0.9rem; color: var(--secondary); font-weight: 500; }
-  .overlay-error {
-    background: #fff0ee; border: 1px solid #f0b0a0;
-    color: var(--red); padding: 12px 20px; border-radius: 8px;
-    max-width: 420px; text-align: center; font-size: 0.85rem;
-    display: none;
-  }
+  /* Overlay */
+  .ov{position:fixed;inset:0;background:rgba(245,245,247,0.94);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:999;gap:14px;}
+  .ov.h{display:none;}
+  .sp{width:36px;height:36px;border:3px solid var(--border);border-top-color:var(--db);border-radius:50%;animation:spin .7s linear infinite;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+  .ot{font-size:.9rem;color:var(--secondary);font-weight:500;}
+  .oe{background:#fff0ee;border:1px solid #f0b0a0;color:var(--red);padding:12px 20px;border-radius:8px;max-width:440px;text-align:center;font-size:.85rem;display:none;}
 
-  @media (max-width: 640px) {
-    .topbar-title { font-size: 0.8rem; }
-    th.col-label, td.col-label { min-width: 160px; max-width: 160px; width: 160px; }
-  }
+  /* Dialog */
+  .dbk{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:998;display:none;align-items:center;justify-content:center;}
+  .dbk.show{display:flex;}
+  .dlg{background:#fff;border-radius:14px;padding:24px;width:320px;box-shadow:0 20px 60px rgba(0,0,0,.2);}
+  .dlg h3{font-size:1rem;font-weight:600;margin-bottom:12px;}
+  .dlg input{width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-family:var(--fn);font-size:.85rem;outline:none;margin-bottom:14px;}
+  .dlg input:focus{border-color:var(--blue);}
+  .dlg-f{display:flex;gap:8px;justify-content:flex-end;}
 </style>
 </head>
 <body>
 
-<div class="overlay" id="overlay">
-  <div class="spinner"></div>
-  <div class="overlay-text" id="overlayText">Loading budget data…</div>
-  <div class="overlay-error" id="overlayError"></div>
+<div class="ov" id="ov"><div class="sp"></div><div class="ot" id="ot">Loading…</div><div class="oe" id="oe"></div></div>
+
+<div class="dbk" id="dbk">
+  <div class="dlg">
+    <h3>Name this group</h3>
+    <input type="text" id="gni" placeholder="e.g. Payroll – Leadership" maxlength="50">
+    <div class="dlg-f">
+      <button class="btn" style="background:var(--bg);color:var(--secondary)" onclick="cancelDlg()">Cancel</button>
+      <button class="btn btn-b" onclick="confirmGrp()">Create Group</button>
+    </div>
+  </div>
 </div>
 
-<!-- Top nav -->
 <div class="topbar">
-  <a class="topbar-back" href="https://kingzilos.github.io/-kinective-tools/">← Tools</a>
-  <div class="topbar-title">Consolidated Budget 2026</div>
-  <div class="topbar-right">
-    <span class="last-updated" id="lastUpdated">—</span>
-    <button class="btn-refresh" id="refreshBtn" onclick="fetchData()">⟳ Refresh</button>
-  </div>
+  <a class="back" href="https://kingzilos.github.io/-kinective-tools/">← Tools</a>
+  <div class="ttl">Consolidated Budget 2026</div>
+  <div class="lu" id="lu">—</div>
+  <button class="btn btn-o" id="bgm" onclick="togGM()">☰ Group</button>
+  <button class="btn btn-g" id="bcg" onclick="openDlg()">＋ Group Selected</button>
+  <button class="btn btn-r" id="bxg" onclick="exitGM()">✕ Cancel</button>
+  <button class="btn btn-b" id="brf" onclick="fetchData()">⟳ Refresh</button>
 </div>
 
-<!-- Controls -->
-<div class="controls">
-  <div class="toggle-group">
-    <button class="toggle-btn active" id="v-ep"  onclick="setView('ep_plano')">EP + Plano</button>
-    <button class="toggle-btn"        id="v-all" onclick="setView('all')">EP + Plano + AMD</button>
+<div class="ctrl">
+  <div class="tg">
+    <button class="tb on" id="vep" onclick="setV('ep_plano')">EP + Plano</button>
+    <button class="tb"    id="val" onclick="setV('all')">+ AMD</button>
   </div>
-  <div class="controls-sep"></div>
-  <div class="toggle-group">
-    <button class="toggle-btn active" id="t-monthly" onclick="setTab('monthly')">Monthly</button>
-    <button class="toggle-btn"        id="t-ytd"     onclick="setTab('ytd')">YTD</button>
-    <button class="toggle-btn"        id="t-fy"      onclick="setTab('fy')">Full Year</button>
+  <div class="sep"></div>
+  <div class="tg">
+    <button class="tb on" id="tm" onclick="setT('monthly')">Monthly</button>
+    <button class="tb"    id="ty" onclick="setT('ytd')">YTD</button>
+    <button class="tb"    id="tf" onclick="setT('fy')">Full Year</button>
   </div>
-  <div class="controls-spacer"></div>
-  <span class="ytd-label" id="ytdLabel"></span>
-  <input class="search-input" type="text" placeholder="🔍 Search…" oninput="doSearch(this.value)">
+  <div class="sp2"></div>
+  <span class="hpill" id="hp">Select rows → Group Selected</span>
+  <span class="ypill" id="yp">YTD: —</span>
+  <input class="srch" type="text" placeholder="🔍 Search…" oninput="doSrch(this.value)">
 </div>
 
-<!-- Summary cards -->
-<div class="summary-bar" id="summaryBar"></div>
+<div class="kbar" id="kbar"></div>
 
-<!-- Table -->
-<div class="table-wrapper" id="tableWrapper">
-  <table id="mainTable">
+<div class="tw">
+  <table>
     <thead id="thead"></thead>
     <tbody id="tbody"></tbody>
   </table>
 </div>
 
 <script>
-const EDGE = "https://jbqvtnukspnlpxgosmhp.supabase.co/functions/v1/budget-data";
+const EDGE   = "https://jbqvtnukspnlpxgosmhp.supabase.co/functions/v1/budget-data";
 const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 
-let data       = null;
-let view       = "ep_plano";
-let tab        = "monthly";
-let searchTerm = "";
+// Force these labels to be treated as data rows (not sub-headers)
+const FORCE_DAT = new Set([
+  "pilates",
+  "34. medical insurance (trustmark)",
+  "39. corporate (body fit payroll)",
+  "employee reimbursements/payroll taxes and fees",
+  "employee reimbursements / payroll taxes and fees",
+  "colonial insurance (reimbursed)",
+  "charge point services (ev charging)",
+  "insurance",
+  "philadelphia/safehold insurance (amd qb)",
+  "philadelphia insurance (amd qb)",
+  "beam insurance (dental insurance)",
+  "hub intl texas (insurance for physical therapy)",
+  "other sporadic or annual insurance",
+  "other sporadic or annual subscriptions",
+  "recovery services / furniture",
+  "medical services",
+  "trash disposal from services rendered",
+  "plano real estate taxes (amd)",
+  "t&t employee credit (benefit reimbursements)",
+]);
 
-// YTD = previous month (data not filled until 1st of next month)
-// currentMonth from API is 0-based (March = 2), so YTD = months 0..(currentMonth-1)
-// i.e. ytdMonths = currentMonth (count of complete months)
-let ytdMonths  = 0; // set after data loads
+// Exclude these rows entirely
+const EXCLUDE = new Set([
+  "operational opening cost","pre opening cost","expenses to date",
+  "net cash flow","land expense","net cash flow – land expense",
+  "net cash flow - land expense","delivery of dividends to shareholders","capex",
+  "costo de venta","expense by profit center",
+]);
+
+let data=null, view="ep_plano", tab="monthly", srch="", ytdM=0, gm=false;
+let sel=new Set();
+let cg=JSON.parse(localStorage.getItem("kin_grps")||"[]");
+const saveG=()=>localStorage.setItem("kin_grps",JSON.stringify(cg));
 
 // ── Fetch ──────────────────────────────────────────────────────────────────────
-async function fetchData() {
-  showOverlay("Loading budget data…");
-  const btn = document.getElementById("refreshBtn");
-  btn.disabled = true;
-  btn.textContent = "Loading…";
-  try {
-    const res = await fetch(EDGE);
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    data = await res.json();
-    if (data.error) throw new Error(data.error);
-
-    // YTD = completed months only (previous month)
-    // currentMonth is 0-based. If March (2), completed = Jan+Feb = 2 months = indices 0,1
-    ytdMonths = data.currentMonth; // e.g. 2 means sum months[0..1]
-
-    hideOverlay();
-    document.getElementById("lastUpdated").textContent =
-      "Updated " + new Date(data.lastUpdated).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
-    updateYtdLabel();
-    renderSummary();
-    renderTable();
-  } catch(e) {
-    showError(e.message);
-  } finally {
-    btn.disabled = false;
-    btn.textContent = "⟳ Refresh";
-  }
+async function fetchData(){
+  showOv("Loading budget data…");
+  const b=document.getElementById("brf"); b.disabled=true; b.textContent="Loading…";
+  try{
+    const r=await fetch(EDGE); if(!r.ok)throw new Error("HTTP "+r.status);
+    data=await r.json(); if(data.error)throw new Error(data.error);
+    ytdM=data.currentMonth;
+    hideOv();
+    document.getElementById("lu").textContent="Updated "+new Date(data.lastUpdated).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"});
+    document.getElementById("yp").textContent=ytdM>0?`YTD thru ${MONTHS[ytdM-1]}`:"YTD: —";
+    renderKPI(); renderTable();
+  }catch(e){showErr(e.message);}
+  finally{b.disabled=false;b.textContent="⟳ Refresh";}
 }
 
-function updateYtdLabel() {
-  const el = document.getElementById("ytdLabel");
-  if (ytdMonths === 0) { el.textContent = "YTD: No complete months yet"; return; }
-  el.textContent = `YTD through ${MONTHS[ytdMonths - 1]}`;
+function setV(v){
+  view=v;
+  document.getElementById("vep").classList.toggle("on",v==="ep_plano");
+  document.getElementById("val").classList.toggle("on",v==="all");
+  if(data){renderKPI();renderTable();}
+}
+function setT(t){
+  tab=t;
+  ["m","y","f"].forEach((x,i)=>document.getElementById("t"+x).classList.toggle("on",["monthly","ytd","fy"][i]===t));
+  if(data)renderTable();
 }
 
-// ── View / Tab ─────────────────────────────────────────────────────────────────
-function setView(v) {
-  view = v;
-  document.getElementById("v-ep").classList.toggle("active",  v === "ep_plano");
-  document.getElementById("v-all").classList.toggle("active", v === "all");
-  if (data) { renderSummary(); renderTable(); }
+// ── Formatters ─────────────────────────────────────────────────────────────────
+function fmt(n,$){
+  if(n==null)return"—";
+  const a=Math.abs(Math.round(n)),s=a.toLocaleString("en-US"),v=n<0?`(${s})`:s;
+  return $?`$${v}`:v;
 }
-function setTab(t) {
-  tab = t;
-  ["monthly","ytd","fy"].forEach(x =>
-    document.getElementById("t-"+x).classList.toggle("active", t === x));
-  if (data) renderTable();
+function vp(r,b){
+  if(!b)return{t:"—",c:"neu"};
+  // If real is 0 and budget exists, it likely means no data entered yet — show dash
+  if(r===0&&b!==0)return{t:"—",c:"neu"};
+  const p=((r-b)/Math.abs(b))*100;
+  return isFinite(p)?{t:(p>=0?"+":"")+p.toFixed(1)+"%",c:p>=0?"pos":"neg"}:{t:"—",c:"neu"};
 }
+const vk=()=>view==="ep_plano"?"ep_plano":"all";
+const gm_r=row=>row?.monthly?.map(m=>({b:vk()==="ep_plano"?m.ep_plano_budget:m.all_budget,r:vk()==="ep_plano"?m.ep_plano_real:m.all_real}));
+const gYTD=row=>row?.ytd?.[vk()];
+const gFY =row=>row?.fullYear?.[vk()];
 
-// ── Format ─────────────────────────────────────────────────────────────────────
-function fmt(n, isTot) {
-  if (n === null || n === undefined) return "—";
-  const abs = Math.abs(Math.round(n));
-  const s   = abs.toLocaleString("en-US");
-  const val = n < 0 ? `(${s})` : s;
-  return isTot ? `$${val}` : val;
-}
-function pct(real, bud) {
-  if (!bud) return { text: "—", cls: "var-neu" };
-  const p = ((real - bud) / Math.abs(bud)) * 100;
-  if (!isFinite(p)) return { text: "—", cls: "var-neu" };
-  return { text: (p >= 0 ? "+" : "") + p.toFixed(1) + "%", cls: p >= 0 ? "var-pos" : "var-neg" };
-}
-function vkey(suffix) { return view === "ep_plano" ? `ep_plano_${suffix}` : `all_${suffix}`; }
-
-// ── Summary ────────────────────────────────────────────────────────────────────
-function renderSummary() {
-  const rows = data.rows;
-  const find = lbl => rows.find(r => r.label && r.label.toLowerCase().trim() === lbl.toLowerCase().trim());
-
-  const src = tab === "fy" ? "fullYear" : "ytd";
-  const vk  = view === "ep_plano" ? "ep_plano" : "all";
-
-  const cards = [
-    { title: "Total Revenue",  row: find("TOTAL REVENUES") },
-    { title: "Total Expenses", row: find("TOTAL EXPENSES") },
-    { title: "Net Profit",     row: find("NET PROFIT")     },
-  ];
-
-  const html = cards.map(c => {
-    if (!c.row || !c.row[src]) return "";
-    const d  = c.row[src][vk];
-    const v  = pct(d.real, d.budget);
-    const isProfit = c.title === "Net Profit";
-    const cls = isProfit ? (d.real >= 0 ? "profit" : "loss") : "";
-    return `<div class="summary-card ${cls}">
-      <div class="sc-label">${c.title} ${tab === "fy" ? "(Full Year)" : "(YTD)"}</div>
-      <div class="sc-value">${fmt(d.real, true)}</div>
-      <div class="sc-sub">Budget: ${fmt(d.budget, true)}</div>
-      <span class="sc-var ${v.cls}">${v.text}</span>
-    </div>`;
+// ── KPI ────────────────────────────────────────────────────────────────────────
+function renderKPI(){
+  const find=l=>data.rows.find(r=>r.label?.trim().toLowerCase()===l);
+  const defs=[{t:"Total Revenue",r:find("total revenues")},{t:"Total Expenses",r:find("total expenses")},{t:"Net Profit",r:find("net profit")}];
+  document.getElementById("kbar").innerHTML=defs.map(({t,r})=>{
+    if(!r?.ytd)return"";
+    const d=r.ytd[vk()],v=vp(d.real,d.budget),cls=t==="Net Profit"?(d.real>=0?"pos":"neg"):"";
+    return`<div class="kc ${cls}"><div class="kl">${t} · YTD ${ytdM>0?MONTHS[ytdM-1]:"—"}</div><div class="kv">${fmt(d.real,true)}</div><div class="kb">Budget: ${fmt(d.budget,true)}</div><span class="kvar ${v.c}">${v.t} vs budget</span></div>`;
   }).join("");
-  document.getElementById("summaryBar").innerHTML = html;
 }
 
 // ── Table ──────────────────────────────────────────────────────────────────────
-function renderTable() {
-  renderHead();
-  renderBody();
-}
+function renderTable(){renderHead();renderBody();}
 
-function renderHead() {
-  const thead = document.getElementById("thead");
-  const isTot = (rtype) => rtype === "tot";
-
-  if (tab === "monthly") {
-    let r1 = `<tr><th class="col-label" rowspan="2">Line Item</th>`;
-    MONTHS.forEach((m, i) => {
-      const cur = i === (data.currentMonth);
-      r1 += `<th colspan="3" style="${cur ? 'background:#162a50' : ''}">${m}</th>`;
+function renderHead(){
+  const th=document.getElementById("thead");
+  if(tab==="monthly"){
+    // Row 1: Label col + month groups + summary groups
+    let r1=`<tr><th class="lc" rowspan="2">Line Item</th>`;
+    MONTHS.forEach((m,i)=>{
+      const cur=i===data.currentMonth;
+      r1+=`<th colspan="3" class="me"${cur?' style="background:#162a50"':''}>${m}</th>`;
     });
-    r1 += `<th colspan="3" class="th-summary">YTD (thru ${ytdMonths > 0 ? MONTHS[ytdMonths-1] : "—"})</th>`;
-    r1 += `<th colspan="3" class="th-summary">Full Year</th></tr>`;
+    r1+=`<th colspan="3" class="hsg me">YTD (${ytdM>0?MONTHS[ytdM-1]:"—"})</th>`;
+    r1+=`<th colspan="3" class="hsg">Full Year</th></tr>`;
 
-    let r2 = `<tr><th class="col-label">—</th>`;
-    for (let i = 0; i < 14; i++) { // 12 months + YTD + FY
-      const isSummary = i >= 12;
-      r2 += `<th class="${isSummary ? 'th-summary-sub' : ''}">Bud</th>`;
-      r2 += `<th class="th-real ${isSummary ? 'th-summary-sub' : ''}">Real</th>`;
-      r2 += `<th class="th-var ${isSummary ? 'th-summary-sub' : ''}">Var%</th>`;
+    // Row 2: Bud / Real / Var% under each group
+    let r2=`<tr>`;
+    for(let i=0;i<14;i++){
+      const sum=i>=12;
+      const meCls=(!sum||i===12)?" me":"";
+      r2+=`<th class="${sum?"hss":""}">Bud</th>`;
+      r2+=`<th class="${sum?"hss":""}" style="color:#ffff99">Real</th>`;
+      r2+=`<th class="${sum?"hsv":"hv"}${meCls}" style="width:58px">Var%</th>`;
     }
-    r2 += `</tr>`;
-    thead.innerHTML = r1 + r2;
-  } else {
-    const lbl = tab === "ytd"
-      ? `YTD (thru ${ytdMonths > 0 ? MONTHS[ytdMonths-1] : "—"})`
-      : "Full Year";
-    thead.innerHTML = `
-      <tr>
-        <th class="col-label" rowspan="2">Line Item</th>
-        <th colspan="3" class="th-summary">${lbl}</th>
-      </tr>
-      <tr>
-        <th class="col-label" style="display:none"></th>
-        <th>Budget</th>
-        <th class="th-real">Real</th>
-        <th class="th-var">Var %</th>
-      </tr>`;
+    r2+=`</tr>`;
+    th.innerHTML=r1+r2;
+  }else{
+    const lbl=tab==="ytd"?`YTD · ${ytdM>0?MONTHS[ytdM-1]:"—"}`:"Full Year";
+    th.innerHTML=`
+      <tr><th class="lc" rowspan="2">Line Item</th><th colspan="3" class="hsg">${lbl}</th></tr>
+      <tr><th class="lc" style="display:none"></th><th class="hss">Budget</th><th class="hss" style="color:#ffff99">Real</th><th class="hsv" style="width:58px">Var %</th></tr>`;
   }
 }
 
-function renderBody() {
-  const tbody  = document.getElementById("tbody");
-  const rows   = data.rows;
-  const vk     = view === "ep_plano" ? "ep_plano" : "all";
-  const search = searchTerm.toLowerCase().trim();
+function renderBody(){
+  const tbody=document.getElementById("tbody"); if(!data){tbody.innerHTML="";return;}
+  const rows=data.rows, s=srch.toLowerCase().trim();
+  const inGrp=new Set(); cg.forEach(g=>g.ri.forEach(i=>inGrp.add(i)));
+  const doneG=new Set();
+  let html="";
 
-  // Group tracking for collapse
-  let currentSecId  = null;
-  let currentSubId  = null;
-  let html          = "";
-  let altIdx        = 0;
+  rows.forEach((row,ri)=>{
+    if(!row?.label)return;
+    const{label,type,level}=row;
+    const ln=label.trim().toLowerCase();
+    if(EXCLUDE.has(ln))return;
 
-  rows.forEach((row, ri) => {
-    if (!row) return;
-    const { label, type, level } = row;
-    if (!label) return;
+    // Custom group: render header once, skip members if collapsed
+    const og=cg.find(g=>g.ri.includes(ri));
+    if(og){
+      if(!doneG.has(og.id)){doneG.add(og.id);html+=cgRow(og);}
+      if(og.col)return;
+    }
 
-    // Search filter (skip section/total headers when searching)
-    if (search && type !== "sec" && !label.toLowerCase().includes(search)) return;
+    if(s&&type!=="sec"&&!ln.includes(s))return;
 
-    const isTot = type === "tot";
-    const isSec = type === "sec";
-    const isSub = type === "sub";
+    // Resolve actual row type
+    const isSec=type==="sec";
+    const isTot=type==="tot";
+    const isSub=type==="sub"&&!FORCE_DAT.has(ln);
+    const rtype=isSec?"sec":isTot?"tot":isSub?"sub":"dat";
+    const lv=level>0?` l${Math.min(level,3)}`:"";
+    const isSel=sel.has(ri);
 
-    const rowId   = `row-${ri}`;
-    const levelCls = level > 0 ? `level-${level}` : "";
-
-    if (isSec) {
-      currentSecId = `sec-${ri}`;
-      currentSubId = null;
-      html += `<tr class="row-sec" id="${currentSecId}" data-group="${currentSecId}" onclick="toggleGroup('${currentSecId}')">
-        <td class="col-label" colspan="100"><span class="toggle-icon">▾</span>${label}</td>
-      </tr>`;
+    // Section / sub-header rows span all columns
+    if(isSec||isSub){
+      html+=`<tr class="${rtype}${lv}" data-ri="${ri}" onclick="rowClick(${ri},event)"><td class="lc" colspan="100">${label.trim()}</td></tr>`;
       return;
     }
 
-    if (isSub) {
-      currentSubId = `sub-${ri}`;
-      const parentGroup = currentSecId || "";
-      html += `<tr class="row-sub ${parentGroup ? 'group-child group-of-'+currentSecId : ''}" 
-                   id="${currentSubId}" data-group="${currentSubId}" data-parent="${parentGroup}"
-                   onclick="toggleGroup('${currentSubId}')">
-        <td class="col-label ${levelCls}" colspan="100"><span class="toggle-icon">▾</span>${label}</td>
-      </tr>`;
-      return;
-    }
+    // Build cells — NO checkbox column in the data, it's injected via JS overlay
+    let cells=`<td class="lc">${label.trim()}</td>`;
+    const $=isTot;
 
-    // Data / total row
-    const parentGroup = currentSubId || currentSecId || "";
-    const rowCls = `${isTot ? 'row-tot' : 'row-dat'} ${levelCls} ${parentGroup ? 'group-child group-of-'+parentGroup : ''}`;
-    altIdx++;
-
-    let cells = `<td class="col-label">${label}</td>`;
-
-    if (tab === "monthly" && row.monthly) {
-      // Monthly columns
-      row.monthly.forEach((m, i) => {
-        const b = view === "ep_plano" ? m.ep_plano_budget : m.all_budget;
-        const r = view === "ep_plano" ? m.ep_plano_real   : m.all_real;
-        const v = pct(r, b);
-        cells += `<td>${fmt(b, isTot)}</td><td>${fmt(r, isTot)}</td><td class="${v.cls}">${v.text}</td>`;
+    if(tab==="monthly"&&row.monthly){
+      const mo=gm_r(row);
+      mo.forEach((m,i)=>{
+        const v=vp(m.r,m.b);
+        cells+=`<td>${fmt(m.b,$)}</td><td>${fmt(m.r,$)}</td><td class="vc ${v.c} me">${v.t}</td>`;
       });
-      // YTD
-      if (row.ytd) {
-        const d = row.ytd[vk];
-        const v = pct(d.real, d.budget);
-        cells += `<td><b>${fmt(d.budget, isTot)}</b></td><td><b>${fmt(d.real, isTot)}</b></td><td class="${v.cls}"><b>${v.text}</b></td>`;
-      }
-      // Full Year
-      if (row.fullYear) {
-        const d = row.fullYear[vk];
-        const v = pct(d.real, d.budget);
-        cells += `<td><b>${fmt(d.budget, isTot)}</b></td><td><b>${fmt(d.real, isTot)}</b></td><td class="${v.cls}"><b>${v.text}</b></td>`;
-      }
-    } else {
-      const src = tab === "ytd" ? row.ytd : row.fullYear;
-      if (src) {
-        const d = src[vk];
-        const v = pct(d.real, d.budget);
-        cells += `<td>${fmt(d.budget, isTot)}</td><td>${fmt(d.real, isTot)}</td><td class="${v.cls}">${v.text}</td>`;
-      } else {
-        cells += `<td>—</td><td>—</td><td>—</td>`;
-      }
+      const y=gYTD(row);
+      if(y){const v=vp(y.real,y.budget);cells+=`<td><b>${fmt(y.budget,$)}</b></td><td><b>${fmt(y.real,$)}</b></td><td class="vc ${v.c} me"><b>${v.t}</b></td>`;}
+      const f=gFY(row);
+      if(f){const v=vp(f.real,f.budget);cells+=`<td><b>${fmt(f.budget,$)}</b></td><td><b>${fmt(f.real,$)}</b></td><td class="vc ${v.c}"><b>${v.t}</b></td>`;}
+    }else{
+      const d=tab==="ytd"?gYTD(row):gFY(row);
+      if(d){const v=vp(d.real,d.budget);cells+=`<td>${fmt(d.budget,$)}</td><td>${fmt(d.real,$)}</td><td class="vc ${v.c}">${v.t}</td>`;}
+      else  cells+=`<td>—</td><td>—</td><td class="vc neu">—</td>`;
     }
 
-    html += `<tr class="${rowCls}" id="${rowId}">${cells}</tr>`;
+    html+=`<tr class="${rtype}${lv}${isSel?" sel":""}" data-ri="${ri}" onclick="rowClick(${ri},event)">${cells}</tr>`;
   });
-
-  tbody.innerHTML = html;
+  tbody.innerHTML=html;
 }
 
-// ── Collapse / Expand ──────────────────────────────────────────────────────────
-function toggleGroup(groupId) {
-  const headerRow = document.getElementById(groupId);
-  if (!headerRow) return;
-  const collapsed = headerRow.classList.toggle("collapsed");
-  // Hide/show direct children of this group
-  document.querySelectorAll(`.group-of-${groupId}`).forEach(tr => {
-    if (collapsed) {
-      tr.classList.add("group-hidden");
-    } else {
-      tr.classList.remove("group-hidden");
-      // If this child is itself a collapsed sub-group, keep ITS children hidden
-      if (tr.classList.contains("row-sub") && tr.classList.contains("collapsed")) {
-        const childGroupId = tr.id;
-        document.querySelectorAll(`.group-of-${childGroupId}`).forEach(c => c.classList.add("group-hidden"));
-      }
-    }
+// ── Custom group summary row ───────────────────────────────────────────────────
+function cgRow(g){
+  const ic=g.col?"▸":"▾";
+  const sm=(i,k)=>g.ri.reduce((s,ri)=>{const m=gm_r(data.rows[ri]);return s+(m?.[i]?.[k]||0);},0);
+  const sy=(k)=>g.ri.reduce((s,ri)=>{const d=gYTD(data.rows[ri]);return s+(d?.[k]||0);},0);
+  const sf=(k)=>g.ri.reduce((s,ri)=>{const d=gFY(data.rows[ri]);return s+(d?.[k]||0);},0);
+
+  let c=`<td class="lc" onclick="togCG('${g.id}')"><span class="cgico">${ic}</span>${g.name}<span class="cgdel" onclick="delG(event,'${g.id}')"> ✕ ungroup</span></td>`;
+
+  if(tab==="monthly"&&data.rows[g.ri[0]]?.monthly){
+    MONTHS.forEach((_,i)=>{const b=sm(i,"b"),r=sm(i,"r"),v=vp(r,b);c+=`<td>${fmt(b,false)}</td><td>${fmt(r,false)}</td><td class="vc ${v.c} me">${v.t}</td>`;});
+    const yb=sy("budget"),yr=sy("real"),vy=vp(yr,yb);
+    c+=`<td><b>${fmt(yb,false)}</b></td><td><b>${fmt(yr,false)}</b></td><td class="vc ${vy.c} me"><b>${vy.t}</b></td>`;
+    const fb=sf("budget"),fr=sf("real"),vf=vp(fr,fb);
+    c+=`<td><b>${fmt(fb,false)}</b></td><td><b>${fmt(fr,false)}</b></td><td class="vc ${vf.c}"><b>${vf.t}</b></td>`;
+  }else{
+    const gt=tab==="ytd"?gYTD:gFY;
+    const tb2=g.ri.reduce((s,i)=>s+(gt(data.rows[i])?.budget||0),0);
+    const tr2=g.ri.reduce((s,i)=>s+(gt(data.rows[i])?.real||0),0);
+    const v=vp(tr2,tb2);
+    c+=`<td>${fmt(tb2,false)}</td><td>${fmt(tr2,false)}</td><td class="vc ${v.c}">${v.t}</td>`;
+  }
+  return`<tr class="cg">${c}</tr>`;
+}
+
+function togCG(id){const g=cg.find(x=>x.id===id);if(g){g.col=!g.col;saveG();renderBody();}}
+function delG(e,id){e.stopPropagation();cg=cg.filter(x=>x.id!==id);saveG();renderBody();}
+
+// ── Group mode — uses checkboxes injected into label cell ──────────────────────
+function togGM(){
+  gm=!gm;
+  document.getElementById("bgm").classList.toggle("on",gm);
+  document.getElementById("bcg").classList.toggle("show",gm);
+  document.getElementById("bxg").classList.toggle("show",gm);
+  document.getElementById("hp").classList.toggle("show",gm);
+  sel.clear();
+  if(gm) injectCheckboxes(); else removeCheckboxes();
+}
+function exitGM(){
+  gm=false;
+  document.getElementById("bgm").classList.remove("on");
+  ["bcg","bxg","hp"].forEach(id=>document.getElementById(id).classList.remove("show"));
+  sel.clear(); removeCheckboxes();
+}
+function injectCheckboxes(){
+  // Add a checkbox inside each label cell for dat/sub rows
+  document.querySelectorAll("#tbody tr.dat td.lc, #tbody tr.sub td.lc").forEach(td=>{
+    const tr=td.closest("tr"), ri=parseInt(tr.dataset.ri);
+    if(isNaN(ri))return;
+    const cb=document.createElement("input");
+    cb.type="checkbox"; cb.dataset.ri=ri; cb.style.cssText="margin-right:6px;cursor:pointer;";
+    cb.checked=sel.has(ri);
+    cb.addEventListener("change",e=>{e.stopPropagation();togSel(ri,e.target.checked);});
+    td.prepend(cb);
   });
 }
+function removeCheckboxes(){
+  document.querySelectorAll("#tbody input[type=checkbox]").forEach(cb=>cb.remove());
+  // Remove sel class from all rows
+  document.querySelectorAll("#tbody tr.sel").forEach(tr=>tr.classList.remove("sel"));
+}
+function togSel(ri,v){
+  v?sel.add(ri):sel.delete(ri);
+  const tr=document.querySelector(`#tbody tr[data-ri="${ri}"]`);
+  if(tr)tr.classList.toggle("sel",v);
+  document.getElementById("bcg").textContent=`＋ Group ${sel.size} Row${sel.size!==1?"s":""}`;
+}
+function rowClick(ri,e){
+  if(!gm||e.target.type==="checkbox")return;
+  const tr=e.currentTarget, cb=tr.querySelector("input[type=checkbox]");
+  if(cb){cb.checked=!cb.checked;togSel(ri,cb.checked);}
+}
+
+// ── Dialog ─────────────────────────────────────────────────────────────────────
+function openDlg(){if(sel.size<2){alert("Select at least 2 rows.");return;}document.getElementById("gni").value="";document.getElementById("dbk").classList.add("show");setTimeout(()=>document.getElementById("gni").focus(),80);}
+function cancelDlg(){document.getElementById("dbk").classList.remove("show");}
+function confirmGrp(){
+  const n=document.getElementById("gni").value.trim();
+  if(!n){alert("Enter a group name.");return;}
+  cg.push({id:"g"+Date.now(),name:n,ri:Array.from(sel).sort((a,b)=>a-b),col:false});
+  saveG();cancelDlg();exitGM();renderBody();
+}
+document.addEventListener("keydown",e=>{
+  if(e.key==="Enter"&&document.getElementById("dbk").classList.contains("show"))confirmGrp();
+  if(e.key==="Escape"&&document.getElementById("dbk").classList.contains("show"))cancelDlg();
+});
 
 // ── Search ─────────────────────────────────────────────────────────────────────
-function doSearch(val) {
-  searchTerm = val;
-  if (data) renderBody();
-}
+function doSrch(v){srch=v;if(data)renderBody();if(gm)injectCheckboxes();}
 
-// ── Overlay helpers ────────────────────────────────────────────────────────────
-function showOverlay(msg) {
-  document.getElementById("overlay").classList.remove("hidden");
-  document.getElementById("overlayText").textContent = msg;
-  document.getElementById("overlayError").style.display = "none";
-}
-function showError(msg) {
-  document.getElementById("overlayText").textContent = "Failed to load";
-  const e = document.getElementById("overlayError");
-  e.style.display = "block";
-  e.textContent = "Error: " + msg;
-}
-function hideOverlay() {
-  document.getElementById("overlay").classList.add("hidden");
-}
+// ── Overlay ────────────────────────────────────────────────────────────────────
+function showOv(m){document.getElementById("ov").classList.remove("h");document.getElementById("ot").textContent=m;document.getElementById("oe").style.display="none";}
+function showErr(m){document.getElementById("ot").textContent="Failed to load";const e=document.getElementById("oe");e.style.display="block";e.textContent="Error: "+m;}
+function hideOv(){document.getElementById("ov").classList.add("h");}
 
-// ── Boot ───────────────────────────────────────────────────────────────────────
 fetchData();
 </script>
 </body>
