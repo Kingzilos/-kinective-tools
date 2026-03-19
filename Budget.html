@@ -95,7 +95,7 @@
   td.lc { text-align:left; padding-left:12px; background:#fff; }
 
   /* Var cell */
-  td.vc { background:var(--vbg) !important; font-size:0.71rem; font-weight:600; min-width:58px; max-width:58px; }
+  td.vc { background:var(--vbg) !important; font-size:0.71rem; font-weight:600; min-width:72px; max-width:72px; }
   td.vc.pos{color:var(--grn);} td.vc.neg{color:var(--red);} td.vc.neu{color:var(--tertiary);font-weight:400;}
   td.me { border-right:3px solid var(--bmonth) !important; }
 
@@ -107,6 +107,7 @@
   tr.sub td { background:var(--lb) !important; font-weight:600; border-bottom:1px solid #b8cfe0; }
   tr.sub td.lc { background:var(--lb) !important; }
   tr.sub td.vc { background:#ccdde8 !important; }
+  tr.sub td:not(.lc):not(.vc) { font-weight:700; }
 
   tr.tot td { background:var(--yel) !important; font-weight:700; border-top:2px solid var(--db); border-bottom:2px solid var(--db); }
   tr.tot td.lc { background:var(--yel) !important; }
@@ -210,6 +211,24 @@ const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov
 // Force these labels to be treated as data rows (not sub-headers)
 const FORCE_DAT = new Set([
   "pilates",
+  "google services (phidev)",
+  "zest licenses & fees",
+  "pest control services",
+  "payroll processing fees",
+  "amd health insurance",
+  "plano pre construction services",
+  "construction legal services",
+  "cleaning and consumables",
+  "recruiting expenses (indeed)",
+  "uniforms",
+  "fitness equipment",
+  "uncategorized expense",
+  "travel expenses",
+  "banking charges & fees",
+  "sales taxes",
+  "franchise taxes",
+  "trash disposal from services rendered",
+  "kin cares donations",
   "34. medical insurance (trustmark)",
   "39. corporate (body fit payroll)",
   "employee reimbursements/payroll taxes and fees",
@@ -232,10 +251,14 @@ const FORCE_DAT = new Set([
 
 // Exclude these rows entirely
 const EXCLUDE = new Set([
+  "costo de venta","expense by profit center",
   "operational opening cost","pre opening cost","expenses to date",
   "net cash flow","land expense","net cash flow – land expense",
   "net cash flow - land expense","delivery of dividends to shareholders","capex",
-  "costo de venta","expense by profit center",
+  "kinective plano","number of memberships",
+  "kfc rent (income)",
+  "net profit includes (kfc income rent)",
+  "net profit (+ amd rent - w/out interest) ", // trailing space variant
 ]);
 
 let data=null, view="ep_plano", tab="monthly", srch="", ytdM=0, gm=false;
@@ -322,7 +345,7 @@ function renderHead(){
       const meCls=(!sum||i===12)?" me":"";
       r2+=`<th class="${sum?"hss":""}">Bud</th>`;
       r2+=`<th class="${sum?"hss":""}" style="color:#ffff99">Real</th>`;
-      r2+=`<th class="${sum?"hsv":"hv"}${meCls}" style="width:58px">Var%</th>`;
+      r2+=`<th class="${sum?"hsv":"hv"}${meCls}" style="width:72px">Var%</th>`;
     }
     r2+=`</tr>`;
     th.innerHTML=r1+r2;
@@ -330,7 +353,7 @@ function renderHead(){
     const lbl=tab==="ytd"?`YTD · ${ytdM>0?MONTHS[ytdM-1]:"—"}`:"Full Year";
     th.innerHTML=`
       <tr><th class="lc" rowspan="2">Line Item</th><th colspan="3" class="hsg">${lbl}</th></tr>
-      <tr><th class="lc" style="display:none"></th><th class="hss">Budget</th><th class="hss" style="color:#ffff99">Real</th><th class="hsv" style="width:58px">Var %</th></tr>`;
+      <tr><th class="lc" style="display:none"></th><th class="hss">Budget</th><th class="hss" style="color:#ffff99">Real</th><th class="hsv" style="width:72px">Var %</th></tr>`;
   }
 }
 
@@ -340,13 +363,18 @@ function renderBody(){
   const inGrp=new Set(); cg.forEach(g=>g.ri.forEach(i=>inGrp.add(i)));
   const doneG=new Set();
   let html="";
-  let inExpenses=false; // flip variance colors when in expenses section
+  let inExpenses=false;
+  let pastEnd=false;
 
   rows.forEach((row,ri)=>{
     if(!row?.label)return;
+    if(pastEnd)return; // stop rendering after last meaningful row
     const{label,type,level}=row;
     const ln=label.trim().toLowerCase();
     if(EXCLUDE.has(ln))return;
+
+    // Stop after NET PROFIT (+ AMD Rent - w/out Interest) — last meaningful row
+    const isEndRow = ln === "net profit (+ amd rent - w/out interest)";
 
     // Track whether we're in the expenses section
     if(type==="sec"&&ln==="expenses") inExpenses=true;
@@ -380,15 +408,15 @@ function renderBody(){
     const lv=level>0?` l${Math.min(level,3)}`:"";
     const isSel=sel.has(ri);
 
-    // Section / sub-header rows span all columns
-    if(isSec||isSub){
-      html+=`<tr class="${rtype}${lv}" data-ri="${ri}" onclick="rowClick(${ri},event)"><td class="lc" title="${label.trim()}" colspan="100">${label.trim()}</td></tr>`;
+    // Section headers span all columns — sub-group headers get data cells
+    if(isSec){
+      html+=`<tr class="sec" data-ri="${ri}"><td class="lc" title="${label.trim()}" colspan="100">${label.trim()}</td></tr>`;
       return;
     }
 
-    // Build cells
+    // Build cells (used by both sub and dat rows)
     let cells=`<td class="lc" title="${label.trim()}">${label.trim()}</td>`;
-    const $=isTot;
+    const $=isTot||isSub; // bold $ for totals and sub-group headers
 
     if(tab==="monthly"&&row.monthly){
       const mo=gm_r(row);
@@ -407,6 +435,9 @@ function renderBody(){
     }
 
     html+=`<tr class="${rtype}${lv}${isSel?" sel":""}" data-ri="${ri}" onclick="rowClick(${ri},event)">${cells}</tr>`;
+
+    // Stop after this row if it's the last meaningful row
+    if(isEndRow) pastEnd=true;
   });
   tbody.innerHTML=html;
 }
