@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Kinective Fitness — CapEx 2026</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  /* Luxury palette */
+  --bg:            #f8f6f1;           /* warm ivory */
+  --card:          #ffffff;
+  --card-alt:      #fdfcf9;
+  --border:        rgba(180,162,120,0.18);
+  --border-inner:  rgba(180,162,120,0.10);
+
+  --gold:          #9a7d4a;           /* champagne gold */
+  --gold-light:    #b8975e;
+  --gold-tint:     rgba(154,125,74,0.08);
+  --gold-border:   rgba(154,125,74,0.22);
+
+  --navy:          #1a2235;           /* deep navy */
+  --navy-mid:      #2c3a52;
+  --navy-light:    rgba(26,34,53,0.06);
+
+  --sage:          #6b7c6e;           /* muted sage */
+  --sage-tint:     rgba(107,124,110,0.08);
+
+  --blush:         #c4956a;           /* warm terracotta/blush */
+  --blush-tint:    rgba(196,149,106,0.09);
+
+  --slate:         #7a8494;           /* cool slate */
+
+  --red:           #a04040;
+
+  --ink:           #1a1a1a;
+  --ink2:          #2e2e2e;
+  --ink3:          #5a5a5a;
+  --ink4:          #888888;
+  --ink5:          #b0b0b0;
+}
+
+html { -webkit-font-smoothing: antialiased; }
+
+body {
+  font-family: 'Inter', -apple-system, sans-serif;
+  background: var(--bg);
+  color: var(--ink);
+  min-height: 100vh;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+/* ── NAV ── */
+nav {
+  position: sticky; top: 0; z-index: 100;
+  height: 54px;
+  background: rgba(248,246,241,0.92);
+  backdrop-filter: blur(24px) saturate(160%);
+  -webkit-backdrop-filter: blur(24px) saturate(160%);
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 36px;
+}
+.nav-left { display: flex; align-items: center; gap: 14px; }
+.nav-logo {
+  font-size: 11.5px; font-weight: 700; letter-spacing: 2.5px;
+  text-transform: uppercase; color: var(--navy);
+}
+.nav-sep { width: 1px; height: 16px; background: var(--border); }
+.nav-label { font-size: 12px; font-weight: 400; color: var(--ink4); letter-spacing: 0.1px; }
+.nav-right { display: flex; align-items: center; gap: 8px; }
+.nav-chip {
+  font-size: 10.5px; font-weight: 500; color: var(--ink3);
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 5px; padding: 3px 9px; letter-spacing: 0.1px;
+}
+.status-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--sage); }
+
+/* ── WRAPPER ── */
+.wrap { max-width: 1060px; margin: 0 auto; padding: 48px 28px 96px; }
+
+/* ── PAGE HEAD ── */
+.page-head {
+  display: flex; align-items: flex-end; justify-content: space-between;
+  gap: 20px; flex-wrap: wrap; margin-bottom: 40px;
+  opacity: 0; animation: up 0.55s 0s ease forwards;
+}
+.eyebrow {
+  font-size: 10.5px; font-weight: 600; letter-spacing: 2px;
+  text-transform: uppercase; color: var(--gold); margin-bottom: 8px;
+}
+.page-title {
+  font-size: 34px; font-weight: 300; letter-spacing: -0.5px;
+  color: var(--navy); line-height: 1.05;
+}
+.page-title strong { font-weight: 700; }
+.page-sub {
+  font-size: 12.5px; color: var(--ink4); margin-top: 6px; font-weight: 400;
+  letter-spacing: 0.1px;
+}
+.date-tag {
+  font-size: 11.5px; font-weight: 500; color: var(--ink3);
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 8px; padding: 9px 16px;
+  white-space: nowrap; letter-spacing: 0.3px;
+}
+
+/* ── KPI ROW ── */
+.kpi-row {
+  display: grid; grid-template-columns: repeat(4, 1fr);
+  gap: 12px; margin-bottom: 36px;
+  opacity: 0; animation: up 0.55s 0.07s ease forwards;
+}
+.kpi {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 16px; padding: 24px 22px 20px;
+  transition: box-shadow .22s, transform .22s; cursor: default;
+}
+.kpi:hover { box-shadow: 0 10px 36px rgba(26,34,53,.07); transform: translateY(-2px); }
+.kpi-label {
+  font-size: 10px; font-weight: 600; letter-spacing: 1.2px;
+  color: var(--ink5); text-transform: uppercase; margin-bottom: 13px;
+}
+.kpi-value {
+  font-size: 27px; font-weight: 700; letter-spacing: -0.8px;
+  color: var(--navy); line-height: 1; margin-bottom: 7px;
+}
+.kpi-value.gold { color: var(--gold); }
+.kpi-note { font-size: 11px; color: var(--ink4); font-weight: 400; }
+
+/* ── DIVIDER ── */
+.divider {
+  display: flex; align-items: center; gap: 14px;
+  margin: 40px 0 18px;
+}
+.divider-text {
+  font-size: 10px; font-weight: 600; letter-spacing: 1.5px;
+  text-transform: uppercase; color: var(--ink5); white-space: nowrap;
+}
+.divider-line { flex: 1; height: 1px; background: var(--border); }
+
+/* ── CATEGORY CARDS ── */
+.cat-grid {
+  display: grid; grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  opacity: 0; animation: up 0.55s 0.12s ease forwards;
+}
+.cat-card {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 18px; overflow: hidden;
+  transition: box-shadow .22s, transform .22s;
+}
+.cat-card:hover { box-shadow: 0 10px 36px rgba(26,34,53,.07); transform: translateY(-2px); }
+
+.cat-top {
+  padding: 24px 24px 0;
+  display: flex; align-items: flex-start;
+  justify-content: space-between; gap: 16px;
+}
+.cat-name { font-size: 13.5px; font-weight: 600; color: var(--navy); letter-spacing: -0.2px; margin-bottom: 3px; }
+.cat-acct { font-size: 11px; color: var(--ink5); font-weight: 400; letter-spacing: 0.1px; }
+.cat-right { text-align: right; flex-shrink: 0; }
+.cat-amount { font-size: 24px; font-weight: 700; letter-spacing: -0.6px; line-height: 1; }
+.cat-ytd-tag { font-size: 9.5px; text-transform: uppercase; letter-spacing: 1px; color: var(--ink5); margin-top: 3px; }
+
+.cat-bar-wrap { padding: 16px 24px 0; }
+.cat-bar-bg { height: 2px; background: var(--border); border-radius: 99px; overflow: hidden; }
+.cat-bar-fill { height: 100%; border-radius: 99px; transition: width 1.3s cubic-bezier(.16,1,.3,1); }
+.cat-bar-meta { display: flex; justify-content: space-between; margin-top: 7px; font-size: 10px; color: var(--ink5); letter-spacing: 0.1px; }
+
+.cat-txns { margin-top: 18px; border-top: 1px solid var(--border-inner); }
+.txn {
+  display: grid; grid-template-columns: 86px 1fr auto;
+  gap: 10px; padding: 10px 24px;
+  border-bottom: 1px solid var(--border-inner);
+  align-items: center; transition: background .12s;
+}
+.txn:last-child { border-bottom: none; }
+.txn:hover { background: var(--card-alt); }
+.txn-date { font-size: 10.5px; color: var(--ink5); font-variant-numeric: tabular-nums; }
+.txn-desc { font-size: 12px; color: var(--ink3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.txn-amt { font-size: 12px; font-weight: 600; color: var(--ink2); font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+/* ── BALANCE SHEET ── */
+.bs-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  opacity: 0; animation: up 0.55s 0.17s ease forwards;
+}
+.bs-card {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 18px; padding: 24px;
+  transition: box-shadow .22s, transform .22s;
+}
+.bs-card:hover { box-shadow: 0 10px 36px rgba(26,34,53,.07); transform: translateY(-2px); }
+.bs-head {
+  font-size: 10px; font-weight: 600; letter-spacing: 1.2px;
+  text-transform: uppercase; color: var(--ink5);
+  padding-bottom: 13px; border-bottom: 1px solid var(--border);
+  margin-bottom: 4px;
+}
+.bs-row {
+  display: flex; justify-content: space-between; align-items: baseline;
+  padding: 8px 0; border-bottom: 1px solid var(--border-inner); gap: 10px;
+}
+.bs-row:last-of-type { border-bottom: none; }
+.bs-row-name { font-size: 11.5px; color: var(--ink3); flex: 1; min-width: 0; }
+.bs-row-val { font-size: 11.5px; font-weight: 600; color: var(--ink2); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.bs-row-val.neg { color: var(--red); }
+.bs-total {
+  display: flex; justify-content: space-between; align-items: baseline;
+  padding-top: 12px; margin-top: 6px;
+  border-top: 1px solid var(--navy);
+  font-size: 12.5px; font-weight: 700;
+}
+.bs-total-label { color: var(--navy); }
+.bs-total-val { font-variant-numeric: tabular-nums; color: var(--navy); }
+.bs-total-val.gold { color: var(--gold); }
+
+/* ── ALERT ── */
+.alert {
+  margin-top: 12px;
+  background: var(--gold-tint); border: 1px solid var(--gold-border);
+  border-radius: 14px; padding: 18px 22px;
+  display: flex; gap: 16px; align-items: flex-start;
+  opacity: 0; animation: up 0.55s 0.22s ease forwards;
+}
+.alert-bar { width: 2px; border-radius: 99px; background: var(--gold); flex-shrink: 0; align-self: stretch; min-height: 36px; }
+.alert-title { font-size: 11.5px; font-weight: 600; color: var(--navy); margin-bottom: 4px; letter-spacing: 0.1px; }
+.alert-body { font-size: 11.5px; color: var(--ink3); line-height: 1.7; }
+.alert-body strong { font-weight: 600; color: var(--ink2); }
+
+/* ── FOOTER ── */
+footer {
+  text-align: center; padding: 36px 16px 16px;
+  font-size: 10.5px; color: var(--ink5); letter-spacing: 0.3px;
+}
+
+/* ── ANIMATIONS ── */
+@keyframes up {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── RESPONSIVE ── */
+@media (max-width: 740px) {
+  .kpi-row { grid-template-columns: repeat(2, 1fr); }
+  .cat-grid, .bs-grid { grid-template-columns: 1fr; }
+  .wrap { padding: 28px 16px 64px; }
+  nav { padding: 0 20px; }
+  .page-title { font-size: 26px; }
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-left">
+    <span class="nav-logo">Kinective</span>
+    <div class="nav-sep"></div>
+    <span class="nav-label">Capital Expenditure Tracker</span>
+  </div>
+  <div class="nav-right">
+    <div class="status-dot"></div>
+    <span class="nav-chip">Accrual Basis</span>
+    <span class="nav-chip">QuickBooks</span>
+  </div>
+</nav>
+
+<div class="wrap">
+
+  <!-- PAGE HEAD -->
+  <div class="page-head">
+    <div>
+      <div class="eyebrow">Financial Operations &mdash; 2026</div>
+      <div class="page-title"><strong>Capital</strong> Expenditures</div>
+      <div class="page-sub">Year-to-date fixed asset spend &mdash; Kinective Fitness Club, El Paso</div>
+    </div>
+    <div class="date-tag">January 1 &ndash; March 20, 2026</div>
+  </div>
+
+  <!-- KPI ROW -->
+  <div class="kpi-row">
+    <div class="kpi">
+      <div class="kpi-label">Total YTD Spend</div>
+      <div class="kpi-value gold">$39,042</div>
+      <div class="kpi-note">4 asset categories</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Transactions</div>
+      <div class="kpi-value">6</div>
+      <div class="kpi-note">80 days into fiscal year</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Largest Purchase</div>
+      <div class="kpi-value">$22,500</div>
+      <div class="kpi-note">Plano Mobile Showroom Unit</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Gross Fixed Assets</div>
+      <div class="kpi-value">$2.35M</div>
+      <div class="kpi-note">Net book value $574K</div>
+    </div>
+  </div>
+
+  <!-- SPEND BY CATEGORY -->
+  <div class="divider">
+    <span class="divider-text">Spend by Category</span>
+    <div class="divider-line"></div>
+    <span class="divider-text">4 Accounts</span>
+  </div>
+
+  <div class="cat-grid">
+
+    <div class="cat-card">
+      <div class="cat-top">
+        <div>
+          <div class="cat-name">Other Fixed Assets &amp; Improvements</div>
+          <div class="cat-acct">Account 4015 &middot; Plano Development</div>
+        </div>
+        <div class="cat-right">
+          <div class="cat-amount" style="color:var(--navy)">$22,500</div>
+          <div class="cat-ytd-tag">YTD</div>
+        </div>
+      </div>
+      <div class="cat-bar-wrap">
+        <div class="cat-bar-bg">
+          <div class="cat-bar-fill" data-w="57.6" style="width:0%;background:var(--navy)"></div>
+        </div>
+        <div class="cat-bar-meta">
+          <span>57.6% of total YTD</span>
+          <span>Running balance $47,120.53</span>
+        </div>
+      </div>
+      <div class="cat-txns">
+        <div class="txn">
+          <span class="txn-date">Mar 18, 2026</span>
+          <span class="txn-desc">Showroom Asset &mdash; Mobile Unit, Plano</span>
+          <span class="txn-amt">$22,500.00</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="cat-card">
+      <div class="cat-top">
+        <div>
+          <div class="cat-name">Equipment Asset</div>
+          <div class="cat-acct">Equipment Assset &middot; Fitness Floor</div>
+        </div>
+        <div class="cat-right">
+          <div class="cat-amount" style="color:var(--sage)">$13,734</div>
+          <div class="cat-ytd-tag">YTD</div>
+        </div>
+      </div>
+      <div class="cat-bar-wrap">
+        <div class="cat-bar-bg">
+          <div class="cat-bar-fill" data-w="35.2" style="width:0%;background:var(--sage)"></div>
+        </div>
+        <div class="cat-bar-meta">
+          <span>35.2% of total YTD</span>
+          <span>Running balance $29,419.77</span>
+        </div>
+      </div>
+      <div class="cat-txns">
+        <div class="txn">
+          <span class="txn-date">Feb 27, 2026</span>
+          <span class="txn-desc">Two Massage Chairs, Men's &mdash; Johnson Fit &amp; Well 701</span>
+          <span class="txn-amt">$13,734.20</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="cat-card">
+      <div class="cat-top">
+        <div>
+          <div class="cat-name">Furniture, Fixtures &amp; Equipment</div>
+          <div class="cat-acct">Account 4002 &middot; Office / Facility</div>
+        </div>
+        <div class="cat-right">
+          <div class="cat-amount" style="color:var(--gold)">$2,808</div>
+          <div class="cat-ytd-tag">YTD</div>
+        </div>
+      </div>
+      <div class="cat-bar-wrap">
+        <div class="cat-bar-bg">
+          <div class="cat-bar-fill" data-w="7.2" style="width:0%;background:var(--gold)"></div>
+        </div>
+        <div class="cat-bar-meta">
+          <span>7.2% of total YTD</span>
+          <span>Running balance $198,223.08</span>
+        </div>
+      </div>
+      <div class="cat-txns">
+        <div class="txn">
+          <span class="txn-date">Mar 3, 2026</span>
+          <span class="txn-desc">Rooftop Deck Furniture &mdash; Kraig / Wayfair</span>
+          <span class="txn-amt">$1,142.03</span>
+        </div>
+        <div class="txn">
+          <span class="txn-date">Mar 4, 2026</span>
+          <span class="txn-desc">Rooftop Improvements, FF&amp;E &mdash; Georgina / Wayfair</span>
+          <span class="txn-amt">$1,297.89</span>
+        </div>
+        <div class="txn">
+          <span class="txn-date">Mar 12, 2026</span>
+          <span class="txn-desc">Storage Cabinet, GM Office &mdash; Wayfair</span>
+          <span class="txn-amt">$368.04</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="cat-card">
+      <div class="cat-top">
+        <div>
+          <div class="cat-name">Uncategorized Asset &mdash; Deposit</div>
+          <div class="cat-acct">Account 3010 &middot; Refundable</div>
+        </div>
+        <div class="cat-right">
+          <div class="cat-amount" style="color:var(--blush)">$2,000</div>
+          <div class="cat-ytd-tag">YTD</div>
+        </div>
+      </div>
+      <div class="cat-bar-wrap">
+        <div class="cat-bar-bg">
+          <div class="cat-bar-fill" data-w="5.1" style="width:0%;background:var(--blush)"></div>
+        </div>
+        <div class="cat-bar-meta">
+          <span>5.1% of total YTD</span>
+          <span>Refundable if purchase not completed</span>
+        </div>
+      </div>
+      <div class="cat-txns">
+        <div class="txn">
+          <span class="txn-date">Mar 2, 2026</span>
+          <span class="txn-desc">Deposit &mdash; Chomex Container Unit, Plano Showroom</span>
+          <span class="txn-amt">$2,000.00</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- BALANCE SHEET -->
+  <div class="divider">
+    <span class="divider-text">Fixed Assets &mdash; Balance Sheet</span>
+    <div class="divider-line"></div>
+    <span class="divider-text">As of March 20, 2026</span>
+  </div>
+
+  <div class="bs-grid">
+
+    <div class="bs-card">
+      <div class="bs-head">Equipment &amp; Physical</div>
+      <div class="bs-row"><span class="bs-row-name">Exercise Equipment (4001)</span><span class="bs-row-val">$1,889,547.98</span></div>
+      <div class="bs-row"><span class="bs-row-name">Equipment Asset</span><span class="bs-row-val">$29,419.77</span></div>
+      <div class="bs-row"><span class="bs-row-name">Restaurant Equipment (4007)</span><span class="bs-row-val">$2,180.77</span></div>
+      <div class="bs-row"><span class="bs-row-name">Sauna Equipment (4010)</span><span class="bs-row-val">$17,191.23</span></div>
+      <div class="bs-total">
+        <span class="bs-total-label">Subtotal</span>
+        <span class="bs-total-val">$1,938,339.75</span>
+      </div>
+    </div>
+
+    <div class="bs-card">
+      <div class="bs-head">Infrastructure &amp; Improvements</div>
+      <div class="bs-row"><span class="bs-row-name">FF&amp;E &mdash; Office (4002)</span><span class="bs-row-val">$198,223.08</span></div>
+      <div class="bs-row"><span class="bs-row-name">Other Fixed Assets (4015)</span><span class="bs-row-val">$47,120.53</span></div>
+      <div class="bs-row"><span class="bs-row-name">Sign (4009)</span><span class="bs-row-val">$75,728.72</span></div>
+      <div class="bs-row"><span class="bs-row-name">Leaseholds / Start-Up (4004)</span><span class="bs-row-val">$50,223.98</span></div>
+      <div class="bs-total">
+        <span class="bs-total-label">Subtotal</span>
+        <span class="bs-total-val">$371,296.31</span>
+      </div>
+    </div>
+
+    <div class="bs-card">
+      <div class="bs-head">Technology &amp; Depreciation</div>
+      <div class="bs-row"><span class="bs-row-name">Computer &amp; Software (4008)</span><span class="bs-row-val">$43,771.08</span></div>
+      <div class="bs-row"><span class="bs-row-name">Website Development</span><span class="bs-row-val">$27,307.23</span></div>
+      <div class="bs-row"><span class="bs-row-name">Accum. Depreciation (4005)</span><span class="bs-row-val neg">($1,859,141.71)</span></div>
+      <div class="bs-row"><span class="bs-row-name">Accum. Amortization (4006)</span><span class="bs-row-val neg">($47,082.19)</span></div>
+      <div class="bs-total">
+        <span class="bs-total-label">Net Book Value</span>
+        <span class="bs-total-val gold">$574,452.47</span>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ALERT -->
+  <div class="alert">
+    <div class="alert-bar"></div>
+    <div>
+      <div class="alert-title">Action Required &mdash; Account 3010</div>
+      <div class="alert-body">The $2,000 Chomex container deposit is currently parked in <strong>Uncategorized Asset</strong>. Upon purchase confirmation, reclassify to <strong>Account 4015</strong> under AMD Capital (Plano development entity). If the purchase does not proceed, reverse as a refund. Do not carry long-term in Account 3010.</div>
+    </div>
+  </div>
+
+</div>
+
+<footer>Kinective Fitness Club &nbsp;&middot;&nbsp; Capital Expenditure Dashboard &nbsp;&middot;&nbsp; Accrual Basis &nbsp;&middot;&nbsp; March 20, 2026</footer>
+
+<script>
+  window.addEventListener('load', () => {
+    setTimeout(() => {
+      document.querySelectorAll('.cat-bar-fill').forEach(el => {
+        el.style.width = el.dataset.w + '%';
+      });
+    }, 200);
+  });
+</script>
+</body>
+</html>
