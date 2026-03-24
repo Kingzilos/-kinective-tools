@@ -1726,7 +1726,7 @@ function updateTotals() {
     ['8152','2213','9753','0211'].forEach(k => {
       acctClose[k] = (ob[k]||0) + incForAcct(k) - expForAcct(k) + xferForAcct(k);
     });
-    acctClose['3472']    = ob['3472']    || 0; // investment — balance only
+    acctClose['3472']    = (ob['3472']||0) + incForAcct('3472') + xferForAcct('3472'); // investment: balance ± transfers & interest
     ['3775','7698'].forEach(k => {
       acctClose[k] = (ob[k]||0) + incForAcct(k) - expForAcct(k) + xferForAcct(k);
     });
@@ -2903,7 +2903,7 @@ function applyToReport(acctNum, expenses, incomeItems, transfers, filename) {
   // Also store under raw key for reference
   window.transferAdjustments[acctNum]  = xferNet;
 
-  const isKin = ['2213','8152','9753','0211'].includes(acctNum);
+  const isKin = ['2213','8152','9753','0211','3472'].includes(acctNum);
   const arr = isKin ? kinExpenses : amdExpenses;
   for (let i = arr.length-1; i >= 0; i--) {
     if (arr[i].account && arr[i].account.startsWith(acctNum)) arr.splice(i,1);
