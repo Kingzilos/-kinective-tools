@@ -107,6 +107,55 @@
     <div class="card-link">Open <svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></div>
   </a>
 
+  <a class="card" href="https://kingzilos.github.io/-kinective-tools/kinective_plano_payapp_tracker.html">
+    <div class="card-icon"><svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><line x1="9" y1="22" x2="9" y2="12"/><line x1="15" y1="22" x2="15" y2="12"/><line x1="3" y1="12" x2="21" y2="12"/></svg></div>
+    <div class="card-label">Plano · Construction</div>
+    <h2>Pay App Tracker</h2>
+    <p>Structure Tone Southwest pay applications, retainage held, change orders, and balance to finish for the Plano build.</p>
+    <div class="card-link">Open <svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></div>
+  </a>
+
+  <!-- dynamic cards injected here -->
+  <div id="custom-cards-container" style="display:contents;"></div>
+
+  <!-- Add Tool card -->
+  <div class="card add-card" onclick="openAddModal()" style="cursor:pointer;border:1.5px dashed var(--border);background:transparent;align-items:center;justify-content:center;min-height:180px;gap:8px;text-align:center;">
+    <div style="width:36px;height:36px;border-radius:50%;background:var(--bg);display:flex;align-items:center;justify-content:center;">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+    </div>
+    <span style="font-size:0.83rem;font-weight:500;color:var(--blue);">Add Tool</span>
+  </div>
+
+</div>
+
+<!-- ADD TOOL MODAL -->
+<div id="add-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.3);backdrop-filter:blur(4px);z-index:200;align-items:center;justify-content:center;">
+  <div style="background:#fff;border-radius:18px;padding:36px 32px;width:100%;max-width:480px;margin:24px;box-shadow:0 24px 64px rgba(0,0,0,0.12);">
+    <h3 style="font-size:1.05rem;font-weight:600;letter-spacing:-0.02em;margin-bottom:4px;">Add a Tool</h3>
+    <p style="font-size:0.83rem;color:var(--secondary);margin-bottom:24px;line-height:1.5;">It'll appear on the dashboard and save in your browser.</p>
+    <div style="display:flex;flex-direction:column;gap:12px;">
+      <div style="display:flex;flex-direction:column;gap:5px;">
+        <label style="font-size:0.75rem;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;color:var(--tertiary);">Label (category)</label>
+        <input id="new-label" type="text" placeholder="e.g. Payroll" style="padding:9px 14px;background:var(--bg);border:1px solid var(--border);border-radius:10px;font-family:inherit;font-size:0.83rem;color:var(--ink);outline:none;transition:border-color 0.2s;" onfocus="this.style.borderColor='var(--blue)'" onblur="this.style.borderColor='var(--border)'">
+      </div>
+      <div style="display:flex;flex-direction:column;gap:5px;">
+        <label style="font-size:0.75rem;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;color:var(--tertiary);">Tool Name</label>
+        <input id="new-name" type="text" placeholder="e.g. Payroll Dashboard" style="padding:9px 14px;background:var(--bg);border:1px solid var(--border);border-radius:10px;font-family:inherit;font-size:0.83rem;color:var(--ink);outline:none;transition:border-color 0.2s;" onfocus="this.style.borderColor='var(--blue)'" onblur="this.style.borderColor='var(--border)'">
+      </div>
+      <div style="display:flex;flex-direction:column;gap:5px;">
+        <label style="font-size:0.75rem;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;color:var(--tertiary);">Description</label>
+        <input id="new-desc" type="text" placeholder="One line about what it does" style="padding:9px 14px;background:var(--bg);border:1px solid var(--border);border-radius:10px;font-family:inherit;font-size:0.83rem;color:var(--ink);outline:none;transition:border-color 0.2s;" onfocus="this.style.borderColor='var(--blue)'" onblur="this.style.borderColor='var(--border)'">
+      </div>
+      <div style="display:flex;flex-direction:column;gap:5px;">
+        <label style="font-size:0.75rem;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;color:var(--tertiary);">URL</label>
+        <input id="new-url" type="text" placeholder="https://kingzilos.github.io/-kinective-tools/..." style="padding:9px 14px;background:var(--bg);border:1px solid var(--border);border-radius:10px;font-family:inherit;font-size:0.83rem;color:var(--ink);outline:none;transition:border-color 0.2s;" onfocus="this.style.borderColor='var(--blue)'" onblur="this.style.borderColor='var(--border)'">
+      </div>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:24px;">
+      <button onclick="saveNewTool()" style="flex:1;padding:10px 20px;background:var(--blue);color:#fff;border:none;border-radius:10px;font-family:inherit;font-size:0.83rem;font-weight:500;cursor:pointer;transition:background 0.2s;" onmouseover="this.style.background='var(--blue-hover)'" onmouseout="this.style.background='var(--blue)'">Add Tool</button>
+      <button onclick="closeAddModal()" style="padding:10px 20px;background:var(--bg);color:var(--secondary);border:1px solid var(--border);border-radius:10px;font-family:inherit;font-size:0.83rem;font-weight:500;cursor:pointer;">Cancel</button>
+    </div>
+  </div>
 </div>
 
 <div class="divider"></div>
@@ -124,7 +173,75 @@
   window.addEventListener('DOMContentLoaded', () => {
     document.getElementById('footer-date').textContent = new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
     renderConfig();
+    renderCustomCards();
   });
+
+  // ── custom cards ──
+  const STORAGE_KEY = 'kinective_custom_tools';
+
+  function getCustomTools() {
+    try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; }
+    catch { return []; }
+  }
+
+  function renderCustomCards() {
+    const container = document.getElementById('custom-cards-container');
+    container.innerHTML = '';
+    getCustomTools().forEach((tool, idx) => {
+      const a = document.createElement('a');
+      a.className = 'card';
+      a.href = tool.url;
+      a.innerHTML = `
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;">
+          <div class="card-icon">
+            <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
+          </div>
+          <button onclick="removeCustomTool(event,${idx})" title="Remove" style="background:none;border:none;cursor:pointer;padding:4px;border-radius:6px;color:var(--tertiary);font-size:16px;line-height:1;transition:color 0.15s;" onmouseover="this.style.color='#ff3b30'" onmouseout="this.style.color='var(--tertiary)'">×</button>
+        </div>
+        <div class="card-label">${tool.label}</div>
+        <h2>${tool.name}</h2>
+        <p>${tool.desc}</p>
+        <div class="card-link">Open <svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></div>`;
+      container.appendChild(a);
+    });
+  }
+
+  function removeCustomTool(e, idx) {
+    e.preventDefault();
+    e.stopPropagation();
+    const tools = getCustomTools();
+    tools.splice(idx, 1);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(tools));
+    renderCustomCards();
+  }
+
+  function openAddModal() {
+    const m = document.getElementById('add-modal');
+    m.style.display = 'flex';
+    setTimeout(() => document.getElementById('new-name').focus(), 50);
+  }
+
+  function closeAddModal() {
+    document.getElementById('add-modal').style.display = 'none';
+    ['new-label','new-name','new-desc','new-url'].forEach(id => document.getElementById(id).value = '');
+  }
+
+  document.getElementById('add-modal').addEventListener('click', function(e) {
+    if (e.target === this) closeAddModal();
+  });
+
+  function saveNewTool() {
+    const label = document.getElementById('new-label').value.trim();
+    const name  = document.getElementById('new-name').value.trim();
+    const desc  = document.getElementById('new-desc').value.trim();
+    const url   = document.getElementById('new-url').value.trim();
+    if (!name || !url) { alert('Tool name and URL are required.'); return; }
+    const tools = getCustomTools();
+    tools.push({ label: label || 'Tool', name, desc, url });
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(tools));
+    renderCustomCards();
+    closeAddModal();
+  }
   function renderConfig() {
     const url = localStorage.getItem('sb_url');
     const key = localStorage.getItem('sb_key');
