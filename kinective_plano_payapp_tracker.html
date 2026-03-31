@@ -175,6 +175,10 @@
     <div class="header-right">
       <span class="badge gray">24 Mar 2023</span>
       <span class="badge blue" id="hdr-badge">PA10 · Mar 31, 2026</span>
+      <span id="sync-indicator" style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text-secondary);margin-left:4px;">
+        <span id="sync-dot" style="width:7px;height:7px;border-radius:50%;background:#d1d5db;flex-shrink:0;transition:background 0.3s;"></span>
+        <span id="sync-label">—</span>
+      </span>
     </div>
   </div>
 </div>
@@ -391,15 +395,19 @@
 
 <script>
 const ORIG = 30438883.00;
+const SB_TABLE = 'plano_payapps';
 
-const payApps = [
+// ── Base pay app data (source of truth for hardcoded apps) ──
+const BASE_PAYAPPS = [
   { app:5,  inv:'21002711005', date:'2025-10-31', period:'Oct 31, 2025', coNet:0,         work:1579769.40, ret:155476.94, elr:1424292.46, prev:0,           due:1424292.46, btf:29014590.54, status:'Paid',    retAdded:155476.94 },
-  { app:6,  inv:'21002711006', date:'2025-11-25', period:'Nov 30, 2025', coNet:0,         work:1983342.94, ret:195834.29,  elr:1787508.65, prev:1424292.46,  due:363216.19,  btf:28651374.35, status:'Paid',    retAdded:40357.35 },
-  { app:7,  inv:'21002711007', date:'2026-01-12', period:'Dec 31, 2025', coNet:0,         work:2175550.39, ret:215055.04,  elr:1960495.35, prev:1787508.65,  due:171937.00,  btf:28479437.35, status:'Paid',    retAdded:19220.75 },
-  { app:8,  inv:'21002711008', date:'2026-01-21', period:'Jan 31, 2026', coNet:32199.58,  work:3210483.58, ret:318548.36,  elr:2891935.22, prev:1959445.65,  due:932489.57,  btf:27579147.36, status:'Paid',    retAdded:103493.32 },
-  { app:9,  inv:'21002711009', date:'2026-02-25', period:'Feb 28, 2026', coNet:11507.99,  work:4393595.19, ret:436859.54,  elr:3956735.65, prev:2891935.22,  due:1064800.43, btf:26493655.34, status:'Paid',    retAdded:118311.18 },
-  { app:10, inv:'21002711010', date:'2026-03-26', period:'Mar 31, 2026', coNet:266685.95, work:6200524.14, ret:617552.45,  elr:5582971.69, prev:3956735.65,  due:1626236.04, btf:25122597.26, status:'Pending', retAdded:180692.91 },
+  { app:6,  inv:'21002711006', date:'2025-11-25', period:'Nov 30, 2025', coNet:0,         work:1983342.94, ret:195834.29, elr:1787508.65, prev:1424292.46,  due:363216.19,  btf:28651374.35, status:'Paid',    retAdded:40357.35 },
+  { app:7,  inv:'21002711007', date:'2026-01-12', period:'Dec 31, 2025', coNet:0,         work:2175550.39, ret:215055.04, elr:1960495.35, prev:1787508.65,  due:171937.00,  btf:28479437.35, status:'Paid',    retAdded:19220.75 },
+  { app:8,  inv:'21002711008', date:'2026-01-21', period:'Jan 31, 2026', coNet:32199.58,  work:3210483.58, ret:318548.36, elr:2891935.22, prev:1959445.65,  due:932489.57,  btf:27579147.36, status:'Paid',    retAdded:103493.32 },
+  { app:9,  inv:'21002711009', date:'2026-02-25', period:'Feb 28, 2026', coNet:11507.99,  work:4393595.19, ret:436859.54, elr:3956735.65, prev:2891935.22,  due:1064800.43, btf:26493655.34, status:'Paid',    retAdded:118311.18 },
+  { app:10, inv:'21002711010', date:'2026-03-26', period:'Mar 31, 2026', coNet:266685.95, work:6200524.14, ret:617552.45, elr:5582971.69, prev:3956735.65,  due:1626236.04, btf:25122597.26, status:'Pending', retAdded:180692.91 },
 ];
+
+let payApps = BASE_PAYAPPS.map(p=>({...p}));
 
 const cos = [
   { num:'CR01', status:'Approved', date:'',           desc:'Addendum to Contract',              cause:'Contract addendum',                                                      cost:0,         days:0 },
@@ -418,6 +426,110 @@ const cos = [
   { num:'CR14', status:'Approved', date:'2026-02-04', desc:'RFI0052 Ice Maker Substitution',     cause:'Discontinued model; substitute UYPO3010A per RFI0052',                   cost:2288.58,   days:0 },
 ];
 
+// ── Supabase helpers ──
+function getSBCreds() {
+  return { url: localStorage.getItem('sb_url'), key: localStorage.getItem('sb_key') };
+}
+
+function setSyncStatus(state) {
+  const dot = document.getElementById('sync-dot');
+  const label = document.getElementById('sync-label');
+  const colors = { synced:'#22c55e', saving:'#f59e0b', error:'#ef4444', offline:'#d1d5db' };
+  const labels = { synced:'Synced', saving:'Saving...', error:'Sync error', offline:'No sync' };
+  dot.style.background = colors[state] || colors.offline;
+  label.textContent = labels[state] || '—';
+}
+
+async function sbFetch(path, opts={}) {
+  const {url, key} = getSBCreds();
+  if (!url || !key) return null;
+  try {
+    const res = await fetch(`${url}/rest/v1/${path}`, {
+      headers: { 'apikey': key, 'Authorization': `Bearer ${key}`, 'Content-Type': 'application/json', 'Prefer': 'return=representation', ...opts.headers },
+      ...opts
+    });
+    if (!res.ok) return null;
+    return res.json();
+  } catch { return null; }
+}
+
+async function loadFromSupabase() {
+  const {url, key} = getSBCreds();
+  if (!url || !key) { setSyncStatus('offline'); return; }
+  setSyncStatus('saving');
+
+  // Try to fetch — table may not exist yet, that's fine
+  const rows = await sbFetch(`${SB_TABLE}?order=app_num.asc`, { method:'GET' });
+  if (!rows || rows.length === 0) {
+    // Nothing saved yet — push base data up
+    await pushAllToSupabase();
+    setSyncStatus('synced');
+    return;
+  }
+
+  // Merge: remote rows override base data; remote-only rows are appended
+  const baseNums = new Set(BASE_PAYAPPS.map(p=>p.app));
+  payApps = BASE_PAYAPPS.map(p=>({...p}));
+
+  rows.forEach(row => {
+    const idx = payApps.findIndex(p=>p.app===row.app_num);
+    const remote = {
+      app: row.app_num, inv: row.inv_no, date: row.invoice_date,
+      period: row.period_to, coNet: parseFloat(row.co_net)||0,
+      work: parseFloat(row.work_completed)||0, ret: parseFloat(row.retainage)||0,
+      elr: parseFloat(row.elr)||0, prev: parseFloat(row.prev_certs)||0,
+      due: parseFloat(row.current_due)||0, btf: parseFloat(row.btf)||0,
+      status: row.status, retAdded: parseFloat(row.ret_added)||0
+    };
+    if (idx >= 0) {
+      // Only override status for base apps (user may have toggled)
+      payApps[idx].status = row.status;
+    } else if (!baseNums.has(row.app_num)) {
+      payApps.push(remote);
+    }
+  });
+
+  // Sort by app number
+  payApps.sort((a,b)=>a.app-b.app);
+  setSyncStatus('synced');
+  renderAll();
+}
+
+async function pushAllToSupabase() {
+  const {url, key} = getSBCreds();
+  if (!url || !key) return;
+  const rows = payApps.map(p=>({
+    app_num: p.app, inv_no: p.inv, invoice_date: p.date, period_to: p.period,
+    co_net: p.coNet, work_completed: p.work, retainage: p.ret, elr: p.elr,
+    prev_certs: p.prev, current_due: p.due, btf: p.btf, status: p.status,
+    ret_added: p.retAdded||0
+  }));
+  await sbFetch(`${SB_TABLE}`, {
+    method: 'POST',
+    headers: { 'Prefer': 'resolution=merge-duplicates,return=representation' },
+    body: JSON.stringify(rows)
+  });
+}
+
+async function saveToSupabase(pa) {
+  const {url, key} = getSBCreds();
+  if (!url || !key) return;
+  setSyncStatus('saving');
+  const row = {
+    app_num: pa.app, inv_no: pa.inv, invoice_date: pa.date, period_to: pa.period,
+    co_net: pa.coNet, work_completed: pa.work, retainage: pa.ret, elr: pa.elr,
+    prev_certs: pa.prev, current_due: pa.due, btf: pa.btf, status: pa.status,
+    ret_added: pa.retAdded||0
+  };
+  const result = await sbFetch(`${SB_TABLE}`, {
+    method: 'POST',
+    headers: { 'Prefer': 'resolution=merge-duplicates,return=representation' },
+    body: JSON.stringify(row)
+  });
+  setSyncStatus(result ? 'synced' : 'error');
+}
+
+// ── Formatters ──
 const f = (n,d=0) => {
   if (n===null||isNaN(n)) return '—';
   const s = Math.abs(n).toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d});
@@ -445,7 +557,6 @@ function renderOverview() {
   const last=payApps[payApps.length-1];
   const ct=ORIG+last.coNet;
   const p=last.work/ct;
-
   const totalCashPaid = payApps.reduce((s,pa)=>s+pa.due, 0);
   const netApprovedCOs = last.coNet;
   const stswBaseOnly = totalCashPaid - netApprovedCOs;
@@ -462,7 +573,6 @@ function renderOverview() {
   document.getElementById('prog-right').textContent=f(ct)+' total contract';
   document.getElementById('prog-left').textContent=`PA${last.app} · ${last.period}`;
 
-  // funding tracker
   document.getElementById('fund-used').textContent=f(stswBaseOnly);
   const stsw_rem_el = document.getElementById('fund-used-rem');
   stsw_rem_el.textContent = `${f(ORIG - stswBaseOnly)} remaining on base contract`;
@@ -483,9 +593,10 @@ function renderOverview() {
   });
 }
 
-function toggleStatus(idx) {
+async function toggleStatus(idx) {
   payApps[idx].status = payApps[idx].status === 'Paid' ? 'Pending' : 'Paid';
   renderAll();
+  await saveToSupabase(payApps[idx]);
 }
 
 function renderPA() {
@@ -495,7 +606,6 @@ function renderPA() {
   payApps.forEach((pa,idx)=>{
     const isPaid=pa.status==='Paid';
     const toggleBtn=`<button onclick="toggleStatus(${idx})" style="margin-left:8px;padding:2px 8px;border-radius:100px;font-size:10.5px;font-weight:500;cursor:pointer;border:1.5px solid ${isPaid?'#d1fae5':'#fde68a'};background:${isPaid?'#ecfdf5':'#fffbeb'};color:${isPaid?'#16a34a':'#d97706'};font-family:var(--font);transition:all 0.15s;">${isPaid?'Mark Pending':'Mark Paid'}</button>`;
-    // per-app CO = this app's cumulative coNet minus previous app's cumulative coNet
     const prevCoNet = idx > 0 ? payApps[idx-1].coNet : 0;
     const coThisApp = pa.coNet - prevCoNet;
     totalCO += coThisApp;
@@ -518,7 +628,7 @@ function renderRet() {
   document.getElementById('ret-kpi-held').textContent=f(payApps[payApps.length-1].ret);
 }
 
-function addPA() {
+async function addPA() {
   const num=parseInt(document.getElementById('new-app-num').value);
   const inv=document.getElementById('new-inv').value.trim();
   const date=document.getElementById('new-date').value;
@@ -531,9 +641,13 @@ function addPA() {
 
   if(!num||!date||!work){showAlert('pa-alert','App number, date, and work completed are required.',false);return;}
   const ret=work*(retP/100), elr=work-ret, due=elr-prev, btf=(ORIG+coNet)-elr;
-  payApps.push({app:num,inv,date,period,coNet,work,ret,elr,prev,due,btf,status});
+  const retAdded = ret - (payApps.length>0 ? payApps[payApps.length-1].ret : 0);
+  const newPA = {app:num,inv,date,period,coNet,work,ret,elr,prev,due,btf,status,retAdded};
+  payApps.push(newPA);
   renderAll(); clearPA();
-  showAlert('pa-alert',`Pay App ${num} added.`,true);
+  showAlert('pa-alert',`PA${num} added and saving...`,true);
+  await saveToSupabase(newPA);
+  showAlert('pa-alert',`PA${num} saved to Supabase.`,true);
 }
 
 function clearPA(){
@@ -546,11 +660,14 @@ function showAlert(id,msg,ok){
   const el=document.getElementById(id);
   el.textContent=msg;
   el.className='alert '+(ok?'ok':'err');
-  setTimeout(()=>{el.className='alert';},4000);
+  setTimeout(()=>{ el.className='alert'; },4000);
 }
 
 function renderAll(){renderOverview();renderPA();renderRet();}
+
+// ── Boot ──
 renderAll();
+loadFromSupabase();
 </script>
 </body>
 </html>
