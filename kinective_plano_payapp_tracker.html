@@ -426,7 +426,9 @@ const cos = [
   { num:'CR14', status:'Approved', date:'2026-02-04', desc:'RFI0052 Ice Maker Substitution',     cause:'Discontinued model; substitute UYPO3010A per RFI0052',                   cost:2288.58,   days:0 },
 ];
 
-// ── Supabase helpers ──
+// ── Supabase sync — saves entire state as one JSON blob ──
+const BLOB_KEY = 'plano_payapps_state';
+
 function getSBCreds() {
   return { url: localStorage.getItem('sb_url'), key: localStorage.getItem('sb_key') };
 }
@@ -440,17 +442,42 @@ function setSyncStatus(state) {
   label.textContent = labels[state] || '—';
 }
 
-async function sbFetch(path, opts={}) {
+async function sbGet() {
   const {url, key} = getSBCreds();
   if (!url || !key) return null;
   try {
-    const res = await fetch(`${url}/rest/v1/${path}`, {
-      headers: { 'apikey': key, 'Authorization': `Bearer ${key}`, 'Content-Type': 'application/json', 'Prefer': 'return=representation', ...opts.headers },
-      ...opts
+    const res = await fetch(`${url}/rest/v1/kv_store?key=eq.${BLOB_KEY}&select=value`, {
+      headers: { 'apikey': key, 'Authorization': `Bearer ${key}` }
     });
     if (!res.ok) return null;
-    return res.json();
+    const rows = await res.json();
+    return rows.length > 0 ? JSON.parse(rows[0].value) : null;
   } catch { return null; }
+}
+
+async function sbSet(data) {
+  const {url, key} = getSBCreds();
+  if (!url || !key) return false;
+  try {
+    const res = await fetch(`${url}/rest/v1/kv_store`, {
+      method: 'POST',
+      headers: {
+        'apikey': key, 'Authorization': `Bearer ${key}`,
+        'Content-Type': 'application/json',
+        'Prefer': 'resolution=merge-duplicates'
+      },
+      body: JSON.stringify({ key: BLOB_KEY, value: JSON.stringify(data) })
+    });
+    return res.ok;
+  } catch { return false; }
+}
+
+async function saveAll() {
+  const {url, key} = getSBCreds();
+  if (!url || !key) { setSyncStatus('offline'); return; }
+  setSyncStatus('saving');
+  const ok = await sbSet(payApps);
+  setSyncStatus(ok ? 'synced' : 'error');
 }
 
 async function loadFromSupabase() {
@@ -458,75 +485,29 @@ async function loadFromSupabase() {
   if (!url || !key) { setSyncStatus('offline'); return; }
   setSyncStatus('saving');
 
-  // Try to fetch — table may not exist yet, that's fine
-  const rows = await sbFetch(`${SB_TABLE}?order=app_num.asc`, { method:'GET' });
-  if (!rows || rows.length === 0) {
-    // Nothing saved yet — push base data up
-    await pushAllToSupabase();
+  const remote = await sbGet();
+  if (remote && Array.isArray(remote) && remote.length > 0) {
+    // Merge: keep base financial data but take ALL fields from remote for matching apps
+    // For base apps: trust remote entirely (user may have edited status, notes, etc.)
+    // For extra apps: append them
+    const baseNums = new Set(BASE_PAYAPPS.map(p => p.app));
+    const remoteMap = {};
+    remote.forEach(r => { remoteMap[r.app] = r; });
+
+    payApps = BASE_PAYAPPS.map(p => remoteMap[p.app] ? { ...p, ...remoteMap[p.app] } : { ...p });
+
+    // Append user-added apps not in base
+    remote.forEach(r => {
+      if (!baseNums.has(r.app)) payApps.push(r);
+    });
+
+    payApps.sort((a,b) => a.app - b.app);
     setSyncStatus('synced');
-    return;
+    renderAll();
+  } else {
+    // Nothing saved yet — push current state up
+    await saveAll();
   }
-
-  // Merge: remote rows override base data; remote-only rows are appended
-  const baseNums = new Set(BASE_PAYAPPS.map(p=>p.app));
-  payApps = BASE_PAYAPPS.map(p=>({...p}));
-
-  rows.forEach(row => {
-    const idx = payApps.findIndex(p=>p.app===row.app_num);
-    const remote = {
-      app: row.app_num, inv: row.inv_no, date: row.invoice_date,
-      period: row.period_to, coNet: parseFloat(row.co_net)||0,
-      work: parseFloat(row.work_completed)||0, ret: parseFloat(row.retainage)||0,
-      elr: parseFloat(row.elr)||0, prev: parseFloat(row.prev_certs)||0,
-      due: parseFloat(row.current_due)||0, btf: parseFloat(row.btf)||0,
-      status: row.status, retAdded: parseFloat(row.ret_added)||0
-    };
-    if (idx >= 0) {
-      // Only override status for base apps (user may have toggled)
-      payApps[idx].status = row.status;
-    } else if (!baseNums.has(row.app_num)) {
-      payApps.push(remote);
-    }
-  });
-
-  // Sort by app number
-  payApps.sort((a,b)=>a.app-b.app);
-  setSyncStatus('synced');
-  renderAll();
-}
-
-async function pushAllToSupabase() {
-  const {url, key} = getSBCreds();
-  if (!url || !key) return;
-  const rows = payApps.map(p=>({
-    app_num: p.app, inv_no: p.inv, invoice_date: p.date, period_to: p.period,
-    co_net: p.coNet, work_completed: p.work, retainage: p.ret, elr: p.elr,
-    prev_certs: p.prev, current_due: p.due, btf: p.btf, status: p.status,
-    ret_added: p.retAdded||0
-  }));
-  await sbFetch(`${SB_TABLE}`, {
-    method: 'POST',
-    headers: { 'Prefer': 'resolution=merge-duplicates,return=representation' },
-    body: JSON.stringify(rows)
-  });
-}
-
-async function saveToSupabase(pa) {
-  const {url, key} = getSBCreds();
-  if (!url || !key) return;
-  setSyncStatus('saving');
-  const row = {
-    app_num: pa.app, inv_no: pa.inv, invoice_date: pa.date, period_to: pa.period,
-    co_net: pa.coNet, work_completed: pa.work, retainage: pa.ret, elr: pa.elr,
-    prev_certs: pa.prev, current_due: pa.due, btf: pa.btf, status: pa.status,
-    ret_added: pa.retAdded||0
-  };
-  const result = await sbFetch(`${SB_TABLE}`, {
-    method: 'POST',
-    headers: { 'Prefer': 'resolution=merge-duplicates,return=representation' },
-    body: JSON.stringify(row)
-  });
-  setSyncStatus(result ? 'synced' : 'error');
 }
 
 // ── Formatters ──
@@ -596,7 +577,7 @@ function renderOverview() {
 async function toggleStatus(idx) {
   payApps[idx].status = payApps[idx].status === 'Paid' ? 'Pending' : 'Paid';
   renderAll();
-  await saveToSupabase(payApps[idx]);
+  await saveAll();
 }
 
 function renderPA() {
@@ -645,9 +626,9 @@ async function addPA() {
   const newPA = {app:num,inv,date,period,coNet,work,ret,elr,prev,due,btf,status,retAdded};
   payApps.push(newPA);
   renderAll(); clearPA();
-  showAlert('pa-alert',`PA${num} added and saving...`,true);
-  await saveToSupabase(newPA);
-  showAlert('pa-alert',`PA${num} saved to Supabase.`,true);
+  showAlert('pa-alert',`PA${num} added — saving...`,true);
+  await saveAll();
+  showAlert('pa-alert',`PA${num} saved.`,true);
 }
 
 function clearPA(){
