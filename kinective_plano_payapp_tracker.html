@@ -237,7 +237,7 @@
       </div>
       <div class="progress-track"><div class="progress-fill" id="prog-fill" style="width:0%"></div></div>
       <div class="progress-meta">
-        <span>PA5 · Oct 2025</span>
+        <span id="prog-left">PA10 · Mar 2026</span>
         <span id="prog-right">$30,705,569 total contract</span>
       </div>
     </div>
@@ -267,17 +267,17 @@
         <div class="funding-rem val-green">$25,000,000 available</div>
       </div>
       <div class="funding-card">
-        <div class="funding-label">Owner Cash (STSW Payments only)</div>
+        <div class="funding-label">Owner Cash (STSW — Base Contract Only)</div>
         <div class="funding-used" id="fund-used">—</div>
         <div class="funding-rem" id="fund-used-rem" style="font-size:11.5px;margin-top:3px;"></div>
       </div>
       <div class="funding-card">
         <div class="funding-label">Total Change Orders (Net Approved)</div>
         <div class="funding-used val-blue" id="fund-co">—</div>
-        <div class="funding-rem val-dim">Added to contract ceiling only</div>
+        <div class="funding-rem val-dim">Billed through pay apps</div>
       </div>
       <div class="funding-card">
-        <div class="funding-label">Owner Cash (Total Project)</div>
+        <div class="funding-label">Owner Cash (Total — Base + COs)</div>
         <div class="funding-used" id="fund-total-proj">—</div>
         <div class="funding-rem val-dim">STSW payments + all other costs</div>
       </div>
@@ -305,7 +305,7 @@
         <thead><tr>
           <th>App</th><th>Invoice</th><th>Date</th><th>Paid Date</th>
           <th class="num">Current Due</th>
-          <th class="num">COs (Cumul.)</th>
+          <th class="num">Change Orders</th>
           <th class="num">Work Completed</th><th class="num">Retainage</th>
           <th class="num">Balance to Finish</th><th>Status</th>
         </tr></thead>
@@ -393,12 +393,12 @@
 const ORIG = 30438883.00;
 
 const payApps = [
-  { app:5,  inv:'21002711005', date:'2025-10-31', period:'Oct 31, 2025', coNet:0,         work:1579769.40, ret:155476.94, elr:1424292.46, prev:0,           due:1424292.46, btf:29014590.54, status:'Paid' },
-  { app:6,  inv:'21002711006', date:'2025-11-25', period:'Nov 30, 2025', coNet:0,         work:1983342.94, ret:195195.64, elr:1788147.30, prev:1424292.46,  due:363854.84,  btf:28651374.35, status:'Paid' },
-  { app:7,  inv:'21002711007', date:'2026-01-12', period:'Dec 31, 2025', coNet:0,         work:2174384.05, ret:213997.42, elr:1960386.63, prev:1788147.30,  due:172239.33,  btf:28479437.35, status:'Paid' },
-  { app:8,  inv:'21002711008', date:'2026-01-21', period:'Jan 31, 2026', coNet:32199.58,  work:3210483.58, ret:318548.36, elr:2891935.22, prev:1959445.65,  due:932489.57,  btf:27579147.36, status:'Paid' },
-  { app:9,  inv:'21002711009', date:'2026-02-25', period:'Feb 28, 2026', coNet:11507.99,  work:4393595.19, ret:436859.54, elr:3956735.65, prev:2891935.22,  due:1064800.43, btf:26493655.34, status:'Paid' },
-  { app:10, inv:'21002711010', date:'2026-03-26', period:'Mar 31, 2026', coNet:266685.95, work:6200524.14, ret:617552.45, elr:5582971.69, prev:3956735.65,  due:1626236.04, btf:25122597.26, status:'Pending' },
+  { app:5,  inv:'21002711005', date:'2025-10-31', period:'Oct 31, 2025', coNet:0,         work:1579769.40, ret:155476.94, elr:1424292.46, prev:0,           due:1424292.46, btf:29014590.54, status:'Paid',    retAdded:155476.94 },
+  { app:6,  inv:'21002711006', date:'2025-11-25', period:'Nov 30, 2025', coNet:0,         work:1983342.94, ret:195834.29,  elr:1787508.65, prev:1424292.46,  due:363216.19,  btf:28651374.35, status:'Paid',    retAdded:40357.35 },
+  { app:7,  inv:'21002711007', date:'2026-01-12', period:'Dec 31, 2025', coNet:0,         work:2175550.39, ret:215055.04,  elr:1960495.35, prev:1787508.65,  due:171937.00,  btf:28479437.35, status:'Paid',    retAdded:19220.75 },
+  { app:8,  inv:'21002711008', date:'2026-01-21', period:'Jan 31, 2026', coNet:32199.58,  work:3210483.58, ret:318548.36,  elr:2891935.22, prev:1959445.65,  due:932489.57,  btf:27579147.36, status:'Paid',    retAdded:103493.32 },
+  { app:9,  inv:'21002711009', date:'2026-02-25', period:'Feb 28, 2026', coNet:11507.99,  work:4393595.19, ret:436859.54,  elr:3956735.65, prev:2891935.22,  due:1064800.43, btf:26493655.34, status:'Paid',    retAdded:118311.18 },
+  { app:10, inv:'21002711010', date:'2026-03-26', period:'Mar 31, 2026', coNet:266685.95, work:6200524.14, ret:617552.45,  elr:5582971.69, prev:3956735.65,  due:1626236.04, btf:25122597.26, status:'Pending', retAdded:180692.91 },
 ];
 
 const cos = [
@@ -446,13 +446,10 @@ function renderOverview() {
   const ct=ORIG+last.coNet;
   const p=last.work/ct;
 
-  // sum of actual cash paid out to GC (invoice amounts, no CO adjustment)
   const totalCashPaid = payApps.reduce((s,pa)=>s+pa.due, 0);
-  // net approved COs (contract ceiling delta only)
-  const netCOs = last.coNet;
-  // total project owner cash = STSW payments; "Total Project" line shown as-is from tracker
-  const TOTAL_PROJECT_CASH = 5582972; // from expenditures tracker (all owner cash flows)
-  const RETAINAGE_REMAINING = 2426335.85; // from spreadsheet
+  const netApprovedCOs = last.coNet;
+  const stswBaseOnly = totalCashPaid - netApprovedCOs;
+  const totalProject = totalCashPaid;
 
   document.getElementById('kpi-cot').textContent=f(ct);
   document.getElementById('kpi-co-sub').textContent=`+${f(last.coNet)} approved COs`;
@@ -463,15 +460,15 @@ function renderOverview() {
   document.getElementById('kpi-btf').textContent=f(last.btf);
   document.getElementById('pct-badge').textContent=pct(p)+' Complete';
   document.getElementById('prog-right').textContent=f(ct)+' total contract';
+  document.getElementById('prog-left').textContent=`PA${last.app} · ${last.period}`;
 
   // funding tracker
-  document.getElementById('fund-used').textContent=f(totalCashPaid);
-  const stsw_rem = 166304.83; // remaining from spreadsheet screenshot
+  document.getElementById('fund-used').textContent=f(stswBaseOnly);
   const stsw_rem_el = document.getElementById('fund-used-rem');
-  stsw_rem_el.textContent = '$'+stsw_rem.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})+' remaining';
+  stsw_rem_el.textContent = `${f(ORIG - stswBaseOnly)} remaining on base contract`;
   stsw_rem_el.className = 'funding-rem val-green';
-  document.getElementById('fund-co').textContent=f(netCOs);
-  document.getElementById('fund-total-proj').textContent=f(TOTAL_PROJECT_CASH);
+  document.getElementById('fund-co').textContent=f(netApprovedCOs);
+  document.getElementById('fund-total-proj').textContent=f(totalProject);
   document.getElementById('fund-ret').textContent=f(last.ret);
 
   setTimeout(()=>{ document.getElementById('prog-fill').style.width=(p*100).toFixed(1)+'%'; },150);
@@ -494,27 +491,29 @@ function toggleStatus(idx) {
 function renderPA() {
   const tbody=document.getElementById('pa-tbody'); tbody.innerHTML='';
   document.getElementById('pa-sub').textContent=`${payApps.length} applications · Contract 21002711`;
+  let totalCO=0;
   payApps.forEach((pa,idx)=>{
     const isPaid=pa.status==='Paid';
     const toggleBtn=`<button onclick="toggleStatus(${idx})" style="margin-left:8px;padding:2px 8px;border-radius:100px;font-size:10.5px;font-weight:500;cursor:pointer;border:1.5px solid ${isPaid?'#d1fae5':'#fde68a'};background:${isPaid?'#ecfdf5':'#fffbeb'};color:${isPaid?'#16a34a':'#d97706'};font-family:var(--font);transition:all 0.15s;">${isPaid?'Mark Pending':'Mark Paid'}</button>`;
+    // per-app CO = this app's cumulative coNet minus previous app's cumulative coNet
+    const prevCoNet = idx > 0 ? payApps[idx-1].coNet : 0;
+    const coThisApp = pa.coNet - prevCoNet;
+    totalCO += coThisApp;
     const tr=document.createElement('tr');
-    tr.innerHTML=`<td><strong>PA${pa.app}</strong></td><td class="val-dim">${pa.inv}</td><td>${pa.date}</td><td>${pa.period}</td><td class="num" style="font-weight:600">${f(pa.due)}</td><td class="num">${pa.coNet?`<span class="val-blue">${f(pa.coNet)}</span>`:'<span class="val-dim">—</span>'}</td><td class="num val-green">${f(pa.work)}</td><td class="num val-red">${f(pa.ret)}</td><td class="num">${f(pa.btf)}</td><td style="white-space:nowrap">${badge(pa.status)}${toggleBtn}</td>`;
+    tr.innerHTML=`<td><strong>PA${pa.app}</strong></td><td class="val-dim">${pa.inv}</td><td>${pa.date}</td><td>${pa.period}</td><td class="num" style="font-weight:600">${f(pa.due)}</td><td class="num">${coThisApp?`<span class="val-blue">${f(coThisApp)}</span>`:'<span class="val-dim">—</span>'}</td><td class="num val-green">${f(pa.work)}</td><td class="num val-red">${f(pa.ret)}</td><td class="num">${f(pa.btf)}</td><td style="white-space:nowrap">${badge(pa.status)}${toggleBtn}</td>`;
     tbody.appendChild(tr);
   });
   const last=payApps[payApps.length-1];
   const tot=payApps.reduce((s,p)=>s+p.due,0);
-  document.getElementById('pa-total').innerHTML=`<td colspan="4"><strong>Totals</strong></td><td class="num"><strong>${f(tot)}</strong></td><td></td><td class="num val-green"><strong>${f(last.work)}</strong></td><td class="num val-red"><strong>${f(last.ret)}</strong></td><td class="num"><strong>${f(last.btf)}</strong></td><td></td>`;
+  document.getElementById('pa-total').innerHTML=`<td colspan="4"><strong>Totals</strong></td><td class="num"><strong>${f(tot)}</strong></td><td class="num val-blue"><strong>${f(totalCO)}</strong></td><td class="num val-green"><strong>${f(last.work)}</strong></td><td class="num val-red"><strong>${f(last.ret)}</strong></td><td class="num"><strong>${f(last.btf)}</strong></td><td></td>`;
 }
 
 function renderRet() {
   const tbody=document.getElementById('ret-tbody'); tbody.innerHTML='';
-  let prev=0;
   payApps.forEach(pa=>{
-    const added=pa.ret-prev;
     const tr=document.createElement('tr');
-    tr.innerHTML=`<td><strong>PA${pa.app}</strong></td><td>${pa.period}</td><td class="num">${f(pa.work)}</td><td class="num val-red">${f(pa.ret)}</td><td class="num">${f(added)}</td><td class="num">${pct(pa.ret/pa.work)}</td>`;
+    tr.innerHTML=`<td><strong>PA${pa.app}</strong></td><td>${pa.period}</td><td class="num">${f(pa.work)}</td><td class="num val-red">${f(pa.ret)}</td><td class="num val-red">${f(pa.retAdded)}</td><td class="num">${pct(pa.ret/pa.work)}</td>`;
     tbody.appendChild(tr);
-    prev=pa.ret;
   });
   document.getElementById('ret-kpi-held').textContent=f(payApps[payApps.length-1].ret);
 }
