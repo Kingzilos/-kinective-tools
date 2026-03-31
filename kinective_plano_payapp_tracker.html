@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kinective Plano — Pay App Tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f0f2f5;
+    --surface: #ffffff;
+    --surface-hover: #fafbfc;
+    --shadow: 0 1px 3px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.06);
+    --shadow-sm: 0 1px 2px rgba(0,0,0,0.05), 0 2px 8px rgba(0,0,0,0.05);
+    --text-primary: #0f1117;
+    --text-secondary: #5a6172;
+    --text-tertiary: #9ba3af;
+    --green: #16a34a;
+    --green-bg: #f0fdf4;
+    --green-badge: #dcfce7;
+    --red: #dc2626;
+    --red-bg: #fef2f2;
+    --red-badge: #fee2e2;
+    --blue: #2563eb;
+    --blue-bg: #eff6ff;
+    --blue-badge: #dbeafe;
+    --amber: #d97706;
+    --amber-bg: #fffbeb;
+    --amber-badge: #fef3c7;
+    --gray-badge: #f3f4f6;
+    --gray-text: #6b7280;
+    --radius: 16px;
+    --radius-sm: 10px;
+    --radius-xs: 6px;
+    --font: 'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: var(--font); background: var(--bg); color: var(--text-primary); font-size: 13.5px; line-height: 1.5; -webkit-font-smoothing: antialiased; }
+
+  /* HEADER */
+  .header { background: var(--surface); box-shadow: var(--shadow-sm); padding: 0 32px; position: sticky; top: 0; z-index: 50; }
+  .header-inner { max-width: 1280px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; height: 64px; gap: 24px; }
+  .header-left { display: flex; align-items: center; gap: 10px; min-width: 0; }
+  .header-logo { font-size: 15px; font-weight: 700; letter-spacing: -0.3px; color: var(--text-primary); white-space: nowrap; }
+  .header-logo span { color: var(--text-tertiary); font-weight: 400; }
+  .header-divider { width: 1px; height: 20px; background: #e5e7eb; flex-shrink: 0; }
+  .header-meta { font-size: 12px; color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .header-right { display: flex; gap: 6px; align-items: center; flex-shrink: 0; }
+
+  /* NAV */
+  .subnav { background: var(--surface); padding: 0 32px; box-shadow: 0 1px 0 #f3f4f6; position: sticky; top: 64px; z-index: 49; }
+  .subnav-inner { max-width: 1280px; margin: 0 auto; }
+  .nav { display: flex; gap: 0; overflow-x: auto; scrollbar-width: none; }
+  .nav::-webkit-scrollbar { display: none; }
+  .nav-item { padding: 0 16px; height: 48px; display: flex; align-items: center; font-size: 13px; font-weight: 500; color: var(--text-secondary); cursor: pointer; border-bottom: 2px solid transparent; white-space: nowrap; transition: color 0.15s; user-select: none; }
+  .nav-item:hover { color: var(--text-primary); }
+  .nav-item.active { color: var(--text-primary); border-bottom-color: var(--text-primary); }
+
+  /* LAYOUT */
+  .main { max-width: 1280px; margin: 0 auto; padding: 28px 32px; }
+  .page { display: none; }
+  .page.active { display: block; }
+
+  /* CARD */
+  .card { background: var(--surface); border-radius: var(--radius); box-shadow: var(--shadow); padding: 24px; margin-bottom: 20px; }
+
+  /* KPI */
+  .kpi-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(185px, 1fr)); gap: 14px; margin-bottom: 20px; }
+  .kpi-card { background: var(--surface); border-radius: var(--radius); box-shadow: var(--shadow); padding: 20px 22px; }
+  .kpi-label { font-size: 11.5px; font-weight: 500; color: var(--text-secondary); margin-bottom: 8px; }
+  .kpi-value { font-size: 23px; font-weight: 700; letter-spacing: -0.5px; line-height: 1; color: var(--text-primary); }
+  .kpi-value.green { color: var(--green); }
+  .kpi-value.red { color: var(--red); }
+  .kpi-value.blue { color: var(--blue); }
+  .kpi-sub { font-size: 11.5px; color: var(--text-tertiary); margin-top: 5px; }
+
+  /* SECTION HEADER */
+  .section-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 14px; }
+  .section-title { font-size: 14px; font-weight: 600; color: var(--text-primary); letter-spacing: -0.1px; }
+  .section-sub { font-size: 12px; color: var(--text-tertiary); margin-top: 2px; }
+
+  /* PROGRESS */
+  .progress-track { background: #f3f4f6; border-radius: 100px; height: 8px; overflow: hidden; margin: 10px 0 6px; }
+  .progress-fill { height: 100%; background: linear-gradient(90deg, #16a34a, #22c55e); border-radius: 100px; transition: width 1s cubic-bezier(.4,0,.2,1); }
+  .progress-meta { display: flex; justify-content: space-between; font-size: 11.5px; color: var(--text-secondary); }
+
+  /* TABLE */
+  .table-card { background: var(--surface); border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; margin-bottom: 20px; }
+  .table-card-header { padding: 18px 22px 14px; display: flex; align-items: flex-start; justify-content: space-between; }
+  .table-scroll { overflow-x: auto; scrollbar-width: thin; scrollbar-color: #d1d5db #f9fafb; }
+  .table-scroll::-webkit-scrollbar { height: 4px; }
+  .table-scroll::-webkit-scrollbar-track { background: #f9fafb; }
+  .table-scroll::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 2px; }
+  table { width: 100%; border-collapse: collapse; }
+  thead tr { background: #f9fafb; }
+  th { padding: 10px 16px; text-align: left; font-size: 11px; font-weight: 600; color: var(--text-secondary); letter-spacing: 0.4px; text-transform: uppercase; white-space: nowrap; }
+  td { padding: 13px 16px; font-size: 13px; color: var(--text-primary); border-top: 1px solid #f3f4f6; vertical-align: middle; white-space: nowrap; }
+  tbody tr:hover { background: var(--surface-hover); }
+  .total-row td { background: #f9fafb; font-weight: 600; border-top: 1px solid #e5e7eb; }
+  .num { text-align: right; font-variant-numeric: tabular-nums; }
+  .val-green { color: var(--green); font-weight: 500; }
+  .val-red { color: var(--red); font-weight: 500; }
+  .val-blue { color: var(--blue); font-weight: 500; }
+  .val-dim { color: var(--text-tertiary); }
+
+  /* BADGES */
+  .badge { display: inline-flex; align-items: center; padding: 3px 9px; border-radius: 100px; font-size: 11px; font-weight: 500; }
+  .badge.green { background: var(--green-badge); color: var(--green); }
+  .badge.red { background: var(--red-badge); color: var(--red); }
+  .badge.blue { background: var(--blue-badge); color: var(--blue); }
+  .badge.amber { background: var(--amber-badge); color: var(--amber); }
+  .badge.gray { background: var(--gray-badge); color: var(--gray-text); }
+
+  /* INFO / WARN */
+  .info-box { background: var(--blue-bg); border-radius: var(--radius-sm); padding: 13px 16px; font-size: 12.5px; color: #1e40af; line-height: 1.6; margin-bottom: 20px; }
+  .info-box strong { font-weight: 600; }
+  .warn-box { background: var(--amber-bg); border-radius: var(--radius-sm); padding: 13px 16px; font-size: 12.5px; color: #92400e; line-height: 1.6; margin-bottom: 20px; }
+  .warn-box strong { font-weight: 600; }
+
+  /* FUNDING */
+  .funding-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 14px; margin-bottom: 20px; }
+  .funding-card { background: var(--surface); border-radius: var(--radius); box-shadow: var(--shadow); padding: 18px 20px; }
+  .funding-label { font-size: 11.5px; font-weight: 500; color: var(--text-secondary); margin-bottom: 6px; }
+  .funding-used { font-size: 20px; font-weight: 700; letter-spacing: -0.3px; }
+  .funding-rem { font-size: 12px; margin-top: 3px; }
+
+  /* FORM */
+  .form-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 14px; }
+  .form-group { display: flex; flex-direction: column; gap: 5px; }
+  .form-group.full { grid-column: 1 / -1; }
+  label { font-size: 11.5px; font-weight: 500; color: var(--text-secondary); }
+  input, select, textarea { font-family: var(--font); font-size: 13px; color: var(--text-primary); background: #f9fafb; border: 1.5px solid #e5e7eb; border-radius: var(--radius-xs); padding: 9px 12px; transition: border-color 0.15s, box-shadow 0.15s; outline: none; }
+  input:focus, select:focus, textarea:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(37,99,235,0.1); background: #fff; }
+  textarea { resize: vertical; min-height: 72px; }
+  .form-actions { margin-top: 18px; display: flex; gap: 10px; flex-wrap: wrap; }
+  .btn { padding: 9px 18px; border-radius: var(--radius-xs); font-family: var(--font); font-size: 13px; font-weight: 500; cursor: pointer; border: none; transition: all 0.15s; }
+  .btn-primary { background: var(--text-primary); color: #fff; }
+  .btn-primary:hover { background: #1e2433; }
+  .btn-ghost { background: transparent; color: var(--text-secondary); border: 1.5px solid #e5e7eb; }
+  .btn-ghost:hover { border-color: #9ca3af; color: var(--text-primary); }
+  .calc-hint { background: #f9fafb; border-radius: var(--radius-xs); padding: 12px 14px; font-size: 12px; color: var(--text-secondary); line-height: 2; margin-top: 16px; }
+  .calc-hint span { color: var(--text-primary); font-weight: 500; }
+  .alert { padding: 11px 14px; border-radius: var(--radius-xs); font-size: 13px; margin-top: 14px; display: none; }
+  .alert.ok { display: block; background: var(--green-bg); color: var(--green); }
+  .alert.err { display: block; background: var(--red-bg); color: var(--red); }
+
+  /* RESPONSIVE */
+  @media (max-width: 768px) {
+    .header, .subnav { padding: 0 16px; }
+    .main { padding: 16px; }
+    .kpi-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+    .kpi-card { padding: 16px; }
+    .kpi-value { font-size: 19px; }
+    .header-meta, .header-divider { display: none; }
+    .nav-item { padding: 0 12px; font-size: 12.5px; }
+    th, td { padding: 10px 12px; }
+  }
+  @media (max-width: 480px) {
+    .kpi-grid { grid-template-columns: 1fr 1fr; }
+    .funding-grid { grid-template-columns: 1fr; }
+    .form-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-inner">
+    <div class="header-left">
+      <div class="header-logo">Kinective Plano <span>/ Pay App Tracker</span></div>
+      <div class="header-divider"></div>
+      <div class="header-meta">AMD Capital LLC · Structure Tone Southwest · Contract 21002711</div>
+    </div>
+    <div class="header-right">
+      <span class="badge gray">24 Mar 2023</span>
+      <span class="badge blue" id="hdr-badge">PA10 · Mar 31, 2026</span>
+    </div>
+  </div>
+</div>
+
+<div class="subnav">
+  <div class="subnav-inner">
+    <div class="nav">
+      <div class="nav-item active" onclick="switchTab('overview',this)">Overview</div>
+      <div class="nav-item" onclick="switchTab('payapps',this)">Pay Applications</div>
+      <div class="nav-item" onclick="switchTab('retainage',this)">Retainage</div>
+      <div class="nav-item" onclick="switchTab('add',this)">Add Pay App</div>
+    </div>
+  </div>
+</div>
+
+<div class="main">
+
+  <!-- ═══════════════════ OVERVIEW ═══════════════════ -->
+  <div class="page active" id="page-overview">
+    <div class="kpi-grid">
+      <div class="kpi-card">
+        <div class="kpi-label">Original Contract Sum</div>
+        <div class="kpi-value">$30,438,883</div>
+        <div class="kpi-sub">Structure Tone Southwest</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Contract Total w/ COs</div>
+        <div class="kpi-value blue" id="kpi-cot">$30,705,569</div>
+        <div class="kpi-sub" id="kpi-co-sub">+$266,686 approved COs</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Work Certified to Date</div>
+        <div class="kpi-value green" id="kpi-cert">$6,200,524</div>
+        <div class="kpi-sub" id="kpi-pct">20.2% of contract</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Total Paid to GC</div>
+        <div class="kpi-value" id="kpi-paid">$5,582,972</div>
+        <div class="kpi-sub">Net of retainage</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Retainage Held</div>
+        <div class="kpi-value red" id="kpi-ret">$617,552</div>
+        <div class="kpi-sub">Liability — due at completion</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Balance to Finish</div>
+        <div class="kpi-value" id="kpi-btf">$25,122,597</div>
+        <div class="kpi-sub">Including retainage</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="section-header" style="margin-bottom:4px;">
+        <div>
+          <div class="section-title">Construction Progress</div>
+          <div class="section-sub">Work certified vs. total contract value</div>
+        </div>
+        <span class="badge green" id="pct-badge">20.2% Complete</span>
+      </div>
+      <div class="progress-track"><div class="progress-fill" id="prog-fill" style="width:0%"></div></div>
+      <div class="progress-meta">
+        <span>PA5 · Oct 2025</span>
+        <span id="prog-right">$30,705,569 total contract</span>
+      </div>
+    </div>
+
+    <div class="table-card">
+      <div class="table-card-header">
+        <div>
+          <div class="section-title">Payment Timeline</div>
+          <div class="section-sub">Applications 5–10</div>
+        </div>
+      </div>
+      <div class="table-scroll"><table>
+        <thead><tr>
+          <th>App</th><th>Period</th><th>Invoice</th>
+          <th class="num">Certified to Date</th><th class="num">Retainage</th>
+          <th class="num">Invoice Amount</th><th class="num">Cumul. Paid</th><th>Status</th>
+        </tr></thead>
+        <tbody id="ov-tbody"></tbody>
+      </table></div>
+    </div>
+
+    <div class="section-title" style="margin-bottom:12px;">Funding Tracker</div>
+    <div class="funding-grid">
+      <div class="funding-card">
+        <div class="funding-label">Construction Loan</div>
+        <div class="funding-used">$0 used</div>
+        <div class="funding-rem val-green">$25,000,000 available</div>
+      </div>
+      <div class="funding-card">
+        <div class="funding-label">Owner Cash (STSW Payments only)</div>
+        <div class="funding-used" id="fund-used">—</div>
+        <div class="funding-rem" id="fund-used-rem" style="font-size:11.5px;margin-top:3px;"></div>
+      </div>
+      <div class="funding-card">
+        <div class="funding-label">Total Change Orders (Net Approved)</div>
+        <div class="funding-used val-blue" id="fund-co">—</div>
+        <div class="funding-rem val-dim">Added to contract ceiling only</div>
+      </div>
+      <div class="funding-card">
+        <div class="funding-label">Owner Cash (Total Project)</div>
+        <div class="funding-used" id="fund-total-proj">—</div>
+        <div class="funding-rem val-dim">STSW payments + all other costs</div>
+      </div>
+      <div class="funding-card">
+        <div class="funding-label">Retainage Held (Liability)</div>
+        <div class="funding-used val-red" id="fund-ret">—</div>
+        <div class="funding-rem val-dim">Payable at substantial completion</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════ PAY APPS ═══════════════════ -->
+  <div class="page" id="page-payapps">
+    <div class="info-box">
+      <strong>Change Order Rule:</strong> Change orders adjust the contract ceiling — they do <em>not</em> increase the original $30,438,883 baseline. The "Contract Sum to Date" column reflects Original Contract + cumulative approved COs at each billing period. Denied and pending COs have no financial impact.
+    </div>
+    <div class="table-card">
+      <div class="table-card-header">
+        <div>
+          <div class="section-title">All Pay Applications</div>
+          <div class="section-sub" id="pa-sub">10 applications · Contract 21002711</div>
+        </div>
+      </div>
+      <div class="table-scroll"><table>
+        <thead><tr>
+          <th>App</th><th>Invoice</th><th>Date</th><th>Paid Date</th>
+          <th class="num">Current Due</th>
+          <th class="num">COs (Cumul.)</th>
+          <th class="num">Work Completed</th><th class="num">Retainage</th>
+          <th class="num">Balance to Finish</th><th>Status</th>
+        </tr></thead>
+        <tbody id="pa-tbody"></tbody>
+        <tfoot><tr class="total-row" id="pa-total"></tr></tfoot>
+      </table></div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════ RETAINAGE ═══════════════════ -->
+  <div class="page" id="page-retainage">
+    <div class="kpi-grid" style="margin-bottom:20px;">
+      <div class="kpi-card">
+        <div class="kpi-label">Retainage Held (Current)</div>
+        <div class="kpi-value red" id="ret-kpi-held">$617,552</div>
+        <div class="kpi-sub">Through PA10</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Est. Retainage at Completion</div>
+        <div class="kpi-value">$3,043,888</div>
+        <div class="kpi-sub">~10% of original contract</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Retainage Rate</div>
+        <div class="kpi-value">10.0%</div>
+        <div class="kpi-sub">AIA G702 standard</div>
+      </div>
+    </div>
+    <div class="warn-box">
+      <strong>Balance Sheet Note:</strong> Retainage held ($617,552 through PA10) is a <strong>current liability on AMD Capital's balance sheet</strong> — not income or expense. It represents deferred payment owed to Structure Tone Southwest upon substantial completion. Budget for full retainage release at project close (~$3.04M total).
+    </div>
+    <div class="table-card">
+      <div class="table-card-header">
+        <div class="section-title">Retainage Accumulation by Application</div>
+      </div>
+      <div class="table-scroll"><table>
+        <thead><tr>
+          <th>App</th><th>Period</th>
+          <th class="num">Work Certified to Date</th>
+          <th class="num">Retainage Cumulative</th>
+          <th class="num">Added This Period</th>
+          <th class="num">Effective Rate</th>
+        </tr></thead>
+        <tbody id="ret-tbody"></tbody>
+      </table></div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════ ADD PAY APP ═══════════════════ -->
+  <div class="page" id="page-add">
+    <div class="card">
+      <div class="section-title" style="margin-bottom:4px;">Add New Pay Application</div>
+      <div class="section-sub" style="margin-bottom:20px;">Retainage, current due, and balance to finish are auto-calculated from inputs.</div>
+      <div class="form-grid">
+        <div class="form-group"><label>Application #</label><input type="number" id="new-app-num" placeholder="11"></div>
+        <div class="form-group"><label>Invoice Number</label><input type="text" id="new-inv" placeholder="21002711011"></div>
+        <div class="form-group"><label>Invoice Date</label><input type="date" id="new-date"></div>
+        <div class="form-group"><label>Period To</label><input type="date" id="new-period"></div>
+        <div class="form-group"><label>Cumulative COs ($)</label><input type="number" id="new-co" value="266685.95"></div>
+        <div class="form-group"><label>Work Completed to Date ($)</label><input type="number" id="new-work" placeholder="0.00"></div>
+        <div class="form-group"><label>Retainage Rate (%)</label><input type="number" id="new-ret-pct" value="10"></div>
+        <div class="form-group"><label>Previous Certs for Payment ($)</label><input type="number" id="new-prev" placeholder="0.00"></div>
+        <div class="form-group"><label>Status</label>
+          <select id="new-status"><option value="Pending">Pending</option><option value="Paid">Paid</option></select>
+        </div>
+        <div class="form-group full"><label>Notes / Scope This Period</label><textarea id="new-notes" placeholder="Describe work covered this period..."></textarea></div>
+      </div>
+      <div class="calc-hint">
+        <div>Contract Sum to Date = <span>$30,438,883 + Cumulative COs</span></div>
+        <div>Retainage = <span>Work Completed × Retainage Rate</span></div>
+        <div>Current Payment Due = <span>(Work Completed − Retainage) − Previous Certs</span></div>
+        <div>Balance to Finish = <span>Contract Sum to Date − Earned Less Retainage</span></div>
+      </div>
+      <div class="form-actions">
+        <button class="btn btn-primary" onclick="addPA()">Add Pay Application</button>
+        <button class="btn btn-ghost" onclick="clearPA()">Clear</button>
+      </div>
+      <div class="alert" id="pa-alert"></div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const ORIG = 30438883.00;
+
+const payApps = [
+  { app:5,  inv:'21002711005', date:'2025-10-31', period:'Oct 31, 2025', coNet:0,         work:1579769.40, ret:155476.94, elr:1424292.46, prev:0,           due:1424292.46, btf:29014590.54, status:'Paid' },
+  { app:6,  inv:'21002711006', date:'2025-11-25', period:'Nov 30, 2025', coNet:0,         work:1983342.94, ret:195195.64, elr:1788147.30, prev:1424292.46,  due:363854.84,  btf:28651374.35, status:'Paid' },
+  { app:7,  inv:'21002711007', date:'2026-01-12', period:'Dec 31, 2025', coNet:0,         work:2174384.05, ret:213997.42, elr:1960386.63, prev:1788147.30,  due:172239.33,  btf:28479437.35, status:'Paid' },
+  { app:8,  inv:'21002711008', date:'2026-01-21', period:'Jan 31, 2026', coNet:32199.58,  work:3210483.58, ret:318548.36, elr:2891935.22, prev:1959445.65,  due:932489.57,  btf:27579147.36, status:'Paid' },
+  { app:9,  inv:'21002711009', date:'2026-02-25', period:'Feb 28, 2026', coNet:11507.99,  work:4393595.19, ret:436859.54, elr:3956735.65, prev:2891935.22,  due:1064800.43, btf:26493655.34, status:'Paid' },
+  { app:10, inv:'21002711010', date:'2026-03-26', period:'Mar 31, 2026', coNet:266685.95, work:6200524.14, ret:617552.45, elr:5582971.69, prev:3956735.65,  due:1626236.04, btf:25122597.26, status:'Pending' },
+];
+
+const cos = [
+  { num:'CR01', status:'Approved', date:'',           desc:'Addendum to Contract',              cause:'Contract addendum',                                                      cost:0,         days:0 },
+  { num:'CR02', status:'Approved', date:'2025-11-07', desc:'Additional Dirt Import',             cause:'1,224 CY additional import fill beyond plan per topo survey',            cost:22155.95,  days:0 },
+  { num:'CR03', status:'Approved', date:'2025-12-03', desc:'Transformer Conduit',                cause:'Oncor mandated primary conduit + transformer pad upsizing (RFI 19)',     cost:10043.63,  days:0 },
+  { num:'CR04', status:'Approved', date:'2026-01-27', desc:'Civil Permit Drawing Revision',      cause:'City-required: utilities, fire hydrants, sanitary reroute, landscaping',  cost:-20691.59, days:0 },
+  { num:'CR05', status:'Denied',   date:'2026-01-28', desc:'Construction Permit Delay',          cause:'85-day delay (9/16/25–12/10/25); pad reconditioning, remobilization',    cost:278543.55, days:99 },
+  { num:'CR06', status:'Open',     date:'',           desc:'—',                                  cause:'—',                                                                       cost:0,         days:0 },
+  { num:'CR07', status:'Denied',   date:'2026-02-04', desc:'Building Pad Location Discrepancy',  cause:'Civil/Structural drawing discrepancy; pier rig idle 4 days',             cost:16096.61,  days:4 },
+  { num:'CR08', status:'Approved', date:'2026-02-04', desc:'Exterior Masonry Product Change',    cause:'Owner/architect directed Blackson brick replacing VE Coronado Stone',    cost:205700.00, days:0 },
+  { num:'CR09', status:'Open',     date:'',           desc:'—',                                  cause:'—',                                                                       cost:0,         days:0 },
+  { num:'CR10', status:'Open',     date:'',           desc:'—',                                  cause:'—',                                                                       cost:0,         days:0 },
+  { num:'CR11', status:'Approved', date:'2026-02-04', desc:'RFI 27 — Door L2-09 Change',        cause:'Door L2-09 revised to solid wood per RFI 27',                            cost:-1729.85,  days:0 },
+  { num:'CR12', status:'Pending',  date:'2026-03-18', desc:'IFC Drawing Changes',                cause:'Addendum B / IFC: plumbing, electrical, ceiling, cold plunge removed',  cost:338677.26, days:0 },
+  { num:'CR13', status:'Open',     date:'',           desc:'—',                                  cause:'—',                                                                       cost:0,         days:0 },
+  { num:'CR14', status:'Approved', date:'2026-02-04', desc:'RFI0052 Ice Maker Substitution',     cause:'Discontinued model; substitute UYPO3010A per RFI0052',                   cost:2288.58,   days:0 },
+];
+
+const f = (n,d=0) => {
+  if (n===null||isNaN(n)) return '—';
+  const s = Math.abs(n).toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d});
+  return n<0 ? `($${s})` : `$${s}`;
+};
+const pct = n => (n*100).toFixed(1)+'%';
+const badge = s => {
+  const m={Paid:'green',Approved:'green',Denied:'red',Pending:'amber',Open:'gray'};
+  return `<span class="badge ${m[s]||'gray'}">${s}</span>`;
+};
+
+function switchTab(id,el) {
+  document.querySelectorAll('.nav-item').forEach(e=>e.classList.remove('active'));
+  document.querySelectorAll('.page').forEach(e=>e.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('page-'+id).classList.add('active');
+  if (id==='overview') setTimeout(()=>{
+    const last=payApps[payApps.length-1];
+    const ct=ORIG+last.coNet;
+    document.getElementById('prog-fill').style.width=(last.work/ct*100).toFixed(1)+'%';
+  },50);
+}
+
+function renderOverview() {
+  const last=payApps[payApps.length-1];
+  const ct=ORIG+last.coNet;
+  const p=last.work/ct;
+
+  // sum of actual cash paid out to GC (invoice amounts, no CO adjustment)
+  const totalCashPaid = payApps.reduce((s,pa)=>s+pa.due, 0);
+  // net approved COs (contract ceiling delta only)
+  const netCOs = last.coNet;
+  // total project owner cash = STSW payments; "Total Project" line shown as-is from tracker
+  const TOTAL_PROJECT_CASH = 5582972; // from expenditures tracker (all owner cash flows)
+  const RETAINAGE_REMAINING = 2426335.85; // from spreadsheet
+
+  document.getElementById('kpi-cot').textContent=f(ct);
+  document.getElementById('kpi-co-sub').textContent=`+${f(last.coNet)} approved COs`;
+  document.getElementById('kpi-cert').textContent=f(last.work);
+  document.getElementById('kpi-pct').textContent=pct(p)+' of contract';
+  document.getElementById('kpi-paid').textContent=f(totalCashPaid);
+  document.getElementById('kpi-ret').textContent=f(last.ret);
+  document.getElementById('kpi-btf').textContent=f(last.btf);
+  document.getElementById('pct-badge').textContent=pct(p)+' Complete';
+  document.getElementById('prog-right').textContent=f(ct)+' total contract';
+
+  // funding tracker
+  document.getElementById('fund-used').textContent=f(totalCashPaid);
+  const stsw_rem = 166304.83; // remaining from spreadsheet screenshot
+  const stsw_rem_el = document.getElementById('fund-used-rem');
+  stsw_rem_el.textContent = '$'+stsw_rem.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})+' remaining';
+  stsw_rem_el.className = 'funding-rem val-green';
+  document.getElementById('fund-co').textContent=f(netCOs);
+  document.getElementById('fund-total-proj').textContent=f(TOTAL_PROJECT_CASH);
+  document.getElementById('fund-ret').textContent=f(last.ret);
+
+  setTimeout(()=>{ document.getElementById('prog-fill').style.width=(p*100).toFixed(1)+'%'; },150);
+
+  const tbody=document.getElementById('ov-tbody'); tbody.innerHTML='';
+  let cum=0;
+  payApps.forEach(pa=>{
+    cum+=pa.due;
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td><strong>PA${pa.app}</strong></td><td>${pa.period}</td><td class="val-dim">${pa.inv}</td><td class="num">${f(pa.work)}</td><td class="num val-red">${f(pa.ret)}</td><td class="num" style="font-weight:600">${f(pa.due)}</td><td class="num">${f(cum)}</td><td>${badge(pa.status)}</td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+function toggleStatus(idx) {
+  payApps[idx].status = payApps[idx].status === 'Paid' ? 'Pending' : 'Paid';
+  renderAll();
+}
+
+function renderPA() {
+  const tbody=document.getElementById('pa-tbody'); tbody.innerHTML='';
+  document.getElementById('pa-sub').textContent=`${payApps.length} applications · Contract 21002711`;
+  payApps.forEach((pa,idx)=>{
+    const isPaid=pa.status==='Paid';
+    const toggleBtn=`<button onclick="toggleStatus(${idx})" style="margin-left:8px;padding:2px 8px;border-radius:100px;font-size:10.5px;font-weight:500;cursor:pointer;border:1.5px solid ${isPaid?'#d1fae5':'#fde68a'};background:${isPaid?'#ecfdf5':'#fffbeb'};color:${isPaid?'#16a34a':'#d97706'};font-family:var(--font);transition:all 0.15s;">${isPaid?'Mark Pending':'Mark Paid'}</button>`;
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td><strong>PA${pa.app}</strong></td><td class="val-dim">${pa.inv}</td><td>${pa.date}</td><td>${pa.period}</td><td class="num" style="font-weight:600">${f(pa.due)}</td><td class="num">${pa.coNet?`<span class="val-blue">${f(pa.coNet)}</span>`:'<span class="val-dim">—</span>'}</td><td class="num val-green">${f(pa.work)}</td><td class="num val-red">${f(pa.ret)}</td><td class="num">${f(pa.btf)}</td><td style="white-space:nowrap">${badge(pa.status)}${toggleBtn}</td>`;
+    tbody.appendChild(tr);
+  });
+  const last=payApps[payApps.length-1];
+  const tot=payApps.reduce((s,p)=>s+p.due,0);
+  document.getElementById('pa-total').innerHTML=`<td colspan="4"><strong>Totals</strong></td><td class="num"><strong>${f(tot)}</strong></td><td></td><td class="num val-green"><strong>${f(last.work)}</strong></td><td class="num val-red"><strong>${f(last.ret)}</strong></td><td class="num"><strong>${f(last.btf)}</strong></td><td></td>`;
+}
+
+function renderRet() {
+  const tbody=document.getElementById('ret-tbody'); tbody.innerHTML='';
+  let prev=0;
+  payApps.forEach(pa=>{
+    const added=pa.ret-prev;
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td><strong>PA${pa.app}</strong></td><td>${pa.period}</td><td class="num">${f(pa.work)}</td><td class="num val-red">${f(pa.ret)}</td><td class="num">${f(added)}</td><td class="num">${pct(pa.ret/pa.work)}</td>`;
+    tbody.appendChild(tr);
+    prev=pa.ret;
+  });
+  document.getElementById('ret-kpi-held').textContent=f(payApps[payApps.length-1].ret);
+}
+
+function addPA() {
+  const num=parseInt(document.getElementById('new-app-num').value);
+  const inv=document.getElementById('new-inv').value.trim();
+  const date=document.getElementById('new-date').value;
+  const period=document.getElementById('new-period').value;
+  const coNet=parseFloat(document.getElementById('new-co').value)||0;
+  const work=parseFloat(document.getElementById('new-work').value)||0;
+  const retP=parseFloat(document.getElementById('new-ret-pct').value)||10;
+  const prev=parseFloat(document.getElementById('new-prev').value)||0;
+  const status=document.getElementById('new-status').value;
+
+  if(!num||!date||!work){showAlert('pa-alert','App number, date, and work completed are required.',false);return;}
+  const ret=work*(retP/100), elr=work-ret, due=elr-prev, btf=(ORIG+coNet)-elr;
+  payApps.push({app:num,inv,date,period,coNet,work,ret,elr,prev,due,btf,status});
+  renderAll(); clearPA();
+  showAlert('pa-alert',`Pay App ${num} added.`,true);
+}
+
+function clearPA(){
+  ['new-app-num','new-inv','new-date','new-period','new-work','new-prev','new-notes'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('new-co').value='266685.95';
+  document.getElementById('new-ret-pct').value='10';
+  document.getElementById('new-status').value='Pending';
+}
+function showAlert(id,msg,ok){
+  const el=document.getElementById(id);
+  el.textContent=msg;
+  el.className='alert '+(ok?'ok':'err');
+  setTimeout(()=>{el.className='alert';},4000);
+}
+
+function renderAll(){renderOverview();renderPA();renderRet();}
+renderAll();
+</script>
+</body>
+</html>
