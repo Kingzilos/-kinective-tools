@@ -1,0 +1,1486 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kinective Payroll WP</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+:root{
+  --bg:#f5f4f1;--surface:#fff;--surface2:#f0efec;--border:#e2e0d8;--border2:#c8c6bc;
+  --text:#1c1b18;--text2:#6a6860;--text3:#9e9b93;
+  --accent:#1a4d8f;--accent-bg:#e8f0fb;
+  --green:#0d6b52;--green-bg:#e0f4ee;
+  --amber:#7a4a08;--amber-bg:#faebd4;
+  --red:#9b2b2b;--red-bg:#fbe8e8;
+  --r:8px;--rs:5px;
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);font-size:13px}
+/* HEADER */
+.hdr{background:var(--text);color:#fff;padding:14px 28px;display:flex;align-items:center;gap:14px}
+.hdr-logo{width:34px;height:34px;background:#fff;border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--text);letter-spacing:-.5px}
+.hdr-title{font-size:14px;font-weight:500}
+.hdr-sub{font-size:11px;color:#888;margin-top:1px}
+/* MAIN */
+.wrap{max-width:1400px;margin:0 auto;padding:22px 20px}
+/* UPLOAD */
+.up-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:20px}
+.drop{background:var(--surface);border:1.5px dashed var(--border2);border-radius:var(--r);padding:22px;text-align:center;cursor:pointer;transition:.15s;position:relative}
+.drop:hover,.drop.over{border-color:var(--accent);background:var(--accent-bg)}
+.drop.done{border-style:solid;border-color:var(--green);background:var(--green-bg)}
+.drop input{position:absolute;inset:0;opacity:0;cursor:pointer}
+.drop-ico{font-size:24px;margin-bottom:6px}
+.drop-t{font-size:12.5px;font-weight:600;margin-bottom:3px}
+.drop-s{font-size:11px;color:var(--text2)}
+.drop-fn{font-size:11px;color:var(--green);margin-top:5px;font-weight:500}
+/* STATUS */
+.status{background:var(--surface);border:0.5px solid var(--border);border-radius:var(--r);padding:10px 16px;margin-bottom:18px;display:flex;align-items:center;gap:10px;font-size:12px;color:var(--text2)}
+.sdot{width:7px;height:7px;border-radius:50%;background:var(--border2);flex-shrink:0}
+.sdot.ok{background:var(--green)}.sdot.err{background:var(--red)}
+/* METRICS */
+.mrow{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:18px}
+.mc{background:var(--surface);border:0.5px solid var(--border);border-radius:var(--r);padding:12px 14px}
+.mc-lbl{font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--text3);margin-bottom:5px}
+.mc-val{font-size:20px;font-weight:400;color:var(--text)}
+.mc-val.grn{color:var(--green)}.mc-val.amb{color:var(--amber)}.mc-val.red{color:var(--red)}
+.mc-sub{font-size:10px;color:var(--text3);margin-top:3px}
+/* PERIOD */
+.pbanner{background:var(--text);color:#fff;border-radius:var(--r);padding:10px 16px;display:flex;gap:28px;margin-bottom:18px;font-size:11px}
+.pi span{display:block;color:#888;font-size:10px;text-transform:uppercase;letter-spacing:.05em;margin-bottom:1px}
+/* TABS */
+.tabs{display:flex;border-bottom:1.5px solid var(--border);margin-bottom:16px}
+.tab{padding:8px 18px;font-size:12px;cursor:pointer;border:none;background:none;color:var(--text2);border-bottom:2px solid transparent;margin-bottom:-1.5px;transition:color .12s}
+.tab.active{color:var(--accent);border-bottom-color:var(--accent);font-weight:500}
+.tab:hover{color:var(--text)}
+.panel{display:none}.panel.active{display:block}
+/* INVOICE */
+.inv-grid{display:grid;grid-template-columns:480px 1fr;gap:16px}
+.icard{background:var(--surface);border:0.5px solid var(--border);border-radius:var(--r);padding:18px 20px}
+.inv-hdr{display:flex;justify-content:space-between;padding-bottom:12px;margin-bottom:14px;border-bottom:0.5px solid var(--border)}
+.inv-from{font-size:11.5px;color:var(--text2);line-height:1.7}
+.inv-from strong{font-size:13px;color:var(--text);display:block}
+.inv-meta{font-size:10.5px;color:var(--text3);line-height:1.7;text-align:right}
+.iline{display:flex;justify-content:space-between;align-items:baseline;padding:6px 0;border-bottom:0.5px solid var(--border);font-size:13px}
+.iline:last-child{border:none}
+.iline .lbl{color:var(--text2)}
+.iline .sub{font-size:10px;color:var(--text3);display:block}
+.iline .amt{font-variant-numeric:tabular-nums;font-size:13px}
+.iline.cred .amt{color:var(--green)}
+.iline.tot{border-top:1.5px solid var(--text);margin-top:4px;padding-top:8px}
+.iline.tot .lbl,.iline.tot .amt{font-size:15px;font-weight:600}
+.fnote{background:var(--surface2);border:0.5px solid var(--border);border-radius:var(--rs);padding:9px 12px;margin-top:12px;font-size:10.5px;color:var(--text2);line-height:1.8}
+.sec-lbl{font-size:10px;text-transform:uppercase;letter-spacing:.07em;color:var(--text3);margin-bottom:8px}
+/* DEDUCTION TABLE */
+.dtbl{width:100%;border-collapse:collapse;font-size:12px}
+.dtbl th{font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:var(--text3);padding:5px 8px;border-bottom:0.5px solid var(--border2);text-align:left}
+.dtbl td{padding:6px 8px;border-bottom:0.5px solid var(--border)}
+.dtbl tr:last-child td{font-weight:600;border-top:0.5px solid var(--border2);border-bottom:none}
+/* WP TABLE — exact Excel replica */
+.filter-row{display:flex;gap:8px;margin-bottom:10px;align-items:center}
+.filter-row input,.filter-row select{height:30px;font-size:12px;padding:0 9px;border:0.5px solid var(--border2);border-radius:var(--rs);background:var(--surface);color:var(--text)}
+.filter-row input{flex:2}.filter-row select{flex:1}
+.flbl{font-size:11px;color:var(--text3);white-space:nowrap}
+.btn-export{background:#fff;color:var(--text);border:none;padding:8px 16px;border-radius:var(--rs);font-size:12px;font-weight:600;cursor:pointer;letter-spacing:.02em;flex-shrink:0}
+/* BUTTONS */
+.btn{display:inline-flex;align-items:center;gap:5px;background:var(--accent);color:#fff;border:none;padding:7px 14px;border-radius:var(--rs);font-size:11.5px;cursor:pointer}
+.btn:hover{background:#153f77}
+.btn-export{background:#fff;color:var(--text);border:none;padding:8px 18px;border-radius:var(--rs);font-size:12.5px;font-weight:600;cursor:pointer;letter-spacing:.01em;flex-shrink:0}
+.btn-export:hover{background:#e8e8e4}
+.btn:hover{background:#153f77}
+.twrap{border:0.5px solid var(--border);border-radius:var(--r);overflow:hidden}
+.tscroll{max-height:520px;overflow-y:auto}
+/* WP table matches Excel exactly */
+table.wp{width:100%;border-collapse:collapse;font-size:12px}
+table.wp thead th{
+  font-size:10.5px;font-weight:600;color:var(--text2);text-align:left;
+  padding:7px 8px;border-bottom:1px solid var(--border2);background:var(--surface2);
+  position:sticky;top:0;white-space:nowrap
+}
+table.wp thead th.r{text-align:right}
+/* DATA rows */
+table.wp tbody tr.data-row td{background:var(--surface);padding:5px 8px;border-bottom:0;vertical-align:middle}
+table.wp tbody tr.data-row:hover td{background:var(--accent-bg)}
+/* BLANK separator rows - exactly like Excel */
+table.wp tbody tr.blank-row td{background:var(--surface2);padding:2px 8px;border-bottom:0.5px solid var(--border)}
+table.wp tbody tr.blank-row.has-zeros td.num{color:var(--text3);font-size:11px}
+/* FOOT */
+table.wp tfoot td{font-weight:600;font-size:12px;border-top:1.5px solid var(--border2);background:var(--surface2);padding:6px 8px}
+table.wp tfoot td.r{text-align:right;font-variant-numeric:tabular-nums}
+td.num{text-align:right;font-variant-numeric:tabular-nums;font-size:11.5px}
+td.emp-id{font-size:10.5px;color:var(--text3)}
+td.name{font-weight:500}
+td.dept{font-size:11px;color:var(--text2)}
+td.pos-title{font-size:11.5px}
+/* BADGE */
+.badge{display:inline-block;font-size:10px;font-weight:600;padding:2px 6px;border-radius:3px}
+/* HISTORY SIDEBAR */
+.page-layout{display:flex;gap:16px;align-items:flex-start}
+.main-col{flex:1;min-width:0}
+.hist-sidebar{width:220px;flex-shrink:0;background:var(--surface);border:0.5px solid var(--border);border-radius:var(--r);padding:14px}
+.hist-title{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--text3);margin-bottom:10px}
+.hist-item{padding:10px;border-radius:var(--rs);cursor:pointer;border:0.5px solid transparent;margin-bottom:6px;transition:.1s}
+.hist-item:hover{background:var(--surface2);border-color:var(--border)}
+.pivot-wrap{background:var(--surface);border:0.5px solid var(--border);border-radius:var(--r);overflow:hidden;max-width:440px}
+table.pvt{width:100%;border-collapse:collapse;font-size:12px}
+table.pvt th{font-size:11px;font-weight:600;color:var(--text2);padding:8px 12px;border-bottom:1px solid var(--border2);background:var(--surface2);text-align:left}
+table.pvt th.r{text-align:right}
+table.pvt td{padding:5px 12px;border-bottom:0.5px solid var(--border)}
+table.pvt td.r{text-align:right;font-variant-numeric:tabular-nums}
+table.pvt tr.grand td{font-weight:700;border-top:1.5px solid var(--border2);background:var(--surface2)}
+table.pvt tr.sub-total td{font-size:11px;color:var(--text2);background:var(--surface2)}
+table.pvt tr.highlight td{background:#fff9c4}
+table.pvt tr:hover td{background:var(--accent-bg)}
+/* ANALYTICS */
+.an-stat{background:var(--surface2);border-radius:var(--rs);padding:8px 12px;text-align:center}
+.an-stat-val{font-size:18px;font-weight:500}
+.an-stat-lbl{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-top:2px}
+.flag-ot{color:var(--red);font-weight:700}
+.flag-ok{color:var(--green)}
+.delta-up{color:var(--red)}.delta-dn{color:var(--green)}.delta-flat{color:var(--text3)}
+.fv-bar-row{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.fv-bar-track{flex:1;height:12px;background:var(--surface2);border-radius:3px;overflow:hidden}
+.fv-bar-fill-fixed{height:12px;background:#1a4d8f;border-radius:3px}
+.fv-bar-fill-var{height:12px;background:#1D9E75;border-radius:3px}
+.ten-btn{transition:.1s}
+.ten-btn.ten-active{background:var(--accent-bg)!important;color:var(--accent)!important;border-color:var(--accent)!important}
+</style>
+</head>
+<body>
+<div class="hdr">
+  <div class="hdr-logo">KFC</div>
+  <div style="flex:1">
+    <div class="hdr-title">Kinective Fitness — Payroll Work Paper</div>
+    <div class="hdr-sub">T&T Staff Management · Upload Excel to populate</div>
+  </div>
+  <button class="btn-export" id="btn-export" onclick="exportXLSX()" style="display:none">
+    ⬇ Export Excel
+  </button>
+</div>
+
+<div class="wrap">
+<div class="page-layout">
+<div class="main-col">
+  <!-- UPLOAD -->
+  <div class="up-row">
+    <div class="drop" id="drop-xl" ondragover="dov(event)" ondrop="ddr(event,'xl')" ondragleave="this.classList.remove('over')">
+      <input type="file" accept=".xlsx,.xls" onchange="ldf(event,'xl')">
+      <div class="drop-ico">📊</div>
+      <div class="drop-t">Employee Payroll Transactions.xlsx</div>
+      <div class="drop-s">Drop or click — T&T export Excel</div>
+      <div class="drop-fn" id="xl-fn"></div>
+    </div>
+    <div class="drop" id="drop-pdf" ondragover="dov(event)" ondrop="ddr(event,'pdf')" ondragleave="this.classList.remove('over')">
+      <input type="file" accept=".pdf" onchange="ldf(event,'pdf')">
+      <div class="drop-ico">📄</div>
+      <div class="drop-t">T&T Invoice.pdf (optional)</div>
+      <div class="drop-s">Drop or click — for manual reference</div>
+      <div class="drop-fn" id="pdf-fn"></div>
+    </div>
+  </div>
+
+  <!-- STATUS -->
+  <div class="status">
+    <div class="sdot" id="sdot"></div>
+    <span id="stxt">Upload the T&T Excel file to begin.</span>
+  </div>
+
+  <!-- METRICS (hidden until loaded) -->
+  <div class="mrow" id="mrow" style="display:none">
+    <div class="mc"><div class="mc-lbl">Gross payroll</div><div class="mc-val" id="m-gross">—</div><div class="mc-sub" id="m-gsub">—</div></div>
+    <div class="mc"><div class="mc-lbl">TX-9063 (13.65%)</div><div class="mc-val amb" id="m-tx">—</div><div class="mc-sub">12.65% burden + 1% fee</div></div>
+    <div class="mc"><div class="mc-lbl">Non-gross bus exp</div><div class="mc-val" id="m-re">—</div><div class="mc-sub">REIMBE pass-through</div></div>
+    <div class="mc"><div class="mc-lbl">Client credits</div><div class="mc-val red" id="m-cr">—</div><div class="mc-sub">employee deductions</div></div>
+    <div class="mc"><div class="mc-lbl">Total current</div><div class="mc-val grn" id="m-tot">—</div><div class="mc-sub">direct debit</div></div>
+  </div>
+
+  <!-- PERIOD -->
+  <div class="pbanner" id="pbanner" style="display:none">
+    <div class="pi"><span>Pay period start</span><b id="p-pps">—</b></div>
+    <div class="pi"><span>Pay period end</span><b id="p-ppe">—</b></div>
+    <div class="pi"><span>Check date</span><b id="p-chk">—</b></div>
+    <div class="pi"><span>Client</span><b id="p-cli">—</b></div>
+    <div class="pi"><span>Employees</span><b id="p-ee">—</b></div>
+    <div class="pi"><span>Pay rows</span><b id="p-rw">—</b></div>
+  </div>
+
+  <!-- TABS -->
+  <div class="tabs" id="tabs" style="display:none">
+    <button class="tab active" onclick="sw('invoice',this)">Invoice</button>
+    <button class="tab" onclick="sw('wp',this)">Payroll WP</button>
+    <button class="tab" onclick="sw('pivot',this)">Pivot</button>
+    <button class="tab" onclick="sw('analytics',this);renderAnalytics()">Analytics</button>
+  </div>
+
+  <!-- ===== INVOICE PANEL ===== -->
+  <div class="panel active" id="panel-invoice">
+    <div id="inv-empty" style="text-align:center;padding:50px;color:var(--text3)">
+      <div style="font-size:32px;margin-bottom:10px">📋</div>
+      <div style="font-size:14px;color:var(--text2);margin-bottom:4px">Upload Excel to generate invoice</div>
+      <div style="font-size:12px">Invoice will populate automatically from the transactions file</div>
+    </div>
+    <div id="inv-content" style="display:none">
+      <div class="inv-grid">
+        <div class="icard">
+          <div class="inv-hdr">
+            <div class="inv-from">
+              <strong>T &amp; T Staff Management, Inc.</strong>
+              511 Executive Center Blvd · El Paso, TX 79902<br>
+              Tel: (915) 771-0393 · Fax: (915) 771-0397
+            </div>
+            <div class="inv-meta">
+              <b>INVOICE</b><br>
+              <span id="inv-dates"></span><br>
+              Client ID: <span id="inv-cli">—</span><br>
+              Invoice #: <span id="inv-num">—</span>
+            </div>
+          </div>
+          <div class="inv-hdr" style="margin-bottom:14px">
+            <div class="inv-from">
+              <strong>To: Kinective Fitness Club LLC</strong>
+              1020 Belvidere St · El Paso, TX 79912<br>
+              (915) 260-9895 Ext. 0000
+            </div>
+            <div class="inv-meta">Payment Terms: Direct Debit</div>
+          </div>
+          <!-- lines -->
+          <div class="iline cred">
+            <div><div class="lbl">Client credits</div><div class="sub">employee deductions withheld</div></div>
+            <div class="amt" id="i-cred">—</div>
+          </div>
+          <div class="iline">
+            <div><div class="lbl">Gross payroll</div><div class="sub">SUM of TX9063-flagged pay codes</div></div>
+            <div class="amt" id="i-gross">—</div>
+          </div>
+          <div class="iline">
+            <div><div class="lbl">TX-9063</div><div class="sub">13.6500% × <span id="i-tx-base">—</span></div></div>
+            <div class="amt" id="i-tx">—</div>
+          </div>
+          <div class="iline">
+            <div><div class="lbl">Non-gross bus exp</div><div class="sub">REIMBE reimbursements</div></div>
+            <div class="amt" id="i-reimbe">—</div>
+          </div>
+          <div class="iline" style="border-top:1px solid var(--border2);margin-top:4px">
+            <div class="lbl">Subtotal</div>
+            <div class="amt" id="i-sub">—</div>
+          </div>
+          <div class="iline">
+            <div class="lbl">Tax</div>
+            <div class="amt">$0.00</div>
+          </div>
+          <div class="iline tot">
+            <div class="lbl">Total current</div>
+            <div class="amt" id="i-tot">—</div>
+          </div>
+          <div class="fnote">
+            Formula: Total = Gross + (Gross × 13.65%) + REIMBE − |Credits|<br>
+            12.65% = employer FICA (7.65%) + T&T admin (~5%) &nbsp;|&nbsp; 1% = T&T service fee
+          </div>
+        </div>
+
+        <div class="icard">
+          <div class="sec-lbl">Client credits — deduction detail</div>
+          <table class="dtbl">
+            <thead><tr><th>Employee</th><th>Code</th><th>Description</th><th style="text-align:right">Amount</th></tr></thead>
+            <tbody id="ded-body"></tbody>
+            <tfoot><tr>
+              <td colspan="3">Total deductions (client credits)</td>
+              <td style="text-align:right" id="ded-tot">—</td>
+            </tr></tfoot>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== PAYROLL WP PANEL ===== -->
+  <div class="panel" id="panel-wp">
+    <div class="filter-row">
+      <span class="flbl">Search</span>
+      <input type="text" id="f-search" placeholder="Name, code, position..." oninput="renderWP()">
+      <span class="flbl">Pay code</span>
+      <select id="f-code" onchange="renderWP()"><option value="">All</option></select>
+      <span class="flbl">KFC position</span>
+      <select id="f-pos" onchange="renderWP()"><option value="">All</option></select>
+      <button class="btn" onclick="exportXLSX()" style="white-space:nowrap">⬇ Export</button>
+    </div>
+    <div class="twrap">
+      <div class="tscroll">
+        <table class="wp">
+          <thead><tr>
+            <th>Employee ID</th>
+            <th>First Name</th>
+            <th>Last Name</th>
+            <th>Position-Job Title</th>
+            <th>Department</th>
+            <th>KFC Position Job Title</th>
+            <th>Payroll Record Type</th>
+            <th>Payroll Code</th>
+            <th class="r">Units To Pay</th>
+            <th class="r">Amount</th>
+            <th class="r">Tax 12.65%</th>
+            <th class="r">Total wo/fee</th>
+            <th class="r">Fee 1%</th>
+            <th class="r">Total</th>
+          </tr></thead>
+          <tbody id="wp-body"></tbody>
+          <tfoot id="wp-foot"></tfoot>
+        </table>
+      </div>
+    </div>
+    <div style="margin-top:8px;font-size:10.5px;color:var(--text3)">
+      Tax 12.65% = Amount × 0.1265 &nbsp;|&nbsp; Total wo/fee = Amount + Tax &nbsp;|&nbsp; Fee 1% = Amount × 0.01 &nbsp;|&nbsp; Total = Total wo/fee + Fee &nbsp;|&nbsp; REIMBE rows: Tax = Fee = $0.00
+    </div>
+  </div>
+
+  <!-- ===== PIVOT PANEL ===== -->
+  <div class="panel" id="panel-pivot">
+    <div style="display:flex;gap:20px;align-items:flex-start">
+      <div>
+        <div class="pivot-wrap">
+          <table class="pvt">
+            <thead><tr><th>Row Labels</th><th class="r">Sum of Total</th></tr></thead>
+            <tbody id="pvt-body"></tbody>
+            <tfoot id="pvt-foot"></tfoot>
+          </table>
+        </div>
+        <div style="margin-top:12px;font-size:10.5px;color:var(--text3)">
+          Grand total includes all pay rows. Subtract client credits (<span id="pvt-credits">—</span>) to get T&T invoice total.
+        </div>
+      </div>
+      <div id="pvt-detail" style="display:none">
+        <div class="icard" style="max-width:360px">
+          <div class="sec-lbl" style="margin-bottom:8px" id="pvt-detail-title">Detail</div>
+          <table class="dtbl" id="pvt-detail-tbl"></table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== ANALYTICS PANEL ===== -->
+  <div class="panel" id="panel-analytics">
+    <div id="analytics-empty" style="text-align:center;padding:50px;color:var(--text3)">
+      <div style="font-size:32px;margin-bottom:10px">📈</div>
+      <div style="font-size:14px;color:var(--text2);margin-bottom:4px">Upload a payroll to see analytics</div>
+      <div style="font-size:12px">Trends require 2+ saved pay periods in history</div>
+    </div>
+    <div id="analytics-content" style="display:none">
+
+      <!-- ROW 1: OT + Fixed/Variable split -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
+
+        <!-- OT Tracker -->
+        <div class="icard">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+            <div class="sec-lbl">Overtime tracker</div>
+            <div style="display:flex;align-items:center;gap:6px">
+              <span style="font-size:10.5px;color:var(--text2)">Alert threshold</span>
+              <input type="number" id="ot-threshold" value="10" min="0" max="100"
+                style="width:52px;height:26px;font-size:11px;padding:0 6px;border:0.5px solid var(--border2);border-radius:4px;background:var(--surface);color:var(--text)"
+                oninput="renderOTTable()">
+              <span style="font-size:10.5px;color:var(--text2)">% of total</span>
+            </div>
+          </div>
+          <div id="ot-summary" style="display:flex;gap:10px;margin-bottom:10px"></div>
+          <div style="max-height:240px;overflow-y:auto">
+            <table class="wp" style="font-size:11.5px">
+              <thead><tr>
+                <th>Employee</th><th>Position</th>
+                <th class="r">OT hrs</th><th class="r">OT cost</th>
+                <th class="r">% of total</th><th class="r">Flag</th>
+              </tr></thead>
+              <tbody id="ot-body"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Fixed vs Variable split -->
+        <div class="icard">
+          <div class="sec-lbl" style="margin-bottom:12px">Fixed vs variable payroll</div>
+          <div id="fv-bars" style="margin-bottom:14px"></div>
+          <div style="max-height:200px;overflow-y:auto">
+            <table class="wp" style="font-size:11.5px">
+              <thead><tr><th>Type</th><th>Codes</th><th class="r">Amount</th><th class="r">% of gross</th></tr></thead>
+              <tbody id="fv-body"></tbody>
+            </table>
+          </div>
+          <div style="margin-top:10px;font-size:10.5px;color:var(--text3)">Higher fixed % = less flexibility in slow months</div>
+        </div>
+      </div>
+
+      <!-- ROW 2: Headcount vs Cost + Pay Rate Analysis -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
+
+        <!-- Headcount vs Cost -->
+        <div class="icard">
+          <div class="sec-lbl" style="margin-bottom:12px">Headcount vs cost by position</div>
+          <div style="max-height:280px;overflow-y:auto">
+            <table class="wp" style="font-size:11.5px">
+              <thead><tr>
+                <th>KFC position</th><th class="r">EEs</th>
+                <th class="r">Gross</th><th class="r">Avg/EE</th><th class="r">% of total</th>
+              </tr></thead>
+              <tbody id="hc-body"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Pay Rate Analysis -->
+        <div class="icard">
+          <div class="sec-lbl" style="margin-bottom:12px">Effective hourly rate by position</div>
+          <div style="font-size:10.5px;color:var(--text3);margin-bottom:8px">Hourly & OT rows only · Amount ÷ Units To Pay</div>
+          <div style="max-height:280px;overflow-y:auto">
+            <table class="wp" style="font-size:11.5px">
+              <thead><tr>
+                <th>Employee</th><th>Position</th>
+                <th class="r">Hours</th><th class="r">Gross</th>
+                <th class="r">Eff. rate</th><th class="r">vs avg</th>
+              </tr></thead>
+              <tbody id="rate-body"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ROW 3: Trend chart (needs history) -->
+      <div class="icard" style="margin-bottom:14px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+          <div class="sec-lbl">Payroll cost trend</div>
+          <div id="trend-period-note" style="font-size:10.5px;color:var(--text3)"></div>
+        </div>
+        <div id="trend-no-data" style="font-size:12px;color:var(--text3);padding:20px 0;text-align:center;display:none">
+          Need 2+ saved pay periods to show trend. Upload more payrolls.
+        </div>
+        <div style="position:relative;height:200px"><canvas id="trendChart"></canvas></div>
+        <div id="trend-legend" style="display:flex;gap:20px;margin-top:10px;font-size:11px;color:var(--text2)"></div>
+      </div>
+
+      <!-- ROW 4: Period-over-period + Employee tenure -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+
+        <!-- Period-over-period -->
+        <div class="icard">
+          <div class="sec-lbl" style="margin-bottom:12px">Period-over-period comparison</div>
+          <div id="pop-empty" style="font-size:11.5px;color:var(--text3);padding:10px 0">
+            Need 2+ saved periods to compare.
+          </div>
+          <div id="pop-content" style="display:none">
+            <div id="pop-metrics" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px"></div>
+            <table class="wp" style="font-size:11.5px">
+              <thead><tr><th>Metric</th><th class="r">Prior</th><th class="r">Current</th><th class="r">Change</th></tr></thead>
+              <tbody id="pop-body"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Employee tenure / new hires -->
+        <div class="icard">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+            <div class="sec-lbl">Employee consistency</div>
+            <div style="display:flex;gap:6px">
+              <button onclick="setTenureFilter('new',this)" class="ten-btn ten-active" style="font-size:10px;padding:3px 8px;border:0.5px solid var(--border2);border-radius:4px;cursor:pointer;background:var(--red-bg);color:var(--red)">New this period</button>
+              <button onclick="setTenureFilter('all',this)" class="ten-btn" style="font-size:10px;padding:3px 8px;border:0.5px solid var(--border2);border-radius:4px;cursor:pointer;background:var(--surface2);color:var(--text2)">All employees</button>
+            </div>
+          </div>
+          <div id="tenure-summary" style="margin-bottom:8px"></div>
+          <div style="max-height:240px;overflow-y:auto">
+            <table class="wp" style="font-size:11.5px">
+              <thead><tr>
+                <th>Employee</th><th>Position</th>
+                <th class="r">Periods</th><th class="r">Status</th>
+              </tr></thead>
+              <tbody id="tenure-body"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- end analytics-content -->
+  </div>
+
+</div><!-- end main-col -->
+
+<!-- HISTORY SIDEBAR -->
+<div class="hist-sidebar">
+  <div class="hist-title">Payroll history</div>
+  <div id="hist-list"><div style="font-size:11px;color:var(--text3);text-align:center;padding:8px 0">No saved payrolls yet</div></div>
+</div>
+
+</div><!-- end page-layout -->
+</div><!-- end wrap -->
+
+<script>
+// ── CODE TAB LOOKUPS (exact replica of VLOOKUP + IFS formulas) ──────────────
+// Department = IFERROR(VLOOKUP(Position-Job Title code, CODE!A:B, 2, FALSE), "")
+const A_TO_B = {"522007":"DEPT. 7 - GENERAL MANAGER","522021":"DEPT. 21 - GROUP FITNESS INST.","522002":"DEPT. 2 - GROUP FITNESS MANAGE","522001":"DEPT. 1 - PER. TRAINERS MANAGE","522011":"DEPT. 11 - PERSONAL TRAINERS","522004":"DEPT. 4 - ZEST MANAGER","522042":"DEPT. 42 - ZEST SUPERVISOR","522421":"DEPT. 421 - ZEST PER.","522041":"DEPT. 41 - WELCOME DESK SUPER","522411":"DEPT. 411 - WELCOME DESK","522040":"DEPT. 411 - Lead WELCOME DESK Super","522043":"DEPT. 43 - KIN. KIDS SUPERVISO","522431":"DEPT. 431 - KINECTIVE KIDS","522044":"DEPT. 44 - CLEANING PER. SUPER","522441":"DEPT. 441 - CLEANING PERSONNEL","522461":"DEPT. 461 - MBR RELATIONS ADV","522031":"DEPT. 31 - SALES MANAGER","522006":"DEPT. 6- SALES&ENGINEERING MGR","522311":"DEPT. 311 - MEMBERSHIP ADVISOR","522012":"DEPT. 12 - MASSAGE THERAPISTS","522014":"DEPT. 14 LEAD MASSAGE THERAPIST","522013":"DEPT. 13 - PHYSICAL THERAPY","522003":"DEPT. 3 - TRAINING&DEVELOP MGR","522008":"DEPT. 8 - JUNIOR TECHNICAL WRI","522009":"DEPT. 9 - PROJECT COORDINATOR","522005":"DEPT. 5 - MAINTENANCE TECH.","522010":"DEPT. 10 - HEAD OF CONSTRUCTIO","522015":"DEPT. 15 CONSTRUCTION MANAGER","522471":"DEPT. 471 - RETAIL","522045":"DEPT. 45 MARKETING MANAGER","522046":"DEPT. 46 IT SUPPORT TECHNICIAN","522200":"DEPT. 102 - CHIEF EXECUTIVE OFFICER","522100":"DEPT. 100 - CHIEF OPERATING OF","522201":"Owner","OWNER":"Hiring Manager","522101":"DEPT. 101 Financial Admin Supervisor","522451":"DEPT. 451 - VALET PARKING","522048":"DEPT. 5 - Assi MAINTENANCE TECH.","522050":"DEPT. 452 - Operations Manager","522047":"DEPT. 44 - Lead CLEANING PER. SUPER","522032":"DEPT. 31 - Assi SALES MANAGER"};
+
+// KFC Position Job Title = IFERROR(VLOOKUP(Department, CODE!B:C, 2, FALSE), "")
+const B_TO_C = {"DEPT. 7 - GENERAL MANAGER":"General Manager","DEPT. 21 - GROUP FITNESS INST.":"Group Fitness (Admin)","DEPT. 2 - GROUP FITNESS MANAGE":"Group Fitness Manager","DEPT. 1 - PER. TRAINERS MANAGE":"Personal Training Manager","DEPT. 11 - PERSONAL TRAINERS":"Personal Training Base Pay","DEPT. 4 - ZEST MANAGER":"Zest Manager","DEPT. 42 - ZEST SUPERVISOR":"Zest Staff","DEPT. 421 - ZEST PER.":"Zest Staff","DEPT. 41 - WELCOME DESK SUPER":"Welcome Desk Supervisor","DEPT. 411 - WELCOME DESK":"Welcome Desk Staff","DEPT. 411 - Lead WELCOME DESK Super":"Welcome Desk Lead","DEPT. 43 - KIN. KIDS SUPERVISO":"Kinective Kids Supervisor","DEPT. 431 - KINECTIVE KIDS":"Kinective Kids Staff","DEPT. 44 - CLEANING PER. SUPER":"Cleaning Supervisor","DEPT. 441 - CLEANING PERSONNEL":"Cleaning Staff","DEPT. 461 - MBR RELATIONS ADV":"Member Relations Advisor","DEPT. 31 - SALES MANAGER":"Sales Manager","DEPT. 6- SALES&ENGINEERING MGR":"Sales Manager","DEPT. 311 - MEMBERSHIP ADVISOR":"Membership Advisor","DEPT. 12 - MASSAGE THERAPISTS":"Massage Therapist","DEPT. 14 LEAD MASSAGE THERAPIST":"Massage Therapist","DEPT. 13 - PHYSICAL THERAPY":"Physical Therapist","DEPT. 3 - TRAINING&DEVELOP MGR":"Training and Development Manager","DEPT. 8 - JUNIOR TECHNICAL WRI":"Junior Technical Writer 2","DEPT. 9 - PROJECT COORDINATOR":"Project Coordinator","DEPT. 5 - MAINTENANCE TECH.":"Maintenance Technician","DEPT. 10 - HEAD OF CONSTRUCTIO":"Construction Manager","DEPT. 15 CONSTRUCTION MANAGER":"Construction Manager","DEPT. 471 - RETAIL":"Retail","DEPT. 45 MARKETING MANAGER":"Marketing","DEPT. 46 IT SUPPORT TECHNICIAN":"IT Technician","DEPT. 102 - CHIEF EXECUTIVE OFFICER":"CEO","DEPT. 100 - CHIEF OPERATING OF":"COO","Owner":"President","Hiring Manager":"Hiring Manager","DEPT. 101 Financial Admin Supervisor":"Finance Administrative Supervisor","DEPT. 451 - VALET PARKING":"Valet Parking","DEPT. 5 - Assi MAINTENANCE TECH.":"Assistant Maintenance Technician","DEPT. 452 - Operations Manager":"Operations Manager","DEPT. 44 - Lead CLEANING PER. SUPER":"Cleaning Lead Supervisor","DEPT. 31 - Assi SALES MANAGER":"Assistant Sales Manager"};
+
+// IFS override formula (exact replica from CODE tab column D)
+// =IFS(
+//   AND(C="JACQUELINE", D="HERNANDEZ", I="HOURLY"), "Lead Group Fitness",
+//   AND(OR(E=522021,E=522011,E=522002), ISNUMBER(SEARCH("class",I))), "Group Fitness Instructors (Classes)",
+//   AND(OR(E=522011,E=522001), ISNUMBER(SEARCH("sess",I))), "Personal Training Sessions",
+//   AND(OR(E=522021,E=522011), ISNUMBER(SEARCH("pilate",I))), "Pilates Instructors (Pilates Classes)",
+//   TRUE, ""  ← falls through to VLOOKUP(dept, B:C)
+// )
+function lookupDept(posCode) {
+  return A_TO_B[posCode.toString().trim()] || '';
+}
+function lookupKFCPos(posCode, fn, ln, payCode) {
+  const pos = posCode.toString().trim();
+  const posNum = parseInt(pos);
+  const fnU = (fn||'').toUpperCase().trim();
+  const lnU = (ln||'').toUpperCase().trim();
+  const codeU = (payCode||'').toUpperCase().trim();
+  const dept = A_TO_B[pos] || '';
+  // IFS conditions
+  if (fnU === 'JACQUELINE' && lnU === 'HERNANDEZ' && codeU === 'HOURLY') return 'Lead Group Fitness';
+  if ([522021,522011,522002].includes(posNum) && codeU.includes('CLASS')) return 'Group Fitness Instructors (Classes)';
+  if ([522011,522001].includes(posNum) && codeU.includes('SESS')) return 'Personal Training Sessions';
+  if ([522021,522011].includes(posNum) && codeU.includes('PILATE')) return 'Pilates Instructors (Pilates Classes)';
+  // Fallback: VLOOKUP dept → KFC
+  return B_TO_C[dept] || '';
+}
+// ── END CODE TAB LOOKUPS ────────────────────────────────────────────────────
+
+const REIMBE = new Set(['REIMBE']);
+const PAY_TYPE = 'Pay Codes';
+const DED_TYPE = 'Deductions';
+const CODE_COLORS = {
+  CLASS:{bg:'#eeedfe',c:'#3c3489'}, HOURLY:{bg:'#e6f1fb',c:'#185fa5'},
+  PILATE:{bg:'#faeeda',c:'#7a4a08'}, SESS:{bg:'#eaf3de',c:'#3b6d11'},
+  SSAL:{bg:'#fac775',c:'#633806'}, BONREG:{bg:'#f1efe8',c:'#5f5e5a'},
+  OT:{bg:'#fcebeb',c:'#9b2b2b'}, MASAGE:{bg:'#fbeaf0',c:'#72243e'},
+  REIMBE:{bg:'#f1efe8',c:'#888780'}
+};
+
+let G = {wpRaw:[], wpRows:[], deds:[], period:{}};
+
+// ── HISTORY (persistent storage) ─────────────────────────────────────────────
+const HIST_PREFIX = 'payroll:';
+
+async function saveToHistory(){
+  if(!G.wpRows.length||!G.period.checkDate) return;
+  const key = HIST_PREFIX + G.period.checkDate;
+  const rows = getPayRows();
+  const payload = {
+    period: G.period,
+    rows: rows.map(r=>({id:r.id,fn:r.fn,ln:r.ln,pos:r.pos,dept:r.dept,kfcPos:r.kfcPos,
+      recType:r.recType,code:r.code,units:r.units,amount:r.amount,
+      tax:r.tax,totalWo:r.totalWo,fee:r.fee,total:r.total,isReim:!!r.isReim})),
+    deds: G.deds.map(d=>({fn:d.fn,ln:d.ln,code:d.code,amount:d.amount})),
+    savedAt: new Date().toISOString()
+  };
+  try {
+    await window.storage.set(key, JSON.stringify(payload));
+    renderHistory();
+  } catch(e){ console.warn('Storage save failed', e); }
+}
+
+async function loadHistory(){
+  try {
+    const result = await window.storage.list(HIST_PREFIX);
+    return result ? result.keys : [];
+  } catch(e){ return []; }
+}
+
+async function loadPayrollFromHistory(key){
+  try {
+    const result = await window.storage.get(key);
+    if(!result) return;
+    const D = JSON.parse(result.value);
+    G.period = D.period;
+    G.deds = D.deds;
+    G.wpRows = D.rows;
+    G.wpRaw = D.rows;
+    buildFilters(G.wpRows);
+    renderAll();
+    ['mrow','pbanner','tabs'].forEach(id=>{
+      document.getElementById(id).style.display=id==='mrow'?'grid':'flex';
+    });
+    document.getElementById('btn-export').style.display='inline-flex';
+    setSt('ok',`Loaded from history: ${G.period.pps} – ${G.period.ppe} (${G.wpRows.length} rows)`);
+    // Highlight active in sidebar
+    document.querySelectorAll('.hist-item').forEach(el=>{
+      el.style.background = el.dataset.key===key ? 'var(--accent-bg)' : '';
+      el.style.fontWeight = el.dataset.key===key ? '600' : '400';
+    });
+  } catch(e){ setSt('err','Failed to load from history: '+e.message); }
+}
+
+async function deleteHistoryEntry(key, e){
+  e.stopPropagation();
+  try {
+    await window.storage.delete(key);
+    renderHistory();
+  } catch(e){ console.warn('Delete failed',e); }
+}
+
+async function renderHistory(){
+  const keys = await loadHistory();
+  const container = document.getElementById('hist-list');
+  if(!keys.length){
+    container.innerHTML='<div style="font-size:11px;color:var(--text3);padding:8px 0;text-align:center">No saved payrolls yet</div>';
+    return;
+  }
+  // Sort keys descending (newest first)
+  const sorted = [...keys].sort((a,b)=>b.localeCompare(a));
+  container.innerHTML = '';
+  for(const key of sorted){
+    try {
+      const result = await window.storage.get(key);
+      if(!result) continue;
+      const D = JSON.parse(result.value);
+      const p = D.period;
+      const gross = D.rows.filter(r=>!r.isReim).reduce((s,r)=>s+r.amount,0);
+      const tx = gross*0.1365;
+      const credits = D.deds.reduce((s,d)=>s+d.amount,0);
+      const total = gross+tx-credits;
+      const div = document.createElement('div');
+      div.className='hist-item';
+      div.dataset.key=key;
+      div.onclick=()=>loadPayrollFromHistory(key);
+      div.innerHTML=`
+        <div style="display:flex;justify-content:space-between;align-items:flex-start">
+          <div>
+            <div style="font-size:12px;font-weight:500;color:var(--text)">${p.checkDate||key.replace(HIST_PREFIX,'')}</div>
+            <div style="font-size:10.5px;color:var(--text2);margin-top:1px">${p.pps} – ${p.ppe}</div>
+            <div style="font-size:11px;color:var(--green);margin-top:3px;font-weight:600">${fmtD(total)}</div>
+            <div style="font-size:10px;color:var(--text3)">${D.rows.length} rows · ${new Set(D.rows.map(r=>r.id)).size} employees</div>
+          </div>
+          <button onclick="deleteHistoryEntry('${key}',event)" style="background:none;border:none;cursor:pointer;font-size:14px;color:var(--text3);padding:2px 4px;line-height:1" title="Delete">×</button>
+        </div>`;
+      container.appendChild(div);
+    } catch(e){}
+  }
+}
+
+function dov(e){e.preventDefault();e.currentTarget.classList.add('over')}
+function ddr(e,t){e.preventDefault();e.currentTarget.classList.remove('over');const f=e.dataTransfer.files[0];if(f)pf(f,t)}
+function ldf(e,t){const f=e.target.files[0];if(f)pf(f,t)}
+
+function pf(file,type){
+  if(type==='pdf'){
+    document.getElementById('pdf-fn').textContent='✓ '+file.name;
+    document.getElementById('drop-pdf').classList.add('done');
+    return;
+  }
+  const r=new FileReader();
+  r.onload=e=>{
+    try{
+      const wb=XLSX.read(e.target.result,{type:'array',cellDates:true});
+
+      // Read Employee Payroll Transactions sheet (primary data source)
+      const txName=wb.SheetNames.find(s=>s.toLowerCase().includes('transaction')||s.toLowerCase().includes('employee payroll'))||wb.SheetNames[0];
+      const txWs=wb.Sheets[txName];
+      const txRaw=XLSX.utils.sheet_to_json(txWs,{raw:true,defval:''});
+
+      if(!txRaw.length){setSt('err','No data in Excel file.');return;}
+
+      // Flexible column detection
+      const keys=Object.keys(txRaw[0]);
+      const fc=k=>keys.find(c=>c.toLowerCase().replace(/[\s\-_]/g,'').includes(k.toLowerCase().replace(/[\s\-_]/g,'')))||k;
+      const cID=fc('employeeid'),cCLI=fc('eeclientid'),cFN=fc('firstname'),cLN=fc('lastname'),cPos=fc('positionjob'),
+            cChk=fc('checknumber'),cPPS=fc('pps'),cPPE=fc('ppe'),cChkD=fc('checkdate'),
+            cRecT=fc('payrollrecord'),cCode=fc('payrollcode'),cUnits=fc('units'),
+            cAmt=fc('amount'),cWC=fc('wc');
+
+      // raw:true + cellDates:true returns dates as JS Date objects
+      const xlDate=v=>{
+        if(!v||v==='')return'';
+        if(v instanceof Date){
+          const m=String(v.getMonth()+1).padStart(2,'0');
+          const d=String(v.getDate()).padStart(2,'0');
+          const y=v.getFullYear();
+          return`${m}/${d}/${String(y).slice(2)}`;
+        }
+        if(typeof v==='number'){
+          const d=new Date(Math.round((v-25569)*86400*1000));
+          return`${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')}/${String(d.getFullYear()).slice(2)}`;
+        }
+        // already a string like '2026-02-23'
+        const s=v.toString().split('T')[0];
+        const parts=s.split('-');
+        if(parts.length===3) return`${parts[1]}/${parts[2]}/${parts[0].slice(2)}`;
+        return s;
+      };
+
+      const all=txRaw.map(r=>({
+        id:r[cID]?.toString().trim()||'',
+        clientId:r[cCLI]?.toString().trim()||'',
+        fn:(r[cFN]||'').toString().trim(),
+        ln:(r[cLN]||'').toString().trim(),
+        pos:r[cPos]?.toString().trim()||'',
+        checkNum:r[cChk]?.toString()||'',
+        pps:xlDate(r[cPPS]),
+        ppe:xlDate(r[cPPE]),
+        checkDate:xlDate(r[cChkD]),
+        recType:(r[cRecT]||'').toString().trim(),
+        code:(r[cCode]||'').toString().trim().toUpperCase(),
+        units:parseFloat(r[cUnits])||0,
+        amount:parseFloat(r[cAmt])||0,
+        wc:(r[cWC]||'').toString().trim().toUpperCase().replace(/\s/g,'')
+      }));
+
+      // Filter to client 522 — compare as string to handle int/float storage
+      const kfc522=all.filter(r=>r.clientId==='522');
+      if(!kfc522.length){
+        setSt('err','No Client 522 (Kinective Fitness) rows found. Check this is the correct T&T export.');
+        return;
+      }
+
+      // Pay period info from first TX9063 row
+      const first=kfc522.find(r=>r.wc==='TX9063')||kfc522[0];
+      G.period={pps:first.pps,ppe:first.ppe,checkDate:first.checkDate,client:'522',checkNum:first.checkNum};
+
+      // WP rows: Pay Codes only, TX9063-tagged or REIMBE
+      // If no TX9063 rows exist (different WC column format), fall back to ALL Pay Codes
+      const tx9063rows=kfc522.filter(r=>r.recType===PAY_TYPE&&r.wc==='TX9063');
+      const reimbeRows=kfc522.filter(r=>r.recType===PAY_TYPE&&REIMBE.has(r.code)&&r.wc!=='TX9063');
+      const payRows=tx9063rows.length>0
+        ?[...tx9063rows,...reimbeRows]
+        :kfc522.filter(r=>r.recType===PAY_TYPE);
+
+      // Deductions → client credits on invoice
+      G.deds=kfc522.filter(r=>r.recType===DED_TYPE&&r.amount>0);
+
+      // Enrich with Department + KFC Position from CODE tab formulas, then calc
+      payRows.forEach(r=>{
+        r.dept = lookupDept(r.pos);
+        r.kfcPos = lookupKFCPos(r.pos, r.fn, r.ln, r.code);
+        const isR=REIMBE.has(r.code);
+        r.isReim=isR;
+        r.tax=isR?0:parseFloat((r.amount*0.1265).toFixed(6));
+        r.totalWo=parseFloat((r.amount+r.tax).toFixed(6));
+        r.fee=isR?0:parseFloat((r.amount*0.01).toFixed(6));
+        r.total=parseFloat((r.totalWo+r.fee).toFixed(6));
+      });
+
+      // Always use TX sheet payRows as source of truth.
+      // WP sheet reading was removed — it caused double-counting issues
+      // when files had no WP sheet or different row structures.
+      // payRows is already correctly filtered: client 522, Pay Codes, TX9063 or REIMBE only.
+      G.wpRows = payRows;
+      G.wpRaw  = payRows;
+
+      document.getElementById('xl-fn').textContent='✓ '+file.name;
+      document.getElementById('drop-xl').classList.add('done');
+      document.getElementById('btn-export').style.display='inline-flex';
+      const ees=new Set(payRows.filter(r=>r.id).map(r=>r.id)).size;
+      const allClients=[...new Set(all.map(r=>r.clientId).filter(Boolean))];
+      const multiNote=allClients.length>1?` (filtered from ${allClients.length} clients in file)`:'';
+      setSt('ok',`Loaded ${payRows.length} pay rows · ${ees} employees · ${G.period.pps} – ${G.period.ppe}${multiNote}`);
+
+      buildFilters(G.wpRows);
+      renderAll();
+      ['mrow','pbanner','tabs'].forEach(id=>{
+        document.getElementById(id).style.display=id==='mrow'?'grid':'flex';
+      });
+      saveToHistory();
+
+    }catch(err){setSt('err','Parse error: '+err.message);console.error(err);}
+  };
+  r.readAsArrayBuffer(file);
+}
+
+function setSt(t,m){
+  document.getElementById('sdot').className='sdot '+(t==='ok'?'ok':'err');
+  document.getElementById('stxt').textContent=m;
+}
+
+function fmt(n,dec=2){
+  if(n===null||n===undefined||isNaN(n)||n==='')return'';
+  if(n===0)return'';// blank zeros like Excel
+  const v=Math.abs(n).toFixed(dec);
+  const parts=v.split('.');
+  parts[0]=parts[0].replace(/\B(?=(\d{3})+(?!\d))/g,',');
+  return (n<0?'(':'')+parts.join('.')+(n<0?')':'');
+}
+function fmtD(n){// always show dollars for totals
+  if(n===null||n===undefined||isNaN(n))return'—';
+  const v=Math.abs(n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+  return(n<0?'-$':'$')+v;
+}
+
+function badge(code){
+  if(!code)return'';
+  const s=CODE_COLORS[code]||{bg:'#f1efe8',c:'#5f5e5a'};
+  return`<span class="badge" style="background:${s.bg};color:${s.c}">${code}</span>`;
+}
+
+function buildFilters(rows){
+  const codes=[...new Set(rows.map(r=>r.code).filter(Boolean))].sort();
+  document.getElementById('f-code').innerHTML='<option value="">All</option>'+codes.map(c=>`<option>${c}</option>`).join('');
+  const pos=[...new Set(rows.map(r=>r.kfcPos).filter(Boolean))].sort();
+  document.getElementById('f-pos').innerHTML='<option value="">All</option>'+pos.map(p=>`<option>${p}</option>`).join('');
+}
+
+function renderAll(){
+  renderMetrics();
+  renderPeriod();
+  renderInvoice();
+  renderWP();
+  renderPivot();
+}
+
+function getPayRows(){
+  return G.wpRows.filter(r=>r.code&&r.amount!==undefined);
+}
+
+function renderMetrics(){
+  const rows=getPayRows();
+  const taxable=rows.filter(r=>!r.isReim);
+  const gross=taxable.reduce((s,r)=>s+r.amount,0);
+  const tx=gross*0.1365;
+  const reimbe=rows.filter(r=>r.isReim).reduce((s,r)=>s+r.amount,0);
+  const credits=G.deds.reduce((s,r)=>s+r.amount,0);
+  const total=gross+tx+reimbe-credits;
+  document.getElementById('m-gross').textContent=fmtD(gross);
+  document.getElementById('m-gsub').textContent=taxable.length+' pay rows';
+  document.getElementById('m-tx').textContent=fmtD(tx);
+  document.getElementById('m-re').textContent=fmtD(reimbe);
+  document.getElementById('m-cr').textContent=fmtD(credits);
+  document.getElementById('m-tot').textContent=fmtD(total);
+}
+
+function renderPeriod(){
+  const p=G.period;
+  document.getElementById('p-pps').textContent=p.pps||'—';
+  document.getElementById('p-ppe').textContent=p.ppe||'—';
+  document.getElementById('p-chk').textContent=p.checkDate||'—';
+  document.getElementById('p-cli').textContent=p.client||'522';
+  const rows=getPayRows();
+  document.getElementById('p-ee').textContent=new Set(rows.map(r=>r.id)).size;
+  document.getElementById('p-rw').textContent=rows.length;
+}
+
+function renderInvoice(){
+  document.getElementById('inv-empty').style.display='none';
+  document.getElementById('inv-content').style.display='block';
+  const rows=getPayRows();
+  const taxable=rows.filter(r=>!r.isReim);
+  const gross=taxable.reduce((s,r)=>s+r.amount,0);
+  const tx=parseFloat((gross*0.1365).toFixed(2));
+  const reimbe=rows.filter(r=>r.isReim).reduce((s,r)=>s+r.amount,0);
+  const credits=G.deds.reduce((s,r)=>s+r.amount,0);
+  const sub=parseFloat((gross+tx+reimbe-credits).toFixed(2));
+  const p=G.period;
+  document.getElementById('inv-dates').innerHTML=`PPS: ${p.pps}<br>PPE: ${p.ppe}<br>Check: ${p.checkDate}`;
+  document.getElementById('inv-cli').textContent=p.client||'522';
+  document.getElementById('inv-num').textContent=p.checkNum||'—';
+  document.getElementById('i-cred').textContent=credits>0?'−'+fmtD(credits):'$0.00';
+  document.getElementById('i-gross').textContent=fmtD(gross);
+  document.getElementById('i-tx-base').textContent=fmtD(gross);
+  document.getElementById('i-tx').textContent=fmtD(tx);
+  document.getElementById('i-reimbe').textContent=fmtD(reimbe);
+  document.getElementById('i-sub').textContent=fmtD(sub);
+  document.getElementById('i-tot').textContent=fmtD(sub);
+
+  const DED_LBL={PURCH:'Purchases',SCOPT:'Colonial pre-tax',SCOAT:'Colonial after-tax',HIPT1:'Health ins. pre-tax',EMPCHG:'Employee charge'};
+  const db=document.getElementById('ded-body');
+  db.innerHTML=G.deds.length
+    ?G.deds.map(d=>`<tr><td>${d.fn} ${d.ln}</td><td>${badge(d.code)}</td><td style="font-size:11px;color:var(--text2)">${DED_LBL[d.code]||d.code}</td><td style="text-align:right">${fmtD(d.amount)}</td></tr>`).join('')
+    :'<tr><td colspan="4" style="color:var(--text3);font-size:11px;padding:8px">No deductions this period</td></tr>';
+  document.getElementById('ded-tot').textContent=fmtD(credits);
+}
+
+function renderWP(){
+  const q=(document.getElementById('f-search').value||'').toLowerCase();
+  const fc=document.getElementById('f-code').value;
+  const fp=document.getElementById('f-pos').value;
+
+  let rows=getPayRows();
+
+  if(q||fc||fp){
+    rows=rows.filter(r=>{
+      const name=(r.fn+' '+r.ln).toLowerCase();
+      return (!q||name.includes(q)||r.code.toLowerCase().includes(q)||(r.kfcPos||'').toLowerCase().includes(q))
+        &&(!fc||r.code===fc)&&(!fp||r.kfcPos===fp);
+    });
+  }
+
+  const body=document.getElementById('wp-body');
+  let lastId='';
+  body.innerHTML=rows.map(r=>{
+    const isReim=r.isReim;
+    const taxDisp=isReim?'':fmt(r.tax);
+    const feeDisp=isReim?'':fmt(r.fee);
+    // Insert a thin visual spacer row between different employees
+    const spacer = (lastId && r.id !== lastId)
+      ? `<tr style="height:4px;background:var(--surface2)"><td colspan="14"></td></tr>`
+      : '';
+    lastId=r.id;
+    return spacer+`<tr class="data-row">
+      <td class="emp-id">${r.id||''}</td>
+      <td class="name">${r.fn||''}</td>
+      <td>${r.ln||''}</td>
+      <td style="font-size:11.5px">${r.pos||''}</td>
+      <td class="dept">${r.dept||''}</td>
+      <td class="pos-title">${r.kfcPos||''}</td>
+      <td style="font-size:11px;color:var(--text2)">${r.recType||''}</td>
+      <td>${badge(r.code)||r.code||''}</td>
+      <td class="num">${r.units?fmt(r.units):''}</td>
+      <td class="num">${r.amount?fmt(r.amount):''}</td>
+      <td class="num">${taxDisp}</td>
+      <td class="num">${r.totalWo?fmt(r.totalWo):''}</td>
+      <td class="num">${feeDisp}</td>
+      <td class="num" style="font-weight:600">${r.total?fmt(r.total):''}</td>
+    </tr>`;
+  }).join('');
+
+  const tAmt=rows.reduce((s,r)=>s+r.amount,0);
+  const tTax=rows.reduce((s,r)=>s+r.tax,0);
+  const tWo=rows.reduce((s,r)=>s+r.totalWo,0);
+  const tFee=rows.reduce((s,r)=>s+r.fee,0);
+  const tTot=rows.reduce((s,r)=>s+r.total,0);
+  document.getElementById('wp-foot').innerHTML=`<tr>
+    <td colspan="8" style="text-align:left">Grand Total &nbsp;<span style="font-weight:400;color:var(--text3);font-size:11px">(${rows.length} rows)</span></td>
+    <td class="r">—</td>
+    <td class="r">${fmtD(tAmt)}</td>
+    <td class="r">${fmtD(tTax)}</td>
+    <td class="r">${fmtD(tWo)}</td>
+    <td class="r">${fmtD(tFee)}</td>
+    <td class="r">${fmtD(tTot)}</td>
+  </tr>`;
+}
+
+function renderPivot(){
+  const rows=getPayRows();
+  // Group by KFC position — sum of Total
+  const map={};
+  rows.forEach(r=>{
+    const k=(r.kfcPos||'(blank)').trim();
+    if(!map[k])map[k]=0;
+    map[k]+=r.total;
+  });
+
+  // Sort alphabetically — exactly like Excel pivot
+  const sorted=Object.entries(map).sort((a,b)=>a[0].localeCompare(b[0]));
+  const grandTotal=sorted.reduce((s,[,v])=>s+v,0);
+  const credits=G.deds.reduce((s,r)=>s+r.amount,0);
+  const invoiceTotal=grandTotal-credits;
+
+  document.getElementById('pvt-body').innerHTML=sorted.map(([pos,tot])=>`
+    <tr onclick="pvtDrill('${pos.replace(/'/g,"\\'")}')">
+      <td>${pos}</td>
+      <td class="r">${fmt(tot)}</td>
+    </tr>`).join('');
+
+  document.getElementById('pvt-foot').innerHTML=`
+    <tr class="grand"><td>Grand Total</td><td class="r">${fmt(grandTotal)}</td></tr>
+    <tr class="sub-total"><td style="padding-top:8px;padding-bottom:2px">− Client credits</td><td class="r" style="color:var(--green)">${fmt(-credits)}</td></tr>
+    <tr class="sub-total"><td style="font-weight:700;font-size:13px;color:var(--text)">T&T Invoice Total</td><td class="r" style="font-weight:700;font-size:13px;color:var(--green)">${fmtD(invoiceTotal)}</td></tr>`;
+
+  document.getElementById('pvt-credits').textContent=fmtD(credits);
+}
+
+function pvtDrill(pos){
+  const rows=getPayRows().filter(r=>(r.kfcPos||'(blank)').trim()===pos);
+  if(!rows.length)return;
+  document.getElementById('pvt-detail').style.display='block';
+  document.getElementById('pvt-detail-title').textContent=pos;
+  const tbl=document.getElementById('pvt-detail-tbl');
+  tbl.innerHTML=`<thead><tr><th>Name</th><th>Code</th><th style="text-align:right">Amount</th><th style="text-align:right">Total</th></tr></thead>`
+    +`<tbody>`+rows.map(r=>`<tr>
+      <td>${r.fn} ${r.ln}</td>
+      <td>${badge(r.code)}</td>
+      <td style="text-align:right;font-variant-numeric:tabular-nums">${fmt(r.amount)}</td>
+      <td style="text-align:right;font-variant-numeric:tabular-nums;font-weight:600">${fmt(r.total)}</td>
+    </tr>`).join('')
+    +`<tr style="font-weight:600;border-top:0.5px solid var(--border2)">
+      <td colspan="2">Total</td>
+      <td style="text-align:right;font-variant-numeric:tabular-nums">${fmt(rows.reduce((s,r)=>s+r.amount,0))}</td>
+      <td style="text-align:right;font-variant-numeric:tabular-nums">${fmt(rows.reduce((s,r)=>s+r.total,0))}</td>
+    </tr></tbody>`;
+}
+
+function sw(id,btn){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('panel-'+id).classList.add('active');
+}
+
+function exportCSV(){ exportXLSX(); }
+
+function exportXLSX(){
+  if(!G.wpRows.length){alert('No data loaded.');return;}
+  const rows=getPayRows();
+  const p=G.period;
+  const chkDate=p.checkDate||'export';
+  const wb=XLSX.utils.book_new();
+  const numFmt='#,##0.00';
+  const setCols=(ws,widths)=>{ws['!cols']=widths.map(w=>({wch:w}));};
+
+  const taxable=rows.filter(r=>!r.isReim);
+  const gross=taxable.reduce((s,r)=>s+r.amount,0);
+  const tx=parseFloat((gross*0.1365).toFixed(2));
+  const reimbe=rows.filter(r=>r.isReim).reduce((s,r)=>s+r.amount,0);
+  const credits=G.deds.reduce((s,r)=>s+r.amount,0);
+  const subTotal=parseFloat((gross+tx+reimbe-credits).toFixed(2));
+  const DL={PURCH:'Purchases',SCOPT:'Colonial pre-tax',SCOAT:'Colonial after-tax',HIPT1:'Health ins. pre-tax',EMPCHG:'Employee charge'};
+
+  // ── SHEET 1: INVOICE ────────────────────────────────────────────────────
+  const invRows=[
+    ['T & T Staff Management, Inc.','','',''],
+    ['511 Executive Center Blvd, El Paso TX 79902','','',''],
+    ['','','',''],
+    ['To: Kinective Fitness Club LLC','','Pay Period:',`${p.pps} – ${p.ppe}`],
+    ['1020 Belvidere St, El Paso TX 79912','','Check Date:',p.checkDate],
+    ['','','Client ID:','522'],
+    ['','','',''],
+    ['Description','Qty/Percent','Charge Base','Amount'],
+    ['Client Credits','','',(credits>0?-credits:0)],
+    ['Gross Payroll','','',gross],
+    ['TX-9063','13.6500%',gross,tx],
+    ['Non-Gross Bus Exp (Reimbursements)','','',reimbe],
+    ['','','Subtotal',subTotal],
+    ['','','Tax',0],
+    ['','','Total Current',subTotal],
+    ['','','',''],
+    ['Payment Terms: Direct Debit','','',''],
+    ['','','',''],
+    ['CLIENT CREDITS DETAIL','','',''],
+    ['Employee','Code','Description','Amount'],
+    ...G.deds.map(d=>[`${d.fn} ${d.ln}`,d.code,DL[d.code]||d.code,d.amount]),
+    ['','','Total Credits',credits],
+  ];
+  const wsI=XLSX.utils.aoa_to_sheet(invRows);
+  setCols(wsI,[38,14,18,15]);
+  // Format amount column
+  invRows.forEach((_,ri)=>{
+    const cell=XLSX.utils.encode_cell({r:ri,c:3});
+    if(wsI[cell]&&typeof wsI[cell].v==='number') wsI[cell].z=numFmt;
+    const cell2=XLSX.utils.encode_cell({r:ri,c:2});
+    if(wsI[cell2]&&typeof wsI[cell2].v==='number') wsI[cell2].z=numFmt;
+  });
+  XLSX.utils.book_append_sheet(wb,wsI,'Invoice');
+
+  // ── SHEET 2: PAYROLL WP ─────────────────────────────────────────────────
+  const wpHdr=['Employee ID','First Name','Last Name','Position-Job Title','Department','KFC Position Job Title','Payroll Record Type','Payroll Code','Units To Pay','Amount','Tax 12.65%','Total wo/fee','Fee 1%','Total'];
+  const wpRows=[wpHdr];
+  let lastId='';
+  rows.forEach(r=>{
+    if(lastId&&r.id!==lastId) wpRows.push(new Array(14).fill(''));
+    wpRows.push([r.id,r.fn,r.ln,r.pos,r.dept,r.kfcPos,r.recType,r.code,
+      r.units,r.amount,
+      r.isReim?'':r.tax,
+      r.totalWo,
+      r.isReim?'':r.fee,
+      r.total]);
+    lastId=r.id;
+  });
+  wpRows.push(['','','','','','','','Grand Total','',
+    rows.reduce((s,r)=>s+r.amount,0),
+    rows.reduce((s,r)=>s+r.tax,0),
+    rows.reduce((s,r)=>s+r.totalWo,0),
+    rows.reduce((s,r)=>s+r.fee,0),
+    rows.reduce((s,r)=>s+r.total,0)]);
+  const wsW=XLSX.utils.aoa_to_sheet(wpRows);
+  setCols(wsW,[13,12,18,22,30,34,16,9,11,13,13,15,10,14]);
+  wsW['!freeze']={xSplit:0,ySplit:1};
+  // Number format numeric cols
+  wpRows.forEach((row,ri)=>{
+    [8,9,10,11,12,13].forEach(ci=>{
+      const cell=XLSX.utils.encode_cell({r:ri,c:ci});
+      if(wsW[cell]&&typeof wsW[cell].v==='number') wsW[cell].z=numFmt;
+    });
+  });
+  XLSX.utils.book_append_sheet(wb,wsW,'Payroll WP');
+
+  // ── SHEET 3: PIVOT ───────────────────────────────────────────────────────
+  const posMap={};
+  rows.forEach(r=>{
+    const k=(r.kfcPos||'(blank)').trim();
+    posMap[k]=(posMap[k]||0)+r.total;
+  });
+  const sorted=Object.entries(posMap).sort((a,b)=>a[0].localeCompare(b[0]));
+  const grandTotal=sorted.reduce((s,[,v])=>s+v,0);
+  const invTotal=parseFloat((grandTotal-credits).toFixed(2));
+  const pvtRows=[
+    ['Row Labels','Sum of Total'],
+    ...sorted.map(([pos,tot])=>[pos,parseFloat(tot.toFixed(2))]),
+    ['Grand Total',parseFloat(grandTotal.toFixed(2))],
+    ['',''],
+    ['− Client credits',credits>0?-credits:0],
+    ['T&T Invoice Total',invTotal],
+  ];
+  const wsP=XLSX.utils.aoa_to_sheet(pvtRows);
+  setCols(wsP,[38,16]);
+  pvtRows.forEach((_,ri)=>{
+    const cell=XLSX.utils.encode_cell({r:ri,c:1});
+    if(wsP[cell]&&typeof wsP[cell].v==='number') wsP[cell].z=numFmt;
+  });
+  XLSX.utils.book_append_sheet(wb,wsP,'Pivot');
+
+  XLSX.writeFile(wb,`Kinective_Payroll_${chkDate}.xlsx`);
+}
+
+// ── ANALYTICS ────────────────────────────────────────────────────────────────
+let trendChartInst = null;
+let tenureFilter = 'new';
+
+function setTenureFilter(f, btn){
+  tenureFilter = f;
+  document.querySelectorAll('.ten-btn').forEach(b=>b.classList.remove('ten-active'));
+  btn.classList.add('ten-active');
+  renderTenure();
+}
+
+async function renderAnalytics(){
+  const rows = getPayRows();
+  if(!rows.length){
+    document.getElementById('analytics-empty').style.display='block';
+    document.getElementById('analytics-content').style.display='none';
+    return;
+  }
+  document.getElementById('analytics-empty').style.display='none';
+  document.getElementById('analytics-content').style.display='block';
+
+  renderOTTable();
+  renderFixedVariable(rows);
+  renderHeadcount(rows);
+  renderPayRates(rows);
+  await renderTrendChart();
+  await renderPOP();
+  await renderTenure();
+}
+
+// ── 1. OVERTIME TRACKER ──────────────────────────────────────────────────────
+function renderOTTable(){
+  const rows = getPayRows();
+  const threshold = parseFloat(document.getElementById('ot-threshold').value)||10;
+
+  // Group by employee: collect OT rows and total cost
+  const empMap = {};
+  rows.forEach(r=>{
+    const k = r.id;
+    if(!empMap[k]) empMap[k]={fn:r.fn,ln:r.ln,kfcPos:r.kfcPos,otAmt:0,otUnits:0,total:0};
+    empMap[k].total += r.total;
+    if(r.code==='OT'){empMap[k].otAmt+=r.amount; empMap[k].otUnits+=r.units;}
+  });
+
+  const otEEs = Object.values(empMap).filter(e=>e.otAmt>0)
+    .sort((a,b)=>b.otAmt-a.otAmt);
+
+  const totalOT = otEEs.reduce((s,e)=>s+e.otAmt,0);
+  const totalGross = rows.filter(r=>!r.isReim).reduce((s,r)=>s+r.amount,0);
+
+  // Summary cards
+  document.getElementById('ot-summary').innerHTML = `
+    <div class="an-stat" style="flex:1"><div class="an-stat-val ${otEEs.length>0?'flag-ot':''}">${otEEs.length}</div><div class="an-stat-lbl">Employees w/ OT</div></div>
+    <div class="an-stat" style="flex:1"><div class="an-stat-val">${fmtD(totalOT)}</div><div class="an-stat-lbl">Total OT cost</div></div>
+    <div class="an-stat" style="flex:1"><div class="an-stat-val">${totalGross>0?(totalOT/totalGross*100).toFixed(1)+'%':'—'}</div><div class="an-stat-lbl">OT % of gross</div></div>`;
+
+  const body = document.getElementById('ot-body');
+  if(!otEEs.length){
+    body.innerHTML=`<tr><td colspan="6" style="text-align:center;color:var(--text3);font-size:11px;padding:12px">No overtime this period</td></tr>`;
+    return;
+  }
+  body.innerHTML = otEEs.map(e=>{
+    const pct = e.total>0 ? (e.otAmt/e.total*100) : 0;
+    const flag = pct>=threshold;
+    return`<tr>
+      <td>${e.fn} ${e.ln}</td>
+      <td style="font-size:10.5px;color:var(--text2)">${e.kfcPos||'—'}</td>
+      <td class="num">${e.otUnits.toFixed(2)}</td>
+      <td class="num">${fmtD(e.otAmt)}</td>
+      <td class="num ${flag?'flag-ot':'flag-ok'}">${pct.toFixed(1)}%</td>
+      <td class="num">${flag?'<span class="flag-ot">⚠ HIGH</span>':'<span class="flag-ok">✓</span>'}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ── 2. FIXED vs VARIABLE ─────────────────────────────────────────────────────
+function renderFixedVariable(rows){
+  const FIXED = ['SSAL','BONREG'];
+  const VARIABLE = ['HOURLY','CLASS','SESS','PILATE','OT','MASAGE'];
+
+  const fixedAmt = rows.filter(r=>FIXED.includes(r.code)).reduce((s,r)=>s+r.amount,0);
+  const varAmt   = rows.filter(r=>VARIABLE.includes(r.code)).reduce((s,r)=>s+r.amount,0);
+  const gross    = rows.filter(r=>!r.isReim).reduce((s,r)=>s+r.amount,0);
+  const fixedPct = gross>0 ? fixedAmt/gross*100 : 0;
+  const varPct   = gross>0 ? varAmt/gross*100 : 0;
+
+  document.getElementById('fv-bars').innerHTML=`
+    <div class="fv-bar-row">
+      <span style="font-size:11px;min-width:60px;color:var(--text2)">Fixed</span>
+      <div class="fv-bar-track"><div class="fv-bar-fill-fixed" style="width:${fixedPct.toFixed(1)}%"></div></div>
+      <span style="font-size:11px;min-width:44px;text-align:right;color:#1a4d8f;font-weight:600">${fixedPct.toFixed(1)}%</span>
+      <span style="font-size:11px;color:var(--text3);min-width:70px;text-align:right">${fmtD(fixedAmt)}</span>
+    </div>
+    <div class="fv-bar-row">
+      <span style="font-size:11px;min-width:60px;color:var(--text2)">Variable</span>
+      <div class="fv-bar-track"><div class="fv-bar-fill-var" style="width:${varPct.toFixed(1)}%"></div></div>
+      <span style="font-size:11px;min-width:44px;text-align:right;color:#1D9E75;font-weight:600">${varPct.toFixed(1)}%</span>
+      <span style="font-size:11px;color:var(--text3);min-width:70px;text-align:right">${fmtD(varAmt)}</span>
+    </div>`;
+
+  const groups=[
+    {label:'Fixed (SSAL, BONREG)', codes:FIXED.join(', '), amt:fixedAmt},
+    {label:'Hourly', codes:'HOURLY', amt:rows.filter(r=>r.code==='HOURLY').reduce((s,r)=>s+r.amount,0)},
+    {label:'Sessions (CLASS, SESS, PILATE)', codes:'CLASS/SESS/PILATE', amt:rows.filter(r=>['CLASS','SESS','PILATE'].includes(r.code)).reduce((s,r)=>s+r.amount,0)},
+    {label:'Overtime', codes:'OT', amt:rows.filter(r=>r.code==='OT').reduce((s,r)=>s+r.amount,0)},
+    {label:'Other', codes:'MASAGE, etc', amt:rows.filter(r=>!FIXED.includes(r.code)&&!VARIABLE.includes(r.code)&&!r.isReim).reduce((s,r)=>s+r.amount,0)},
+  ].filter(g=>g.amt>0);
+
+  document.getElementById('fv-body').innerHTML = groups.map((g,i)=>`
+    <tr style="background:${i%2?'var(--surface2)':'var(--surface)'}">
+      <td>${g.label}</td>
+      <td style="font-size:10.5px;color:var(--text3)">${g.codes}</td>
+      <td class="num">${fmtD(g.amt)}</td>
+      <td class="num">${gross>0?(g.amt/gross*100).toFixed(1)+'%':'—'}</td>
+    </tr>`).join('');
+}
+
+// ── 3. HEADCOUNT vs COST ─────────────────────────────────────────────────────
+function renderHeadcount(rows){
+  const gross = rows.filter(r=>!r.isReim).reduce((s,r)=>s+r.amount,0);
+  const posMap={};
+  rows.forEach(r=>{
+    const k=(r.kfcPos||'Unknown').trim();
+    if(!posMap[k])posMap[k]={ees:new Set(),amt:0};
+    if(r.id) posMap[k].ees.add(r.id);
+    posMap[k].amt+=r.amount;
+  });
+  const sorted=Object.entries(posMap).sort((a,b)=>b[1].amt-a[1].amt);
+  document.getElementById('hc-body').innerHTML=sorted.map(([pos,v],i)=>`
+    <tr style="background:${i%2?'var(--surface2)':'var(--surface)'}">
+      <td style="font-size:11px">${pos}</td>
+      <td class="num">${v.ees.size}</td>
+      <td class="num">${fmtD(v.amt)}</td>
+      <td class="num">${v.ees.size>0?fmtD(v.amt/v.ees.size):'—'}</td>
+      <td class="num">${gross>0?(v.amt/gross*100).toFixed(1)+'%':'—'}</td>
+    </tr>`).join('');
+}
+
+// ── 4. PAY RATE ANALYSIS ─────────────────────────────────────────────────────
+function renderPayRates(rows){
+  const hourlyRows = rows.filter(r=>['HOURLY','OT'].includes(r.code)&&r.units>0&&r.amount>0);
+
+  // Avg rate by position
+  const posRates={};
+  hourlyRows.forEach(r=>{
+    const k=r.kfcPos||'Unknown';
+    if(!posRates[k])posRates[k]={total:0,units:0};
+    posRates[k].total+=r.amount; posRates[k].units+=r.units;
+  });
+  const posAvg={};
+  Object.entries(posRates).forEach(([k,v])=>{ posAvg[k]=v.units>0?v.total/v.units:0; });
+
+  // Per-employee
+  const empMap={};
+  hourlyRows.forEach(r=>{
+    const k=r.id+r.fn+r.ln;
+    if(!empMap[k])empMap[k]={fn:r.fn,ln:r.ln,kfcPos:r.kfcPos,total:0,units:0};
+    empMap[k].total+=r.amount; empMap[k].units+=r.units;
+  });
+
+  const emps=Object.values(empMap).sort((a,b)=>b.total-a.total);
+  document.getElementById('rate-body').innerHTML=emps.map((e,i)=>{
+    const rate=e.units>0?e.total/e.units:0;
+    const avg=posAvg[e.kfcPos]||0;
+    const diff=avg>0?((rate-avg)/avg*100):0;
+    const cls=diff>15?'flag-ot':diff<-15?'delta-dn':'flag-ok';
+    return`<tr style="background:${i%2?'var(--surface2)':'var(--surface)'}">
+      <td>${e.fn} ${e.ln}</td>
+      <td style="font-size:10.5px;color:var(--text2)">${e.kfcPos||'—'}</td>
+      <td class="num">${e.units.toFixed(2)}</td>
+      <td class="num">${fmtD(e.total)}</td>
+      <td class="num" style="font-weight:600">${fmtD(rate)}/hr</td>
+      <td class="num ${cls}">${diff>=0?'+':''}${diff.toFixed(1)}%</td>
+    </tr>`;
+  }).join('');
+}
+
+// ── 5. TREND CHART ───────────────────────────────────────────────────────────
+async function renderTrendChart(){
+  const keys = await loadHistory();
+  const note = document.getElementById('trend-period-note');
+  const noData = document.getElementById('trend-no-data');
+
+  if(keys.length < 2){
+    noData.style.display='block';
+    note.textContent=`${keys.length} period${keys.length===1?' saved':'s saved'} — need 2+ for trend`;
+    if(trendChartInst){trendChartInst.destroy();trendChartInst=null;}
+    return;
+  }
+  noData.style.display='none';
+
+  // Load all periods
+  const periods=[];
+  const sorted=keys.sort();
+  for(const k of sorted){
+    try{
+      const r=await window.storage.get(k);
+      if(!r)continue;
+      const D=JSON.parse(r.value);
+      const gross=D.rows.filter(r=>!r.isReim).reduce((s,r)=>s+r.amount,0);
+      const tx=gross*0.1365;
+      const credits=D.deds.reduce((s,d)=>s+d.amount,0);
+      const total=gross+tx-credits;
+      periods.push({label:D.period.checkDate||k.replace(HIST_PREFIX,''), gross, tx, total,
+        ees:new Set(D.rows.map(r=>r.id)).size});
+    }catch(e){}
+  }
+
+  note.textContent=`${periods.length} pay periods`;
+  const labels=periods.map(p=>p.label);
+
+  if(trendChartInst)trendChartInst.destroy();
+  trendChartInst=new Chart(document.getElementById('trendChart'),{
+    type:'line',
+    data:{labels,datasets:[
+      {label:'Gross payroll',data:periods.map(p=>p.gross),borderColor:'#1a4d8f',backgroundColor:'rgba(26,77,143,.08)',tension:.3,pointRadius:4,pointBackgroundColor:'#1a4d8f'},
+      {label:'TX-9063',data:periods.map(p=>p.tx),borderColor:'#BA7517',backgroundColor:'rgba(186,117,23,.08)',tension:.3,pointRadius:4,pointBackgroundColor:'#BA7517'},
+      {label:'Total current',data:periods.map(p=>p.total),borderColor:'#1D9E75',backgroundColor:'rgba(29,158,117,.08)',tension:.3,pointRadius:4,pointBackgroundColor:'#1D9E75'},
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>`${ctx.dataset.label}: ${fmtD(ctx.raw)}`}}},
+      scales:{y:{ticks:{callback:v=>'$'+Math.round(v/1000)+'k'},grid:{color:'rgba(0,0,0,.05)'}},
+              x:{grid:{display:false}}}}
+  });
+
+  document.getElementById('trend-legend').innerHTML=[
+    {c:'#1a4d8f',l:'Gross payroll'},{c:'#BA7517',l:'TX-9063'},{c:'#1D9E75',l:'Total current'}
+  ].map(x=>`<span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:2px;background:${x.c}"></span>${x.l}</span>`).join('');
+}
+
+// ── 6. PERIOD-OVER-PERIOD ────────────────────────────────────────────────────
+async function renderPOP(){
+  const keys=(await loadHistory()).sort();
+  if(keys.length<2){
+    document.getElementById('pop-empty').style.display='block';
+    document.getElementById('pop-content').style.display='none';
+    return;
+  }
+  document.getElementById('pop-empty').style.display='none';
+  document.getElementById('pop-content').style.display='block';
+
+  // Get current and prior period
+  const curKey=G.period.checkDate?HIST_PREFIX+G.period.checkDate:keys[keys.length-1];
+  const curIdx=keys.indexOf(curKey);
+  const priorKey=curIdx>0?keys[curIdx-1]:keys[keys.length-2];
+
+  let curD,priorD;
+  try{
+    const cr=await window.storage.get(curKey);
+    const pr=await window.storage.get(priorKey);
+    if(!cr||!pr)return;
+    curD=JSON.parse(cr.value);
+    priorD=JSON.parse(pr.value);
+  }catch(e){return;}
+
+  const calc=D=>{
+    const gross=D.rows.filter(r=>!r.isReim).reduce((s,r)=>s+r.amount,0);
+    const tx=gross*0.1365;
+    const credits=D.deds.reduce((s,d)=>s+d.amount,0);
+    const total=gross+tx-credits;
+    const ees=new Set(D.rows.map(r=>r.id)).size;
+    const otCost=D.rows.filter(r=>r.code==='OT').reduce((s,r)=>s+r.amount,0);
+    return{gross,tx,total,ees,otCost};
+  };
+
+  const cur=calc(curD), pri=calc(priorD);
+
+  const delta=(c,p,isMoney=true)=>{
+    if(!p)return'—';
+    const d=c-p; const pct=(d/p*100).toFixed(1);
+    const cls=d>0?'delta-up':'delta-dn';
+    const sign=d>=0?'+':'';
+    return`<span class="${cls}">${sign}${isMoney?fmtD(d):d.toFixed(0)} (${sign}${pct}%)</span>`;
+  };
+
+  const metrics=[
+    {l:'Gross payroll',c:cur.gross,p:pri.gross,money:true},
+    {l:'TX-9063',c:cur.tx,p:pri.tx,money:true},
+    {l:'Total current',c:cur.total,p:pri.total,money:true},
+    {l:'Headcount',c:cur.ees,p:pri.ees,money:false},
+    {l:'OT cost',c:cur.otCost,p:pri.otCost,money:true},
+  ];
+
+  document.getElementById('pop-metrics').innerHTML=`
+    <div class="an-stat"><div class="an-stat-val" style="font-size:12px;color:var(--text2)">${priorD.period.checkDate}</div><div class="an-stat-lbl">Prior period</div></div>
+    <div class="an-stat"><div class="an-stat-val" style="font-size:12px;color:var(--accent)">${curD.period.checkDate}</div><div class="an-stat-lbl">Current period</div></div>`;
+
+  document.getElementById('pop-body').innerHTML=metrics.map((m,i)=>`
+    <tr style="background:${i%2?'var(--surface2)':'var(--surface)'}">
+      <td>${m.l}</td>
+      <td class="num">${m.money?fmtD(m.p):m.p}</td>
+      <td class="num" style="font-weight:600">${m.money?fmtD(m.c):m.c}</td>
+      <td class="num">${delta(m.c,m.p,m.money)}</td>
+    </tr>`).join('');
+}
+
+// ── 7. EMPLOYEE TENURE / NEW HIRES ───────────────────────────────────────────
+async function renderTenure(){
+  const keys=(await loadHistory()).sort();
+  const curKey=G.period.checkDate?HIST_PREFIX+G.period.checkDate:keys[keys.length-1];
+
+  // Build appearance map: employeeId -> [{key,period,fn,ln,kfcPos}]
+  const empHistory={};
+  for(const k of keys){
+    try{
+      const r=await window.storage.get(k);
+      if(!r)continue;
+      const D=JSON.parse(r.value);
+      const eeIds=new Set();
+      D.rows.forEach(row=>{
+        if(!row.id||eeIds.has(row.id))return;
+        eeIds.add(row.id);
+        if(!empHistory[row.id])empHistory[row.id]={fn:row.fn,ln:row.ln,kfcPos:row.kfcPos,periods:[]};
+        empHistory[row.id].periods.push(k);
+      });
+    }catch(e){}
+  }
+
+  const curEEs=new Set();
+  if(curKey){
+    try{
+      const r=await window.storage.get(curKey);
+      if(r){const D=JSON.parse(r.value);D.rows.forEach(row=>{if(row.id)curEEs.add(row.id);});}
+    }catch(e){}
+  }
+
+  const allEEs=Object.entries(empHistory).map(([id,v])=>({
+    id,fn:v.fn,ln:v.ln,kfcPos:v.kfcPos,
+    count:v.periods.length,
+    isNew:v.periods.length===1&&v.periods[0]===curKey,
+    inCurrent:curEEs.has(id)
+  }));
+
+  const newEEs=allEEs.filter(e=>e.isNew);
+  const total=allEEs.filter(e=>e.inCurrent).length;
+
+  document.getElementById('tenure-summary').innerHTML=`
+    <div style="display:flex;gap:8px">
+      <div class="an-stat" style="flex:1"><div class="an-stat-val ${newEEs.length>0?'flag-ot':''}">${newEEs.length}</div><div class="an-stat-lbl">New this period</div></div>
+      <div class="an-stat" style="flex:1"><div class="an-stat-val">${total}</div><div class="an-stat-lbl">Active employees</div></div>
+      <div class="an-stat" style="flex:1"><div class="an-stat-val">${keys.length}</div><div class="an-stat-lbl">Periods tracked</div></div>
+    </div>`;
+
+  const display = tenureFilter==='new' ? newEEs : allEEs.filter(e=>e.inCurrent).sort((a,b)=>b.count-a.count);
+
+  document.getElementById('tenure-body').innerHTML = display.length===0
+    ? `<tr><td colspan="4" style="text-align:center;color:var(--text3);font-size:11px;padding:12px">${tenureFilter==='new'?'No new employees this period':'No employees found'}</td></tr>`
+    : display.map((e,i)=>{
+        const status = e.count===1
+          ? `<span style="background:var(--red-bg);color:var(--red);font-size:10px;padding:2px 7px;border-radius:4px;font-weight:600">NEW</span>`
+          : `<span style="background:var(--green-bg);color:var(--green);font-size:10px;padding:2px 7px;border-radius:4px">${e.count} periods</span>`;
+        return`<tr style="background:${i%2?'var(--surface2)':'var(--surface)'}">
+          <td>${e.fn} ${e.ln}</td>
+          <td style="font-size:10.5px;color:var(--text2)">${e.kfcPos||'—'}</td>
+          <td class="num">${e.count}</td>
+          <td>${status}</td>
+        </tr>`;
+      }).join('');
+}
+
+// Init
+renderHistory();
+
+</script>
+</body>
+</html>
