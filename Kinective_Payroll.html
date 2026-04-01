@@ -733,25 +733,43 @@ function pf(file,type){
 
       if(!txRaw.length){setSt('err','No data in Excel file.');return;}
 
-      // Flexible column detection
-      const keys=Object.keys(txRaw[0]);
+      // T&T sometimes exports with text-prefix apostrophes on all string values
+      // Strip them so matching works correctly
+      const clean = v => {
+        if(typeof v !== 'string') return v;
+        return v.startsWith("'") ? v.slice(1) : v;
+      };
+
+      // Also strip apostrophes from column header keys
+      const rawKeys = Object.keys(txRaw[0]);
+      const cleanKey = k => k.startsWith("'") ? k.slice(1) : k;
+
+      // Flexible column detection — using cleaned header names
+      const keys = rawKeys.map(cleanKey);
       const fc=k=>keys.find(c=>c.toLowerCase().replace(/[\s\-_]/g,'').includes(k.toLowerCase().replace(/[\s\-_]/g,'')))||null;
 
-      const cID   = fc('employeeid')   || keys[1];
-      // T&T exports use either 'EE Client ID' or 'Department' for the client/dept number
-      const cCLI  = fc('eeclientid')   || fc('department') || keys[0];
-      const cFN   = fc('firstname')    || keys[2];
-      const cLN   = fc('lastname')     || keys[3];
-      const cPos  = fc('positionjob')  || keys[4];
-      const cChk  = fc('checknumber')  || keys[5];
-      const cPPS  = fc('pps')          || keys[6];
-      const cPPE  = fc('ppe')          || keys[7];
-      const cChkD = fc('checkdate')    || keys[8];
-      const cRecT = fc('payrollrecord')|| keys[9];
-      const cCode = fc('payrollcode')  || keys[10];
-      const cUnits= fc('units')        || keys[11];
-      const cAmt  = fc('amount')       || keys[12];
-      const cWC   = fc('wc')           || keys[13];
+      const cID   = fc('employeeid')    || keys[1];
+      const cCLI  = fc('eeclientid')    || fc('department') || keys[0];
+      const cFN   = fc('firstname')     || keys[2];
+      const cLN   = fc('lastname')      || keys[3];
+      const cPos  = fc('positionjob')   || keys[4];
+      const cChk  = fc('checknumber')   || keys[5];
+      const cPPS  = fc('pps')           || keys[6];
+      const cPPE  = fc('ppe')           || keys[7];
+      const cChkD = fc('checkdate')     || keys[8];
+      const cRecT = fc('payrollrecord') || keys[9];
+      const cCode = fc('payrollcode')   || keys[10];
+      const cUnits= fc('units')         || keys[11];
+      const cAmt  = fc('amount')        || keys[12];
+      const cWC   = fc('wc')            || keys[13];
+
+      // Helper to get a value from a raw row using either the cleaned or original key
+      const get = (row, cleanedKey) => {
+        // Try cleaned key first, then original (with apostrophe prefix)
+        if(row[cleanedKey] !== undefined) return row[cleanedKey];
+        const origKey = rawKeys.find(k => cleanKey(k) === cleanedKey);
+        return origKey !== undefined ? row[origKey] : '';
+      };
 
       // raw:true + cellDates:true returns dates as JS Date objects
       const xlDate=v=>{
@@ -774,20 +792,20 @@ function pf(file,type){
       };
 
       const all=txRaw.map(r=>({
-        id:r[cID]?.toString().trim()||'',
-        clientId:r[cCLI]?.toString().trim()||'',
-        fn:(r[cFN]||'').toString().trim(),
-        ln:(r[cLN]||'').toString().trim(),
-        pos:r[cPos]?.toString().trim()||'',
-        checkNum:r[cChk]?.toString()||'',
-        pps:xlDate(r[cPPS]),
-        ppe:xlDate(r[cPPE]),
-        checkDate:xlDate(r[cChkD]),
-        recType:(r[cRecT]||'').toString().trim(),
-        code:(r[cCode]||'').toString().trim().toUpperCase(),
-        units:parseFloat(r[cUnits])||0,
-        amount:parseFloat(r[cAmt])||0,
-        wc:(r[cWC]||'').toString().trim().toUpperCase().replace(/\s/g,'')
+        id:    clean(get(r,cID)?.toString().trim()||''),
+        clientId: clean(get(r,cCLI)?.toString().trim()||''),
+        fn:    clean((get(r,cFN)||'').toString().trim()),
+        ln:    clean((get(r,cLN)||'').toString().trim()),
+        pos:   clean(get(r,cPos)?.toString().trim()||''),
+        checkNum: clean(get(r,cChk)?.toString()||''),
+        pps:      xlDate(get(r,cPPS)),
+        ppe:      xlDate(get(r,cPPE)),
+        checkDate:xlDate(get(r,cChkD)),
+        recType:  clean((get(r,cRecT)||'').toString().trim()),
+        code:     clean((get(r,cCode)||'').toString().trim().toUpperCase()),
+        units:    parseFloat(get(r,cUnits))||0,
+        amount:   parseFloat(get(r,cAmt))||0,
+        wc:       clean((get(r,cWC)||'').toString().trim().toUpperCase().replace(/\s/g,''))
       }));
 
       // Filter to client 522 — normalize to handle int (522), float (522.0), string ("0522"), etc.
@@ -1226,28 +1244,30 @@ async function renderAnalytics(){
 function renderOTTable(){
   const rows = getPayRows();
   const threshold = parseFloat(document.getElementById('ot-threshold').value)||10;
+  const totalGross = rows.filter(r=>!r.isReim).reduce((s,r)=>s+r.amount,0);
 
-  // Group by employee ID
+  // Pull OT rows directly — same source as Payroll WP tab
+  const otRows = rows.filter(r=>r.code==='OT');
+
+  // Aggregate per employee (some may have multiple OT rows)
   const empMap = {};
-  rows.forEach(r=>{
-    const k = r.id;
-    if(!empMap[k]) empMap[k]={fn:r.fn,ln:r.ln,kfcPos:r.kfcPos,otAmt:0,otUnits:0,total:0};
-    empMap[k].total += r.total;
-    if(r.code==='OT'){
-      empMap[k].otAmt   += r.amount;
-      empMap[k].otUnits += r.units;
-      // Always update name/position from the OT row itself so we get accurate data
-      empMap[k].fn      = r.fn;
-      empMap[k].ln      = r.ln;
-      empMap[k].kfcPos  = r.kfcPos;
-    }
+  otRows.forEach(r=>{
+    const k = r.fn+'|'+r.ln; // use name as key — works even if ID parsing is broken
+    if(!empMap[k]) empMap[k]={fn:r.fn, ln:r.ln, kfcPos:r.kfcPos, otAmt:0, otUnits:0};
+    empMap[k].otAmt   += r.amount;
+    empMap[k].otUnits += r.units;
+    empMap[k].kfcPos   = r.kfcPos; // keep most recent
   });
 
-  const otEEs = Object.values(empMap).filter(e=>e.otAmt>0)
-    .sort((a,b)=>b.otAmt-a.otAmt);
+  // Total cost for each employee (all pay codes, matched by name)
+  const empTotal = {};
+  rows.forEach(r=>{
+    const k = r.fn+'|'+r.ln;
+    empTotal[k] = (empTotal[k]||0) + r.total;
+  });
 
-  const totalOT    = otEEs.reduce((s,e)=>s+e.otAmt,0);
-  const totalGross = rows.filter(r=>!r.isReim).reduce((s,r)=>s+r.amount,0);
+  const otEEs = Object.values(empMap).sort((a,b)=>b.otAmt-a.otAmt);
+  const totalOT = otEEs.reduce((s,e)=>s+e.otAmt,0);
 
   // Summary cards
   document.getElementById('ot-summary').innerHTML = `
@@ -1261,7 +1281,8 @@ function renderOTTable(){
     return;
   }
   body.innerHTML = otEEs.map(e=>{
-    const pct = e.total>0 ? (e.otAmt/e.total*100) : 0;
+    const tot = empTotal[e.fn+'|'+e.ln]||0;
+    const pct = tot>0 ? (e.otAmt/tot*100) : 0;
     const flag = pct>=threshold;
     return`<tr>
       <td>${e.fn} ${e.ln}</td>
