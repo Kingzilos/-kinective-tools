@@ -202,6 +202,12 @@ table.pvt tr:hover td{background:var(--accent-bg)}
     <div class="pi"><span>Client</span><b id="p-cli">—</b></div>
     <div class="pi"><span>Employees</span><b id="p-ee">—</b></div>
     <div class="pi"><span>Pay rows</span><b id="p-rw">—</b></div>
+    <div class="pi" style="margin-left:auto">
+      <button onclick="saveToHistory(true)" id="btn-save"
+        style="background:#fff;color:#1a4d8f;border:none;padding:7px 16px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap">
+        💾 Save
+      </button>
+    </div>
   </div>
 
   <!-- TABS -->
@@ -558,104 +564,152 @@ const CODE_COLORS = {
 
 let G = {wpRaw:[], wpRows:[], deds:[], period:{}};
 
-// ── HISTORY (persistent storage) ─────────────────────────────────────────────
-const HIST_PREFIX = 'payroll:';
+// ── SUPABASE CONFIG ───────────────────────────────────────────────────────────
+const SB_URL = 'https://jbqvtnukspnlpxgosmhp.supabase.co';
+const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpicXZ0bnVrc3BubHB4Z29zbWhwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyNzU0NjcsImV4cCI6MjA4ODg1MTQ2N30.0EvUKNrSbH2UkQPEkTWXKS8PGNVr4G0dvWoJp9HBROs';
+const SB_HDR = {
+  'apikey': SB_KEY,
+  'Authorization': `Bearer ${SB_KEY}`,
+  'Content-Type': 'application/json',
+  'Prefer': 'return=minimal'
+};
 
-async function saveToHistory(){
-  if(!G.wpRows.length||!G.period.checkDate) return;
-  const key = HIST_PREFIX + G.period.checkDate;
+async function sbFetch(path, opts={}){
+  const res = await fetch(SB_URL + path, {...opts, headers:{...SB_HDR,...(opts.headers||{})}});
+  if(!res.ok){ const t=await res.text(); throw new Error(`Supabase ${res.status}: ${t}`); }
+  const txt = await res.text();
+  return txt ? JSON.parse(txt) : null;
+}
+
+// ── HISTORY (Supabase-backed) ─────────────────────────────────────────────────
+async function saveToHistory(manual=false){
+  if(!G.wpRows.length || !G.period.checkDate) return;
+  const btn = document.getElementById('btn-save');
+  if(btn){ btn.textContent='Saving…'; btn.disabled=true; }
   const rows = getPayRows();
   const payload = {
     period: G.period,
     rows: rows.map(r=>({id:r.id,fn:r.fn,ln:r.ln,pos:r.pos,dept:r.dept,kfcPos:r.kfcPos,
       recType:r.recType,code:r.code,units:r.units,amount:r.amount,
       tax:r.tax,totalWo:r.totalWo,fee:r.fee,total:r.total,isReim:!!r.isReim})),
-    deds: G.deds.map(d=>({fn:d.fn,ln:d.ln,code:d.code,amount:d.amount})),
-    savedAt: new Date().toISOString()
+    deds: G.deds.map(d=>({fn:d.fn,ln:d.ln,code:d.code,amount:d.amount}))
   };
   try {
-    await window.storage.set(key, JSON.stringify(payload));
+    await sbFetch('/rest/v1/payroll_history', {
+      method: 'POST',
+      headers: {'Prefer': 'resolution=merge-duplicates'},
+      body: JSON.stringify({
+        check_date:   G.period.checkDate,
+        period_start: G.period.pps,
+        period_end:   G.period.ppe,
+        payload
+      })
+    });
+    if(btn){ btn.textContent='✓ Saved'; btn.style.background='#e0f4ee'; btn.style.color='#0d6b52'; }
+    setTimeout(()=>{ if(btn){btn.textContent='💾 Save';btn.disabled=false;btn.style.background='#fff';btn.style.color='#1a4d8f';} },2000);
+    if(manual) showToast('Payroll saved to history ✓');
     renderHistory();
-  } catch(e){ console.warn('Storage save failed', e); }
+  } catch(e){
+    if(btn){ btn.textContent='✗ Failed'; btn.disabled=false; }
+    setTimeout(()=>{ if(btn){btn.textContent='💾 Save';btn.style.background='#fff';btn.style.color='#1a4d8f';} },2000);
+    console.warn('Save failed:', e.message);
+  }
+}
+
+function showToast(msg){
+  const t = document.createElement('div');
+  t.textContent = msg;
+  t.style.cssText='position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1a4d8f;color:#fff;padding:10px 22px;border-radius:8px;font-size:13px;font-weight:500;z-index:9999;box-shadow:0 4px 16px rgba(0,0,0,.2);transition:opacity .4s';
+  document.body.appendChild(t);
+  setTimeout(()=>{ t.style.opacity='0'; setTimeout(()=>t.remove(),400); },2500);
 }
 
 async function loadHistory(){
   try {
-    const result = await window.storage.list(HIST_PREFIX);
-    return result ? result.keys : [];
-  } catch(e){ return []; }
+    const data = await sbFetch('/rest/v1/payroll_history?select=check_date,period_start,period_end,saved_at&order=check_date.desc');
+    return data || [];
+  } catch(e){ console.warn('loadHistory failed:', e.message); return []; }
 }
 
-async function loadPayrollFromHistory(key){
+async function loadPayrollFromHistory(checkDate){
   try {
-    const result = await window.storage.get(key);
-    if(!result) return;
-    const D = JSON.parse(result.value);
+    const data = await sbFetch(`/rest/v1/payroll_history?check_date=eq.${encodeURIComponent(checkDate)}&select=payload`);
+    if(!data || !data.length) return;
+    const D = data[0].payload;
     G.period = D.period;
-    G.deds = D.deds;
+    G.deds   = D.deds;
     G.wpRows = D.rows;
-    G.wpRaw = D.rows;
+    G.wpRaw  = D.rows;
     buildFilters(G.wpRows);
     renderAll();
     ['mrow','pbanner','tabs'].forEach(id=>{
-      document.getElementById(id).style.display=id==='mrow'?'grid':'flex';
+      document.getElementById(id).style.display = id==='mrow'?'grid':'flex';
     });
-    document.getElementById('btn-export').style.display='inline-flex';
-    setSt('ok',`Loaded from history: ${G.period.pps} – ${G.period.ppe} (${G.wpRows.length} rows)`);
-    // Highlight active in sidebar
+    document.getElementById('btn-export').style.display = 'inline-flex';
+    setSt('ok', `Loaded: ${G.period.pps} – ${G.period.ppe} · ${G.wpRows.length} rows`);
     document.querySelectorAll('.hist-item').forEach(el=>{
-      el.style.background = el.dataset.key===key ? 'var(--accent-bg)' : '';
-      el.style.fontWeight = el.dataset.key===key ? '600' : '400';
+      const active = el.dataset.key === checkDate;
+      el.style.background  = active ? 'var(--accent-bg)' : '';
+      el.style.fontWeight  = active ? '600' : '400';
+      el.style.borderColor = active ? 'var(--accent)' : 'transparent';
     });
-  } catch(e){ setSt('err','Failed to load from history: '+e.message); }
+  } catch(e){ setSt('err', 'Load failed: ' + e.message); }
 }
 
-async function deleteHistoryEntry(key, e){
+async function deleteHistoryEntry(checkDate, e){
   e.stopPropagation();
+  if(!confirm(`Delete payroll for ${checkDate}?`)) return;
   try {
-    await window.storage.delete(key);
+    await sbFetch(`/rest/v1/payroll_history?check_date=eq.${encodeURIComponent(checkDate)}`, {method:'DELETE'});
     renderHistory();
-  } catch(e){ console.warn('Delete failed',e); }
+  } catch(e){ console.warn('Delete failed:', e.message); }
 }
 
 async function renderHistory(){
-  const keys = await loadHistory();
   const container = document.getElementById('hist-list');
-  if(!keys.length){
-    container.innerHTML='<div style="font-size:11px;color:var(--text3);padding:8px 0;text-align:center">No saved payrolls yet</div>';
+  container.innerHTML = '<div style="font-size:11px;color:var(--text3);padding:8px 0;text-align:center">Loading…</div>';
+  const rows = await loadHistory();
+  if(!rows.length){
+    container.innerHTML = '<div style="font-size:11px;color:var(--text3);padding:8px 0;text-align:center">No saved payrolls yet</div>';
     return;
   }
-  // Sort keys descending (newest first)
-  const sorted = [...keys].sort((a,b)=>b.localeCompare(a));
   container.innerHTML = '';
-  for(const key of sorted){
+  for(const row of rows){
+    // Load summary stats from payload
+    let gross=0, total=0, eeCount=0, rowCount=0;
     try {
-      const result = await window.storage.get(key);
-      if(!result) continue;
-      const D = JSON.parse(result.value);
-      const p = D.period;
-      const gross = D.rows.filter(r=>!r.isReim).reduce((s,r)=>s+r.amount,0);
-      const tx = gross*0.1365;
-      const credits = D.deds.reduce((s,d)=>s+d.amount,0);
-      const total = gross+tx-credits;
-      const div = document.createElement('div');
-      div.className='hist-item';
-      div.dataset.key=key;
-      div.onclick=()=>loadPayrollFromHistory(key);
-      div.innerHTML=`
-        <div style="display:flex;justify-content:space-between;align-items:flex-start">
-          <div>
-            <div style="font-size:12px;font-weight:500;color:var(--text)">${p.checkDate||key.replace(HIST_PREFIX,'')}</div>
-            <div style="font-size:10.5px;color:var(--text2);margin-top:1px">${p.pps} – ${p.ppe}</div>
-            <div style="font-size:11px;color:var(--green);margin-top:3px;font-weight:600">${fmtD(total)}</div>
-            <div style="font-size:10px;color:var(--text3)">${D.rows.length} rows · ${new Set(D.rows.map(r=>r.id)).size} employees</div>
-          </div>
-          <button onclick="deleteHistoryEntry('${key}',event)" style="background:none;border:none;cursor:pointer;font-size:14px;color:var(--text3);padding:2px 4px;line-height:1" title="Delete">×</button>
-        </div>`;
-      container.appendChild(div);
+      const detail = await sbFetch(`/rest/v1/payroll_history?check_date=eq.${encodeURIComponent(row.check_date)}&select=payload`);
+      if(detail && detail.length){
+        const D = detail[0].payload;
+        gross  = D.rows.filter(r=>!r.isReim).reduce((s,r)=>s+r.amount, 0);
+        const tx = gross * 0.1365;
+        const credits = D.deds.reduce((s,d)=>s+d.amount, 0);
+        total  = gross + tx - credits;
+        eeCount = new Set(D.rows.map(r=>r.id)).size;
+        rowCount = D.rows.length;
+      }
     } catch(e){}
+
+    const div = document.createElement('div');
+    div.className  = 'hist-item';
+    div.dataset.key = row.check_date;
+    div.onclick    = () => loadPayrollFromHistory(row.check_date);
+    div.innerHTML  = `
+      <div style="display:flex;justify-content:space-between;align-items:flex-start">
+        <div>
+          <div style="font-size:12px;font-weight:500;color:var(--text)">${row.check_date}</div>
+          <div style="font-size:10.5px;color:var(--text2);margin-top:1px">${row.period_start} – ${row.period_end}</div>
+          <div style="font-size:11px;color:var(--green);margin-top:3px;font-weight:600">${fmtD(total)}</div>
+          <div style="font-size:10px;color:var(--text3)">${rowCount} rows · ${eeCount} employees</div>
+        </div>
+        <button onclick="deleteHistoryEntry('${row.check_date}',event)"
+          style="background:none;border:none;cursor:pointer;font-size:14px;color:var(--text3);padding:2px 4px;line-height:1"
+          title="Delete">×</button>
+      </div>`;
+    container.appendChild(div);
   }
 }
+
 
 function dov(e){e.preventDefault();e.currentTarget.classList.add('over')}
 function ddr(e,t){e.preventDefault();e.currentTarget.classList.remove('over');const f=e.dataTransfer.files[0];if(f)pf(f,t)}
@@ -1297,115 +1351,108 @@ function renderPayRates(rows){
 
 // ── 5. TREND CHART ───────────────────────────────────────────────────────────
 async function renderTrendChart(){
-  const keys = await loadHistory();
-  const note = document.getElementById('trend-period-note');
+  const note   = document.getElementById('trend-period-note');
   const noData = document.getElementById('trend-no-data');
+  const allRows = await loadHistory();
 
-  if(keys.length < 2){
-    noData.style.display='block';
-    note.textContent=`${keys.length} period${keys.length===1?' saved':'s saved'} — need 2+ for trend`;
-    if(trendChartInst){trendChartInst.destroy();trendChartInst=null;}
+  if(allRows.length < 2){
+    noData.style.display = 'block';
+    note.textContent = `${allRows.length} period${allRows.length===1?' saved':'s saved'} — need 2+ for trend`;
+    if(trendChartInst){trendChartInst.destroy(); trendChartInst=null;}
     return;
   }
-  noData.style.display='none';
+  noData.style.display = 'none';
 
-  // Load all periods
-  const periods=[];
-  const sorted=keys.sort();
-  for(const k of sorted){
+  // Load full payloads sorted ascending by check_date
+  const periods = [];
+  const sorted  = [...allRows].sort((a,b)=>a.check_date.localeCompare(b.check_date));
+  for(const row of sorted){
     try{
-      const r=await window.storage.get(k);
-      if(!r)continue;
-      const D=JSON.parse(r.value);
-      const gross=D.rows.filter(r=>!r.isReim).reduce((s,r)=>s+r.amount,0);
-      const tx=gross*0.1365;
-      const credits=D.deds.reduce((s,d)=>s+d.amount,0);
-      const total=gross+tx-credits;
-      periods.push({label:D.period.checkDate||k.replace(HIST_PREFIX,''), gross, tx, total,
-        ees:new Set(D.rows.map(r=>r.id)).size});
+      const detail = await sbFetch(`/rest/v1/payroll_history?check_date=eq.${encodeURIComponent(row.check_date)}&select=payload`);
+      if(!detail||!detail.length) continue;
+      const D = detail[0].payload;
+      const gross   = D.rows.filter(r=>!r.isReim).reduce((s,r)=>s+r.amount, 0);
+      const tx      = gross * 0.1365;
+      const credits = D.deds.reduce((s,d)=>s+d.amount, 0);
+      const total   = gross + tx - credits;
+      periods.push({label: row.check_date, gross, tx, total, ees: new Set(D.rows.map(r=>r.id)).size});
     }catch(e){}
   }
 
-  note.textContent=`${periods.length} pay periods`;
-  const labels=periods.map(p=>p.label);
-
-  if(trendChartInst)trendChartInst.destroy();
-  trendChartInst=new Chart(document.getElementById('trendChart'),{
+  note.textContent = `${periods.length} pay periods`;
+  if(trendChartInst) trendChartInst.destroy();
+  trendChartInst = new Chart(document.getElementById('trendChart'),{
     type:'line',
-    data:{labels,datasets:[
-      {label:'Gross payroll',data:periods.map(p=>p.gross),borderColor:'#1a4d8f',backgroundColor:'rgba(26,77,143,.08)',tension:.3,pointRadius:4,pointBackgroundColor:'#1a4d8f'},
-      {label:'TX-9063',data:periods.map(p=>p.tx),borderColor:'#BA7517',backgroundColor:'rgba(186,117,23,.08)',tension:.3,pointRadius:4,pointBackgroundColor:'#BA7517'},
-      {label:'Total current',data:periods.map(p=>p.total),borderColor:'#1D9E75',backgroundColor:'rgba(29,158,117,.08)',tension:.3,pointRadius:4,pointBackgroundColor:'#1D9E75'},
+    data:{labels:periods.map(p=>p.label), datasets:[
+      {label:'Gross payroll', data:periods.map(p=>p.gross),  borderColor:'#1a4d8f', backgroundColor:'rgba(26,77,143,.08)',  tension:.3, pointRadius:4, pointBackgroundColor:'#1a4d8f'},
+      {label:'TX-9063',       data:periods.map(p=>p.tx),     borderColor:'#BA7517', backgroundColor:'rgba(186,117,23,.08)', tension:.3, pointRadius:4, pointBackgroundColor:'#BA7517'},
+      {label:'Total current', data:periods.map(p=>p.total),  borderColor:'#1D9E75', backgroundColor:'rgba(29,158,117,.08)', tension:.3, pointRadius:4, pointBackgroundColor:'#1D9E75'},
     ]},
-    options:{responsive:true,maintainAspectRatio:false,
-      plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>`${ctx.dataset.label}: ${fmtD(ctx.raw)}`}}},
-      scales:{y:{ticks:{callback:v=>'$'+Math.round(v/1000)+'k'},grid:{color:'rgba(0,0,0,.05)'}},
-              x:{grid:{display:false}}}}
+    options:{responsive:true, maintainAspectRatio:false,
+      plugins:{legend:{display:false}, tooltip:{callbacks:{label:ctx=>`${ctx.dataset.label}: ${fmtD(ctx.raw)}`}}},
+      scales:{y:{ticks:{callback:v=>'$'+Math.round(v/1000)+'k'}, grid:{color:'rgba(0,0,0,.05)'}}, x:{grid:{display:false}}}}
   });
 
-  document.getElementById('trend-legend').innerHTML=[
+  document.getElementById('trend-legend').innerHTML = [
     {c:'#1a4d8f',l:'Gross payroll'},{c:'#BA7517',l:'TX-9063'},{c:'#1D9E75',l:'Total current'}
   ].map(x=>`<span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:2px;background:${x.c}"></span>${x.l}</span>`).join('');
 }
 
 // ── 6. PERIOD-OVER-PERIOD ────────────────────────────────────────────────────
 async function renderPOP(){
-  const keys=(await loadHistory()).sort();
-  if(keys.length<2){
-    document.getElementById('pop-empty').style.display='block';
-    document.getElementById('pop-content').style.display='none';
+  const allRows = await loadHistory();
+  if(allRows.length < 2){
+    document.getElementById('pop-empty').style.display  = 'block';
+    document.getElementById('pop-content').style.display = 'none';
     return;
   }
-  document.getElementById('pop-empty').style.display='none';
-  document.getElementById('pop-content').style.display='block';
+  document.getElementById('pop-empty').style.display  = 'none';
+  document.getElementById('pop-content').style.display = 'block';
 
-  // Get current and prior period
-  const curKey=G.period.checkDate?HIST_PREFIX+G.period.checkDate:keys[keys.length-1];
-  const curIdx=keys.indexOf(curKey);
-  const priorKey=curIdx>0?keys[curIdx-1]:keys[keys.length-2];
+  const sorted = [...allRows].sort((a,b)=>a.check_date.localeCompare(b.check_date));
+  const curCheckDate = G.period.checkDate;
+  const curIdx  = sorted.findIndex(r=>r.check_date===curCheckDate);
+  const curRow  = curIdx>=0 ? sorted[curIdx]   : sorted[sorted.length-1];
+  const priorRow= curIdx>0  ? sorted[curIdx-1] : sorted[sorted.length-2];
 
-  let curD,priorD;
+  let curD, priorD;
   try{
-    const cr=await window.storage.get(curKey);
-    const pr=await window.storage.get(priorKey);
-    if(!cr||!pr)return;
-    curD=JSON.parse(cr.value);
-    priorD=JSON.parse(pr.value);
-  }catch(e){return;}
+    const cr = await sbFetch(`/rest/v1/payroll_history?check_date=eq.${encodeURIComponent(curRow.check_date)}&select=payload`);
+    const pr = await sbFetch(`/rest/v1/payroll_history?check_date=eq.${encodeURIComponent(priorRow.check_date)}&select=payload`);
+    if(!cr||!cr.length||!pr||!pr.length) return;
+    curD   = cr[0].payload;
+    priorD = pr[0].payload;
+  } catch(e){ return; }
 
-  const calc=D=>{
-    const gross=D.rows.filter(r=>!r.isReim).reduce((s,r)=>s+r.amount,0);
-    const tx=gross*0.1365;
-    const credits=D.deds.reduce((s,d)=>s+d.amount,0);
-    const total=gross+tx-credits;
-    const ees=new Set(D.rows.map(r=>r.id)).size;
-    const otCost=D.rows.filter(r=>r.code==='OT').reduce((s,r)=>s+r.amount,0);
-    return{gross,tx,total,ees,otCost};
+  const calc = D =>{
+    const gross   = D.rows.filter(r=>!r.isReim).reduce((s,r)=>s+r.amount, 0);
+    const tx      = gross * 0.1365;
+    const credits = D.deds.reduce((s,d)=>s+d.amount, 0);
+    return{ gross, tx, total:gross+tx-credits,
+            ees: new Set(D.rows.map(r=>r.id)).size,
+            otCost: D.rows.filter(r=>r.code==='OT').reduce((s,r)=>s+r.amount, 0) };
   };
+  const cur = calc(curD), pri = calc(priorD);
 
-  const cur=calc(curD), pri=calc(priorD);
-
-  const delta=(c,p,isMoney=true)=>{
-    if(!p)return'—';
-    const d=c-p; const pct=(d/p*100).toFixed(1);
-    const cls=d>0?'delta-up':'delta-dn';
-    const sign=d>=0?'+':'';
-    return`<span class="${cls}">${sign}${isMoney?fmtD(d):d.toFixed(0)} (${sign}${pct}%)</span>`;
+  const delta = (c,p,money=true) => {
+    if(!p) return '—';
+    const d=c-p, pct=(d/p*100).toFixed(1), sign=d>=0?'+':'';
+    const cls = d>0?'delta-up':'delta-dn';
+    return `<span class="${cls}">${sign}${money?fmtD(d):d.toFixed(0)} (${sign}${pct}%)</span>`;
   };
-
-  const metrics=[
-    {l:'Gross payroll',c:cur.gross,p:pri.gross,money:true},
-    {l:'TX-9063',c:cur.tx,p:pri.tx,money:true},
-    {l:'Total current',c:cur.total,p:pri.total,money:true},
-    {l:'Headcount',c:cur.ees,p:pri.ees,money:false},
-    {l:'OT cost',c:cur.otCost,p:pri.otCost,money:true},
-  ];
 
   document.getElementById('pop-metrics').innerHTML=`
-    <div class="an-stat"><div class="an-stat-val" style="font-size:12px;color:var(--text2)">${priorD.period.checkDate}</div><div class="an-stat-lbl">Prior period</div></div>
-    <div class="an-stat"><div class="an-stat-val" style="font-size:12px;color:var(--accent)">${curD.period.checkDate}</div><div class="an-stat-lbl">Current period</div></div>`;
+    <div class="an-stat"><div class="an-stat-val" style="font-size:12px;color:var(--text2)">${priorRow.check_date}</div><div class="an-stat-lbl">Prior period</div></div>
+    <div class="an-stat"><div class="an-stat-val" style="font-size:12px;color:var(--accent)">${curRow.check_date}</div><div class="an-stat-lbl">Current period</div></div>`;
 
-  document.getElementById('pop-body').innerHTML=metrics.map((m,i)=>`
+  const metrics=[
+    {l:'Gross payroll', c:cur.gross,   p:pri.gross,   money:true},
+    {l:'TX-9063',       c:cur.tx,      p:pri.tx,      money:true},
+    {l:'Total current', c:cur.total,   p:pri.total,   money:true},
+    {l:'Headcount',     c:cur.ees,     p:pri.ees,     money:false},
+    {l:'OT cost',       c:cur.otCost,  p:pri.otCost,  money:true},
+  ];
+  document.getElementById('pop-body').innerHTML = metrics.map((m,i)=>`
     <tr style="background:${i%2?'var(--surface2)':'var(--surface)'}">
       <td>${m.l}</td>
       <td class="num">${m.money?fmtD(m.p):m.p}</td>
@@ -1416,64 +1463,66 @@ async function renderPOP(){
 
 // ── 7. EMPLOYEE TENURE / NEW HIRES ───────────────────────────────────────────
 async function renderTenure(){
-  const keys=(await loadHistory()).sort();
-  const curKey=G.period.checkDate?HIST_PREFIX+G.period.checkDate:keys[keys.length-1];
+  const allRows = await loadHistory();
+  const sorted  = [...allRows].sort((a,b)=>a.check_date.localeCompare(b.check_date));
 
-  // Build appearance map: employeeId -> [{key,period,fn,ln,kfcPos}]
-  const empHistory={};
-  for(const k of keys){
+  // Build appearance map across all periods
+  const empHistory = {};
+  for(const row of sorted){
     try{
-      const r=await window.storage.get(k);
-      if(!r)continue;
-      const D=JSON.parse(r.value);
-      const eeIds=new Set();
-      D.rows.forEach(row=>{
-        if(!row.id||eeIds.has(row.id))return;
-        eeIds.add(row.id);
-        if(!empHistory[row.id])empHistory[row.id]={fn:row.fn,ln:row.ln,kfcPos:row.kfcPos,periods:[]};
-        empHistory[row.id].periods.push(k);
+      const detail = await sbFetch(`/rest/v1/payroll_history?check_date=eq.${encodeURIComponent(row.check_date)}&select=payload`);
+      if(!detail||!detail.length) continue;
+      const D = detail[0].payload;
+      const seen = new Set();
+      D.rows.forEach(r=>{
+        if(!r.id || seen.has(r.id)) return;
+        seen.add(r.id);
+        if(!empHistory[r.id]) empHistory[r.id]={fn:r.fn,ln:r.ln,kfcPos:r.kfcPos,periods:[]};
+        empHistory[r.id].periods.push(row.check_date);
       });
     }catch(e){}
   }
 
-  const curEEs=new Set();
-  if(curKey){
+  // Current period employee set
+  const curCheckDate = G.period.checkDate;
+  const curEEs = new Set();
+  if(curCheckDate){
     try{
-      const r=await window.storage.get(curKey);
-      if(r){const D=JSON.parse(r.value);D.rows.forEach(row=>{if(row.id)curEEs.add(row.id);});}
+      const detail = await sbFetch(`/rest/v1/payroll_history?check_date=eq.${encodeURIComponent(curCheckDate)}&select=payload`);
+      if(detail&&detail.length) detail[0].payload.rows.forEach(r=>{if(r.id)curEEs.add(r.id);});
     }catch(e){}
   }
 
-  const allEEs=Object.entries(empHistory).map(([id,v])=>({
-    id,fn:v.fn,ln:v.ln,kfcPos:v.kfcPos,
-    count:v.periods.length,
-    isNew:v.periods.length===1&&v.periods[0]===curKey,
-    inCurrent:curEEs.has(id)
+  const allEEs = Object.entries(empHistory).map(([id,v])=>({
+    id, fn:v.fn, ln:v.ln, kfcPos:v.kfcPos,
+    count: v.periods.length,
+    isNew: v.periods.length===1 && v.periods[0]===curCheckDate,
+    inCurrent: curEEs.has(id)
   }));
 
-  const newEEs=allEEs.filter(e=>e.isNew);
-  const total=allEEs.filter(e=>e.inCurrent).length;
+  const newEEs = allEEs.filter(e=>e.isNew);
+  const active = allEEs.filter(e=>e.inCurrent);
 
   document.getElementById('tenure-summary').innerHTML=`
     <div style="display:flex;gap:8px">
       <div class="an-stat" style="flex:1"><div class="an-stat-val ${newEEs.length>0?'flag-ot':''}">${newEEs.length}</div><div class="an-stat-lbl">New this period</div></div>
-      <div class="an-stat" style="flex:1"><div class="an-stat-val">${total}</div><div class="an-stat-lbl">Active employees</div></div>
-      <div class="an-stat" style="flex:1"><div class="an-stat-val">${keys.length}</div><div class="an-stat-lbl">Periods tracked</div></div>
+      <div class="an-stat" style="flex:1"><div class="an-stat-val">${active.length}</div><div class="an-stat-lbl">Active employees</div></div>
+      <div class="an-stat" style="flex:1"><div class="an-stat-val">${sorted.length}</div><div class="an-stat-lbl">Periods tracked</div></div>
     </div>`;
 
-  const display = tenureFilter==='new' ? newEEs : allEEs.filter(e=>e.inCurrent).sort((a,b)=>b.count-a.count);
+  const display = tenureFilter==='new' ? newEEs : active.sort((a,b)=>b.count-a.count);
 
-  document.getElementById('tenure-body').innerHTML = display.length===0
+  document.getElementById('tenure-body').innerHTML = !display.length
     ? `<tr><td colspan="4" style="text-align:center;color:var(--text3);font-size:11px;padding:12px">${tenureFilter==='new'?'No new employees this period':'No employees found'}</td></tr>`
     : display.map((e,i)=>{
-        const status = e.count===1
+        const badge = e.count===1
           ? `<span style="background:var(--red-bg);color:var(--red);font-size:10px;padding:2px 7px;border-radius:4px;font-weight:600">NEW</span>`
           : `<span style="background:var(--green-bg);color:var(--green);font-size:10px;padding:2px 7px;border-radius:4px">${e.count} periods</span>`;
         return`<tr style="background:${i%2?'var(--surface2)':'var(--surface)'}">
           <td>${e.fn} ${e.ln}</td>
           <td style="font-size:10.5px;color:var(--text2)">${e.kfcPos||'—'}</td>
           <td class="num">${e.count}</td>
-          <td>${status}</td>
+          <td>${badge}</td>
         </tr>`;
       }).join('');
 }
