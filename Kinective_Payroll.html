@@ -735,11 +735,23 @@ function pf(file,type){
 
       // Flexible column detection
       const keys=Object.keys(txRaw[0]);
-      const fc=k=>keys.find(c=>c.toLowerCase().replace(/[\s\-_]/g,'').includes(k.toLowerCase().replace(/[\s\-_]/g,'')))||k;
-      const cID=fc('employeeid'),cCLI=fc('eeclientid'),cFN=fc('firstname'),cLN=fc('lastname'),cPos=fc('positionjob'),
-            cChk=fc('checknumber'),cPPS=fc('pps'),cPPE=fc('ppe'),cChkD=fc('checkdate'),
-            cRecT=fc('payrollrecord'),cCode=fc('payrollcode'),cUnits=fc('units'),
-            cAmt=fc('amount'),cWC=fc('wc');
+      const fc=k=>keys.find(c=>c.toLowerCase().replace(/[\s\-_]/g,'').includes(k.toLowerCase().replace(/[\s\-_]/g,'')))||null;
+
+      const cID   = fc('employeeid')   || keys[1];
+      // T&T exports use either 'EE Client ID' or 'Department' for the client/dept number
+      const cCLI  = fc('eeclientid')   || fc('department') || keys[0];
+      const cFN   = fc('firstname')    || keys[2];
+      const cLN   = fc('lastname')     || keys[3];
+      const cPos  = fc('positionjob')  || keys[4];
+      const cChk  = fc('checknumber')  || keys[5];
+      const cPPS  = fc('pps')          || keys[6];
+      const cPPE  = fc('ppe')          || keys[7];
+      const cChkD = fc('checkdate')    || keys[8];
+      const cRecT = fc('payrollrecord')|| keys[9];
+      const cCode = fc('payrollcode')  || keys[10];
+      const cUnits= fc('units')        || keys[11];
+      const cAmt  = fc('amount')       || keys[12];
+      const cWC   = fc('wc')           || keys[13];
 
       // raw:true + cellDates:true returns dates as JS Date objects
       const xlDate=v=>{
@@ -778,10 +790,18 @@ function pf(file,type){
         wc:(r[cWC]||'').toString().trim().toUpperCase().replace(/\s/g,'')
       }));
 
-      // Filter to client 522 — compare as string to handle int/float storage
-      const kfc522=all.filter(r=>r.clientId==='522');
+      // Filter to client 522 — normalize to handle int (522), float (522.0), string ("0522"), etc.
+      const normClient = v => {
+        if(!v && v!==0) return '';
+        const s = v.toString().trim().replace(/\.0+$/, ''); // strip .0 or .000
+        return s.replace(/^0+/, '') || '0'; // strip leading zeros
+      };
+
+      const kfc522=all.filter(r=>normClient(r.clientId)==='522');
       if(!kfc522.length){
-        setSt('err','No Client 522 (Kinective Fitness) rows found. Check this is the correct T&T export.');
+        // Show diagnostic — what client IDs ARE in the file?
+        const foundClients=[...new Set(all.map(r=>r.clientId).filter(Boolean))].slice(0,10).join(', ');
+        setSt('err',`No Client 522 found. Client IDs in this file: ${foundClients||'none'}. Sheet read: "${txName}"`);
         return;
       }
 
@@ -1207,19 +1227,26 @@ function renderOTTable(){
   const rows = getPayRows();
   const threshold = parseFloat(document.getElementById('ot-threshold').value)||10;
 
-  // Group by employee: collect OT rows and total cost
+  // Group by employee ID
   const empMap = {};
   rows.forEach(r=>{
     const k = r.id;
     if(!empMap[k]) empMap[k]={fn:r.fn,ln:r.ln,kfcPos:r.kfcPos,otAmt:0,otUnits:0,total:0};
     empMap[k].total += r.total;
-    if(r.code==='OT'){empMap[k].otAmt+=r.amount; empMap[k].otUnits+=r.units;}
+    if(r.code==='OT'){
+      empMap[k].otAmt   += r.amount;
+      empMap[k].otUnits += r.units;
+      // Always update name/position from the OT row itself so we get accurate data
+      empMap[k].fn      = r.fn;
+      empMap[k].ln      = r.ln;
+      empMap[k].kfcPos  = r.kfcPos;
+    }
   });
 
   const otEEs = Object.values(empMap).filter(e=>e.otAmt>0)
     .sort((a,b)=>b.otAmt-a.otAmt);
 
-  const totalOT = otEEs.reduce((s,e)=>s+e.otAmt,0);
+  const totalOT    = otEEs.reduce((s,e)=>s+e.otAmt,0);
   const totalGross = rows.filter(r=>!r.isReim).reduce((s,r)=>s+r.amount,0);
 
   // Summary cards
