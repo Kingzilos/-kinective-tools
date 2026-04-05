@@ -1587,6 +1587,7 @@ function renderIncome() {
 }
 
 function updateIncomeAmt(el) {
+  window._xlsUploadedThisSession = true; // manual income edit — recompute closing balances
   const raw = parseFloat(el.textContent.replace(/[$,]/g,'')) || 0;
   const acct = el.dataset.acct;
   el.textContent = fmt(raw);
@@ -1626,6 +1627,7 @@ function syncExpenseEdit(el, field, group, idx) {
 }
 
 function syncExpenseAmount(el, group, idx) {
+  window._xlsUploadedThisSession = true; // manual expense edit — recompute closing balances
   const arr = group==='kin' ? kinExpenses : amdExpenses;
   const raw = parseFloat(el.textContent.replace(/[$,]/g,'')) || 0;
   el.textContent = fmt(raw);
@@ -2066,7 +2068,7 @@ function buildWeek8Snapshot() {
 // This file works identically on ANY machine — no IndexedDB dependency
 // for historical data. New entries (Week 12+) save locally as normal.
 async function initWeekSystem() {
-  // Seed all verified weeks as baseline
+  // Seed all verified weeks as baseline — these are always correct
   allWeeks[8]  = buildWeek8Snapshot();
   allWeeks[9]  = buildWeek9Snapshot();
   allWeeks[10] = buildWeek10Snapshot();
@@ -2075,13 +2077,13 @@ async function initWeekSystem() {
   allWeeks[13] = buildWeek13Snapshot();
   allWeeks[14] = buildWeek14Snapshot();
 
-  // Supabase / localStorage overrides seeds — live saved data always wins
+  // Only load weeks 15+ from Supabase/localStorage — never override hardcoded weeks
   try {
     const rows = await dbLoadAll();
-    rows.forEach(w => { if (w.weekNum >= 11) allWeeks[w.weekNum] = w; });
+    rows.forEach(w => { if (w.weekNum >= 15) allWeeks[w.weekNum] = w; });
   } catch(e) { console.warn('Load failed:', e); }
 
-  // Open on the latest available week
+  // Always open on Week 14 (or higher if saved weeks exist)
   const allNums = Object.keys(allWeeks).map(Number);
   currentWeekNum = Math.max(...allNums);
   rebuildWeekDropdown();
@@ -2596,6 +2598,44 @@ if (document.readyState === 'loading') {
 } else {
   initWeekSystem();
 }
+
+function buildWeek13Snapshot() {
+  return {
+    weekNum:13, label:'Mar 20 – Mar 26', saved:true,
+    openingBalances: { '8152':193466.42,'2213':112915.30,'9753':18079.05,'0211':45777.16,'3472':4222772.25,'3775':36907.89,'7698':26206.82,'2085':2461372.25 },
+    income: { total: 129606.52, data: {
+      kin: { '8152':{ label:'8152 WestStar — Weekly Receipts', amount:129567.16 }, '2213':{ label:'2213 WestStar — Credit', amount:38.66 }, '9753':{ label:'9753 Wells Fargo — Income', amount:0 }, '3472':{ label:'3472 Money Market — Interest', amount:0 }, '0211':{ label:'0211 Wells Fargo — Credit', amount:0 } },
+      amd: { '3775':{ label:'3775 WestStar — Credit', amount:0.70 }, '7698':{ label:'7698 Wells Fargo — Credit', amount:0 }, '2085':{ label:'2085 Money Market — Interest', amount:0 } }
+    }},
+    expenses: { kin:[{ name:'Kinective — 14 transactions', amount:37200.59, account:'8152 WestStar' }], amd:[{ name:'AMD Capital — 1 transaction', amount:0.70, account:'3775 WestStar' }] },
+    capexItems:[], capexYTD:0,
+    accumFlow:565826.71, accumFlow2025:628267.94,
+    transferAdjustments:{},
+    closingBalances:{ kin:4685415.41, amd:2524486.96, combined:7209902.37,
+      accounts:{ '8152':123033.58,'2213':175902.37,'9753':18079.05,'0211':45628.16,'3472':4322772.25,'3775':36907.89,'7698':26206.82,'2085':2461372.25 }
+    }
+  };
+}
+
+
+function buildWeek14Snapshot() {
+  return {
+    weekNum:14, label:'Mar 27 – Apr 2', saved:false,
+    openingBalances: { '8152':123033.58,'2213':175902.37,'9753':18079.05,'0211':45628.16,'3472':4322772.25,'3775':36907.89,'7698':26206.82,'2085':2461372.25 },
+    income: { total:0, data: {
+      kin: { '8152':{ label:'8152 WestStar — Weekly Receipts', amount:0 }, '2213':{ label:'2213 WestStar — Credit', amount:0 }, '9753':{ label:'9753 Wells Fargo — Income', amount:0 }, '3472':{ label:'3472 Money Market — Interest', amount:0 }, '0211':{ label:'0211 Wells Fargo — Credit', amount:0 } },
+      amd: { '3775':{ label:'3775 WestStar — Credit', amount:0 }, '7698':{ label:'7698 Wells Fargo — Credit', amount:0 }, '2085':{ label:'2085 Money Market — Interest', amount:0 } }
+    }},
+    expenses:{ kin:[], amd:[] },
+    capexItems:[], capexYTD:0,
+    accumFlow:0, accumFlow2025:0,
+    transferAdjustments:{},
+    closingBalances:{ kin:4685415.41, amd:2524486.96, combined:7209902.37,
+      accounts:{ '8152':123033.58,'2213':175902.37,'9753':18079.05,'0211':45628.16,'3472':4322772.25,'3775':36907.89,'7698':26206.82,'2085':2461372.25 }
+    }
+  };
+
+}
 </script>
 
 <!-- ── XLS PARSER ────────────────────────────── -->
@@ -3036,40 +3076,5 @@ function downloadExcel() {
 
 </script>
 </body>
-</html
-function buildWeek13Snapshot() {
-  return {
-    weekNum:13, label:'Mar 20 – Mar 26', saved:true,
-    openingBalances: { '8152':193466.42,'2213':112915.30,'9753':18079.05,'0211':45777.16,'3472':4222772.25,'3775':36907.89,'7698':26206.82,'2085':2461372.25 },
-    income: { total: 129606.52, data: {
-      kin: { '8152':{ label:'8152 WestStar — Weekly Receipts', amount:129567.16 }, '2213':{ label:'2213 WestStar — Credit', amount:38.66 }, '9753':{ label:'9753 Wells Fargo — Income', amount:0 }, '3472':{ label:'3472 Money Market — Interest', amount:0 }, '0211':{ label:'0211 Wells Fargo — Credit', amount:0 } },
-      amd: { '3775':{ label:'3775 WestStar — Credit', amount:0.70 }, '7698':{ label:'7698 Wells Fargo — Credit', amount:0 }, '2085':{ label:'2085 Money Market — Interest', amount:0 } }
-    }},
-    expenses: { kin:[{ name:'Kinective — 14 transactions', amount:37200.59, account:'8152 WestStar' }], amd:[{ name:'AMD Capital — 1 transaction', amount:0.70, account:'3775 WestStar' }] },
-    capexItems:[], capexYTD:0,
-    accumFlow:565826.71, accumFlow2025:628267.94,
-    transferAdjustments:{},
-    closingBalances:{ kin:4685415.41, amd:2524486.96, combined:7209902.37,
-      accounts:{ '8152':123033.58,'2213':175902.37,'9753':18079.05,'0211':45628.16,'3472':4322772.25,'3775':36907.89,'7698':26206.82,'2085':2461372.25 }
-    }
-  };
-}
-
-function buildWeek14Snapshot() {
-  return {
-    weekNum:14, label:'Mar 27 – Apr 2', saved:false,
-    openingBalances: { '8152':123033.58,'2213':175902.37,'9753':18079.05,'0211':45628.16,'3472':4322772.25,'3775':36907.89,'7698':26206.82,'2085':2461372.25 },
-    income: { total:0, data: {
-      kin: { '8152':{ label:'8152 WestStar — Weekly Receipts', amount:0 }, '2213':{ label:'2213 WestStar — Credit', amount:0 }, '9753':{ label:'9753 Wells Fargo — Income', amount:0 }, '3472':{ label:'3472 Money Market — Interest', amount:0 }, '0211':{ label:'0211 Wells Fargo — Credit', amount:0 } },
-      amd: { '3775':{ label:'3775 WestStar — Credit', amount:0 }, '7698':{ label:'7698 Wells Fargo — Credit', amount:0 }, '2085':{ label:'2085 Money Market — Interest', amount:0 } }
-    }},
-    expenses:{ kin:[], amd:[] },
-    capexItems:[], capexYTD:0,
-    accumFlow:0, accumFlow2025:0,
-    transferAdjustments:{},
-    closingBalances:{ kin:4685415.41, amd:2524486.96, combined:7209902.37,
-      accounts:{ '8152':123033.58,'2213':175902.37,'9753':18079.05,'0211':45628.16,'3472':4322772.25,'3775':36907.89,'7698':26206.82,'2085':2461372.25 }
-    }
-  };
-}
->
+</htm
+l
