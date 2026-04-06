@@ -1929,30 +1929,40 @@ function getSBCreds() {
   return { url: localStorage.getItem('sb_url') || SB_URL_DEFAULT, key: localStorage.getItem('sb_key') || SB_KEY_DEFAULT };
 }
 async function dbSave(weekData) {
+  // Always save to localStorage first — instant, works offline
   try { localStorage.setItem(LS_PREFIX + weekData.weekNum, JSON.stringify(weekData)); } catch(e) {}
+  // Then sync to Supabase
   const { url, key } = getSBCreds();
   if (!url || !key) return;
-  const res = await fetch(`${url}/rest/v1/${SB_TABLE}`, {
-    method: 'POST',
-    headers: {'Content-Type':'application/json','apikey':key,'Authorization':'Bearer '+key,'Prefer':'resolution=merge-duplicates'},
-    body: JSON.stringify({ week_num: weekData.weekNum, data: weekData })
-  });
-  if (!res.ok) throw new Error('Supabase save failed: ' + await res.text());
+  try {
+    const res = await fetch(`${url}/rest/v1/${SB_TABLE}`, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json','apikey':key,'Authorization':'Bearer '+key,'Prefer':'resolution=merge-duplicates'},
+      body: JSON.stringify({ week_num: weekData.weekNum, data: weekData })
+    });
+    if (!res.ok) throw new Error(await res.text());
+  } catch(e) {
+    console.warn('Supabase save failed:', e.message);
+    // Don't throw — localStorage save already succeeded
+  }
 }
 async function dbLoadAll() {
   const { url, key } = getSBCreds();
+  // Try Supabase first
   if (url && key) {
     try {
       const res = await fetch(`${url}/rest/v1/${SB_TABLE}?select=data&order=week_num.asc`, { headers: {'apikey':key,'Authorization':'Bearer '+key} });
       if (res.ok) {
         const rows = await res.json();
         if (Array.isArray(rows) && rows.length > 0) {
+          // Cache to localStorage
           rows.forEach(r => { if (r.data?.weekNum) localStorage.setItem(LS_PREFIX + r.data.weekNum, JSON.stringify(r.data)); });
           return rows.map(r => r.data).filter(Boolean);
         }
       }
     } catch(e) { console.warn('Supabase load failed, using localStorage:', e.message); }
   }
+  // Fallback to localStorage
   const results = [];
   for (let i = 0; i < localStorage.length; i++) {
     const k = localStorage.key(i);
@@ -2077,10 +2087,11 @@ async function initWeekSystem() {
   allWeeks[13] = buildWeek13Snapshot();
   allWeeks[14] = buildWeek14Snapshot();
 
-  // Only load weeks 15+ from Supabase/localStorage — never override hardcoded weeks
+  // Load weeks 14+ from Supabase — saved data overrides hardcoded seeds
+  // (weeks 8-13 are always hardcoded and never overridden)
   try {
     const rows = await dbLoadAll();
-    rows.forEach(w => { if (w.weekNum >= 15) allWeeks[w.weekNum] = w; });
+    rows.forEach(w => { if (w.weekNum >= 14) allWeeks[w.weekNum] = w; });
   } catch(e) { console.warn('Load failed:', e); }
 
   // Always open on Week 14 (or higher if saved weeks exist)
