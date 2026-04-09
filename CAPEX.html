@@ -695,6 +695,11 @@ async function saveToSupabase() {
     return;
   }
   
+  if (transactions.length === 0) {
+    showToast('No transactions to save', 'error');
+    return;
+  }
+  
   statusDot.classList.add('saving');
   syncStatus.textContent = 'Saving...';
   
@@ -711,6 +716,8 @@ async function saveToSupabase() {
       entity: txn.entity || 'KFC'
     }));
     
+    console.log('Saving payload:', payload);
+    
     const response = await fetch(`${supabaseUrl}/rest/v1/capex_transactions?on_conflict=transaction_hash`, {
       method: 'POST',
       headers: {
@@ -722,11 +729,16 @@ async function saveToSupabase() {
       body: JSON.stringify(payload)
     });
     
-    if (!response.ok) throw new Error('Save failed');
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Supabase error:', errorText);
+      throw new Error(errorText || 'Save failed');
+    }
     
     hasUnsavedChanges = false;
+    isConnected = true;
     updateConnectionStatus();
-    showToast('Saved to Supabase', 'success');
+    showToast('Saved ' + transactions.length + ' transactions', 'success');
     
   } catch (err) {
     console.error(err);
@@ -737,17 +749,25 @@ async function saveToSupabase() {
 }
 
 function updateConnectionStatus() {
+  const hasCredentials = supabaseUrl && supabaseKey;
+  const hasData = transactions.length > 0;
+  
   if (isConnected) {
     statusDot.classList.add('connected');
     statusDot.title = 'Connected to Supabase';
     syncStatus.textContent = hasUnsavedChanges ? 'Unsaved Changes' : 'Synced';
-    saveBtn.disabled = !hasUnsavedChanges;
+  } else if (hasCredentials) {
+    statusDot.classList.remove('connected');
+    statusDot.title = 'Not synced';
+    syncStatus.textContent = hasData ? 'Ready to Save' : 'Connected';
   } else {
     statusDot.classList.remove('connected');
     statusDot.title = 'Not connected';
     syncStatus.textContent = 'Not Connected';
-    saveBtn.disabled = true;
   }
+  
+  // Enable save if we have credentials and data
+  saveBtn.disabled = !(hasCredentials && hasData);
 }
 
 // ============ FILE PARSING ============
@@ -1213,6 +1233,7 @@ connectBtn.addEventListener('click', () => {
   localStorage.setItem('sb_url', supabaseUrl);
   localStorage.setItem('sb_key', supabaseKey);
   
+  updateConnectionStatus();
   loadFromSupabase();
 });
 
