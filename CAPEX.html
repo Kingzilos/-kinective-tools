@@ -7,34 +7,35 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
-  --bg: #f8f6f1;
+  --bg: #f5f7fa;
   --card: #ffffff;
-  --card-alt: #fdfcf9;
-  --border: rgba(180,162,120,0.18);
-  --border-inner: rgba(180,162,120,0.10);
-  --gold: #9a7d4a;
-  --gold-light: #b8975e;
-  --gold-tint: rgba(154,125,74,0.08);
-  --gold-border: rgba(154,125,74,0.22);
-  --navy: #1a2235;
-  --navy-mid: #2c3a52;
-  --navy-light: rgba(26,34,53,0.06);
-  --sage: #6b7c6e;
-  --sage-tint: rgba(107,124,110,0.08);
-  --blush: #c4956a;
-  --blush-tint: rgba(196,149,106,0.09);
-  --slate: #7a8494;
-  --red: #a04040;
-  --green: #4a7c59;
-  --ink: #1a1a1a;
-  --ink2: #2e2e2e;
-  --ink3: #5a5a5a;
-  --ink4: #888888;
-  --ink5: #b0b0b0;
+  --card-alt: #fafbfc;
+  --border: rgba(26,54,93,0.12);
+  --border-inner: rgba(26,54,93,0.06);
+  
+  --navy: #1a365d;
+  --navy-mid: #2c4a7c;
+  --navy-light: rgba(26,54,93,0.08);
+  
+  --accent: #1a365d;
+  --accent-light: #2c4a7c;
+  --accent-tint: rgba(26,54,93,0.06);
+  
+  --green: #276749;
+  --green-tint: rgba(39,103,73,0.1);
+  --red: #c53030;
+  --red-tint: rgba(197,48,48,0.1);
+  
+  --ink: #1a202c;
+  --ink2: #2d3748;
+  --ink3: #4a5568;
+  --ink4: #718096;
+  --ink5: #a0aec0;
 }
 
 html { -webkit-font-smoothing: antialiased; }
@@ -70,7 +71,7 @@ nav {
 }
 .status-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--ink5); transition: background 0.3s; }
 .status-dot.connected { background: var(--green); }
-.status-dot.saving { background: var(--gold); animation: pulse 1s infinite; }
+.status-dot.saving { background: var(--navy); animation: pulse 1s infinite; }
 
 @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
 
@@ -84,7 +85,7 @@ nav {
 }
 .eyebrow {
   font-size: 10.5px; font-weight: 600; letter-spacing: 2px;
-  text-transform: uppercase; color: var(--gold); margin-bottom: 8px;
+  text-transform: uppercase; color: var(--navy); margin-bottom: 8px;
 }
 .page-title {
   font-size: 34px; font-weight: 300; letter-spacing: -0.5px;
@@ -97,8 +98,9 @@ nav {
 .controls {
   display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 24px;
   padding: 20px 24px;
-  background: var(--card); border: 1px solid var(--border);
+  background: var(--card);
   border-radius: 16px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
 }
 .control-group { display: flex; flex-direction: column; gap: 6px; }
 .control-group label {
@@ -112,7 +114,7 @@ nav {
   color: var(--ink2); min-width: 140px;
 }
 .control-group input:focus, .control-group select:focus {
-  outline: none; border-color: var(--gold);
+  outline: none; border-color: var(--navy);
 }
 
 .btn {
@@ -129,11 +131,11 @@ nav {
   background: var(--card); color: var(--ink2);
   border: 1px solid var(--border);
 }
-.btn-secondary:hover { background: var(--card-alt); border-color: var(--gold-border); }
+.btn-secondary:hover { background: var(--card-alt); border-color: var(--navy); }
 .btn-gold {
-  background: var(--gold); color: #fff;
+  background: var(--navy); color: #fff;
 }
-.btn-gold:hover { background: var(--gold-light); }
+.btn-gold:hover { background: var(--navy-mid); }
 .btn-danger {
   background: var(--red); color: #fff;
 }
@@ -150,15 +152,18 @@ nav {
 .entity-option input { display: none; }
 .entity-card {
   display: block;
-  background: var(--card); border: 2px solid var(--border);
-  border-radius: 12px; padding: 16px 20px;
+  background: var(--card);
+  border: 2px solid transparent;
+  border-radius: 12px;
+  padding: 16px 20px;
   transition: all 0.2s;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
 }
 .entity-option input:checked + .entity-card {
-  border-color: var(--gold);
-  background: var(--gold-tint);
+  border-color: var(--navy);
+  background: var(--navy-light);
 }
-.entity-card:hover { border-color: var(--gold-border); }
+.entity-card:hover { border-color: var(--navy-mid); }
 .entity-name {
   display: block; font-size: 13px; font-weight: 600;
   color: var(--navy); margin-bottom: 4px;
@@ -176,39 +181,91 @@ nav {
   background: var(--card);
 }
 .upload-zone:hover, .upload-zone.dragover {
-  border-color: var(--gold); background: var(--gold-tint);
+  border-color: var(--navy); background: var(--navy-light);
 }
 .upload-zone input { display: none; }
 .upload-icon { font-size: 28px; margin-bottom: 8px; }
 .upload-text { font-size: 13px; color: var(--ink3); }
 .upload-hint { font-size: 11px; color: var(--ink5); margin-top: 4px; }
 
-/* KPI ROW */
-.kpi-row {
-  display: grid; grid-template-columns: repeat(4, 1fr);
-  gap: 12px; margin-bottom: 24px;
+/* SUMMARY SECTION */
+.summary-section {
+  display: flex; gap: 16px; align-items: flex-start;
+  margin-bottom: 24px; flex-wrap: wrap;
 }
-.kpi {
-  background: var(--card); border: 1px solid var(--border);
-  border-radius: 16px; padding: 20px;
-  transition: box-shadow .22s, transform .22s;
+.total-card {
+  background: var(--card);
+  border-radius: 16px;
+  padding: 24px 28px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  min-width: 200px;
 }
-.kpi:hover { box-shadow: 0 10px 36px rgba(26,34,53,.07); transform: translateY(-2px); }
-.kpi-label {
-  font-size: 10px; font-weight: 600; letter-spacing: 1.2px;
-  color: var(--ink5); text-transform: uppercase; margin-bottom: 10px;
+.total-label {
+  font-size: 11px; font-weight: 500;
+  color: var(--ink4); text-transform: uppercase;
+  letter-spacing: 0.5px; margin-bottom: 8px;
 }
-.kpi-value {
-  font-size: 26px; font-weight: 700; letter-spacing: -0.8px;
+.total-value {
+  font-size: 32px; font-weight: 700;
   color: var(--navy); line-height: 1;
+  margin-bottom: 6px; letter-spacing: -0.5px;
 }
-.kpi-value.gold { color: var(--gold); }
-.kpi-note { font-size: 11px; color: var(--ink4); margin-top: 6px; }
+.total-note {
+  font-size: 12px; color: var(--ink4);
+}
+
+/* MONTHLY SUMMARY CARDS */
+.monthly-grid {
+  display: flex; gap: 12px; flex-wrap: wrap;
+  flex: 1;
+}
+.monthly-card {
+  background: var(--card);
+  border-radius: 16px;
+  padding: 20px 24px;
+  min-width: 160px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+}
+.monthly-card-title {
+  font-size: 14px; font-weight: 600;
+  color: var(--navy); margin-bottom: 16px;
+}
+.monthly-card-row {
+  display: flex; justify-content: space-between;
+  align-items: center; margin-bottom: 8px;
+}
+.monthly-card-row:last-child { margin-bottom: 0; }
+.monthly-card-label {
+  font-size: 12px; color: var(--ink4);
+}
+.monthly-card-value {
+  font-size: 12px; font-weight: 500;
+  color: var(--ink2); font-variant-numeric: tabular-nums;
+}
+.monthly-card-value.amount {
+  font-size: 14px; font-weight: 600;
+}
+.monthly-card-change {
+  font-size: 11px; font-weight: 500;
+  padding: 2px 6px; border-radius: 4px;
+  margin-left: 8px;
+}
+.monthly-card-change.up {
+  background: rgba(74,124,89,0.1); color: var(--green);
+}
+.monthly-card-change.down {
+  background: rgba(160,64,64,0.1); color: var(--red);
+}
+.monthly-card-change.neutral {
+  background: var(--navy-light); color: var(--ink4);
+}
 
 /* TABLE */
 .table-wrap {
-  background: var(--card); border: 1px solid var(--border);
-  border-radius: 16px; overflow: hidden;
+  background: var(--card);
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
 }
 .table-header {
   display: flex; justify-content: space-between; align-items: center;
@@ -236,11 +293,11 @@ tr:last-child td { border-bottom: none; }
 tr:hover td { background: var(--card-alt); }
 .txn-date { color: var(--ink4); font-variant-numeric: tabular-nums; white-space: nowrap; }
 .txn-vendor { font-weight: 500; }
-.txn-desc { color: var(--ink3); max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.txn-desc { color: var(--ink3); max-width: 400px; }
 .txn-cat { font-size: 10px; background: var(--navy-light); color: var(--navy); padding: 3px 8px; border-radius: 4px; white-space: nowrap; }
 .txn-entity { font-size: 10px; font-weight: 600; padding: 3px 8px; border-radius: 4px; white-space: nowrap; }
-.txn-entity.kfc { background: var(--sage-tint); color: var(--sage); }
-.txn-entity.amd { background: var(--blush-tint); color: var(--blush); }
+.txn-entity.kfc { background: var(--navy-light); color: var(--navy); }
+.txn-entity.amd { background: var(--green-tint); color: var(--green); }
 .txn-amt { font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
 
 /* EMPTY STATE */
@@ -286,25 +343,28 @@ tr:hover td { background: var(--card-alt); }
 .preview-stat { text-align: center; }
 .preview-stat-value { font-size: 24px; font-weight: 700; color: var(--navy); }
 .preview-stat-value.green { color: var(--green); }
-.preview-stat-value.gold { color: var(--gold); }
+.preview-stat-value.gold { color: var(--ink4); }
 .preview-stat-label { font-size: 10px; color: var(--ink5); text-transform: uppercase; letter-spacing: 0.5px; margin-top: 4px; }
 
 .preview-table { max-height: 300px; overflow-y: auto; }
 .preview-table table { font-size: 11px; }
 .preview-table th, .preview-table td { padding: 8px 12px; }
-.row-new { background: rgba(74, 124, 89, 0.08); }
-.row-dupe { background: rgba(154, 125, 74, 0.08); opacity: 0.6; }
+.row-new { background: rgba(39, 103, 73, 0.08); }
+.row-dupe { background: rgba(26, 54, 93, 0.05); opacity: 0.6; }
 .status-badge {
   font-size: 9px; font-weight: 600; padding: 2px 6px;
   border-radius: 3px; text-transform: uppercase;
 }
-.status-badge.new { background: var(--sage-tint); color: var(--green); }
-.status-badge.dupe { background: var(--gold-tint); color: var(--gold); }
+.status-badge.new { background: var(--green-tint); color: var(--green); }
+.status-badge.dupe { background: var(--navy-light); color: var(--ink4); }
 
 /* SUPABASE CONFIG */
 .config-panel {
-  background: var(--card); border: 1px solid var(--border);
-  border-radius: 16px; padding: 20px 24px; margin-bottom: 24px;
+  background: var(--card);
+  border-radius: 16px;
+  padding: 20px 24px;
+  margin-bottom: 24px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
 }
 .config-header {
   display: flex; justify-content: space-between; align-items: center;
@@ -406,10 +466,10 @@ tr:hover td { background: var(--card-alt); }
       </label>
     </div>
     <div class="upload-zone" id="uploadZone">
-      <input type="file" id="fileInput" accept=".csv">
+      <input type="file" id="fileInput" accept=".csv,.xlsx,.xls">
       <div class="upload-icon">📄</div>
-      <div class="upload-text">Drop QBO CSV export here or click to browse</div>
-      <div class="upload-hint">Transaction List by Date/Vendor filtered to Fixed Asset accounts</div>
+      <div class="upload-text">Drop QBO export here or click to browse</div>
+      <div class="upload-hint">Supports CSV and Excel (.xlsx) • Transaction Report filtered to Fixed Asset accounts</div>
     </div>
   </div>
 
@@ -452,28 +512,14 @@ tr:hover td { background: var(--card-alt); }
     </div>
   </div>
 
-  <!-- KPI ROW -->
-  <div class="kpi-row">
-    <div class="kpi">
-      <div class="kpi-label">Total Spend (Filtered)</div>
-      <div class="kpi-value gold" id="kpiTotal">$0</div>
-      <div class="kpi-note" id="kpiTotalNote">0 transactions</div>
+  <!-- SUMMARY SECTION -->
+  <div class="summary-section">
+    <div class="total-card">
+      <div class="total-label">Total Spend (Filtered)</div>
+      <div class="total-value" id="kpiTotal">$0</div>
+      <div class="total-note" id="kpiTotalNote">0 transactions</div>
     </div>
-    <div class="kpi">
-      <div class="kpi-label">Unique Vendors</div>
-      <div class="kpi-value" id="kpiVendors">0</div>
-      <div class="kpi-note">Across filtered period</div>
-    </div>
-    <div class="kpi">
-      <div class="kpi-label">Categories</div>
-      <div class="kpi-value" id="kpiCategories">0</div>
-      <div class="kpi-note">Asset account types</div>
-    </div>
-    <div class="kpi">
-      <div class="kpi-label">Date Range</div>
-      <div class="kpi-value" id="kpiRange">—</div>
-      <div class="kpi-note" id="kpiRangeNote">No data loaded</div>
-    </div>
+    <div class="monthly-grid" id="monthlyGrid"></div>
   </div>
 
   <!-- TABLE -->
@@ -704,47 +750,136 @@ function updateConnectionStatus() {
   }
 }
 
-// ============ CSV PARSING ============
+// ============ FILE PARSING ============
 function getSelectedEntity() {
   const selected = document.querySelector('input[name="uploadEntity"]:checked');
   return selected ? selected.value : 'KFC';
 }
 
-function parseQBOExport(csvText) {
-  const result = Papa.parse(csvText, { header: true, skipEmptyLines: true });
+function parseExcelFile(arrayBuffer) {
+  const workbook = XLSX.read(arrayBuffer, { type: 'array', cellDates: true });
+  const sheetName = workbook.SheetNames[0];
+  const sheet = workbook.Sheets[sheetName];
   
+  // Convert to JSON with header detection
+  const rawData = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' });
+  
+  // Find the header row (contains "Transaction date" or "Date")
+  let headerRowIdx = -1;
+  for (let i = 0; i < Math.min(rawData.length, 10); i++) {
+    const row = rawData[i];
+    const rowStr = row.join(' ').toLowerCase();
+    if (rowStr.includes('transaction date') || rowStr.includes('date') && rowStr.includes('amount')) {
+      headerRowIdx = i;
+      break;
+    }
+  }
+  
+  if (headerRowIdx === -1) {
+    // Fallback: assume first non-empty row with multiple values is header
+    for (let i = 0; i < rawData.length; i++) {
+      const nonEmpty = rawData[i].filter(c => c !== '').length;
+      if (nonEmpty >= 4) {
+        headerRowIdx = i;
+        break;
+      }
+    }
+  }
+  
+  if (headerRowIdx === -1) {
+    throw new Error('Could not find header row in Excel file');
+  }
+  
+  const headers = rawData[headerRowIdx].map(h => String(h || '').trim());
+  const dataRows = rawData.slice(headerRowIdx + 1);
+  
+  // Map to objects
+  const mapped = dataRows.map(row => {
+    const obj = {};
+    headers.forEach((h, i) => {
+      obj[h] = row[i];
+    });
+    return obj;
+  });
+  
+  return mapped;
+}
+
+function parseCSVFile(text) {
+  const result = Papa.parse(text, { header: true, skipEmptyLines: true });
   if (result.errors.length > 0) {
     console.warn('CSV parse warnings:', result.errors);
   }
-  
+  return result.data;
+}
+
+function parseQBOExport(data, isExcel = false) {
   const entity = getSelectedEntity();
+  let currentAccount = '';
   
-  // Map QBO columns - adjust these based on actual export format
-  const mapped = result.data.map(row => {
-    // Try different column name patterns
-    const date = parseDate(row['Date'] || row['Transaction Date'] || row['Txn Date'] || '');
-    const vendor = row['Name'] || row['Vendor'] || row['Payee'] || '';
-    const description = row['Memo'] || row['Description'] || row['Memo/Description'] || '';
-    const amount = parseFloat((row['Amount'] || row['Debit'] || row['Credit'] || '0').replace(/[$,()]/g, '').trim()) || 0;
-    const category = row['Account'] || row['Category'] || row['Account Name'] || 'Uncategorized';
+  const transactions = [];
+  
+  data.forEach(row => {
+    // Check if this row is an account header (first column has account name, no date)
+    const firstCol = String(row[Object.keys(row)[0]] || '').trim();
+    const dateCol = row['Transaction date'] || row['Date'] || row['Txn Date'] || '';
     
-    if (!date || amount === 0) return null;
+    // Detect account header rows (e.g., "4015 Other Fixed Assets and Improvements")
+    if (firstCol && !dateCol && /^\d{4}\s/.test(firstCol)) {
+      currentAccount = firstCol;
+      return;
+    }
+    
+    // Skip total rows and empty rows
+    if (firstCol.toLowerCase().startsWith('total for') || firstCol.toLowerCase().includes('accrual basis')) {
+      return;
+    }
+    
+    // Parse transaction row
+    let dateVal = row['Transaction date'] || row['Date'] || row['Txn Date'] || '';
+    const vendor = String(row['Name'] || row['Vendor'] || row['Payee'] || '').trim();
+    const description = String(row['Memo/Description'] || row['Memo'] || row['Description'] || '').trim();
+    const account = String(row['Account full name'] || row['Account'] || row['Category'] || currentAccount || '').trim();
+    let amount = row['Amount'] || row['Debit'] || row['Credit'] || 0;
+    
+    // Parse date
+    let dateStr = '';
+    if (dateVal instanceof Date) {
+      dateStr = dateVal.toISOString().split('T')[0];
+    } else if (typeof dateVal === 'number') {
+      // Excel serial date
+      const d = XLSX.SSF.parse_date_code(dateVal);
+      if (d) {
+        dateStr = `${d.y}-${String(d.m).padStart(2,'0')}-${String(d.d).padStart(2,'0')}`;
+      }
+    } else if (typeof dateVal === 'string' && dateVal) {
+      dateStr = parseDate(dateVal);
+    }
+    
+    // Parse amount
+    if (typeof amount === 'string') {
+      amount = parseFloat(amount.replace(/[$,()]/g, '').trim()) || 0;
+    }
+    amount = Math.abs(parseFloat(amount) || 0);
+    
+    // Skip rows without valid date or amount
+    if (!dateStr || amount === 0) return;
     
     const txn = {
-      date,
-      period: getPeriod(date),
-      vendor: vendor.trim(),
-      description: description.trim(),
-      amount: Math.abs(amount),
-      category: category.trim(),
+      date: dateStr,
+      period: getPeriod(dateStr),
+      vendor: vendor,
+      description: description,
+      amount: amount,
+      category: account || 'Uncategorized',
       entity: entity
     };
     
     txn.hash = hashTransaction(txn);
-    return txn;
-  }).filter(Boolean);
+    transactions.push(txn);
+  });
   
-  return mapped;
+  return transactions;
 }
 
 function processUpload(parsed) {
@@ -857,30 +992,81 @@ function updateFilters() {
     vendors.map(v => `<option value="${v}" ${v === currentVendor ? 'selected' : ''}>${v}</option>`).join('');
 }
 
+function getMonthName(period) {
+  const [year, month] = period.split('-');
+  const date = new Date(year, parseInt(month) - 1, 1);
+  return date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+}
+
+function renderMonthlyCards(filtered) {
+  const grid = document.getElementById('monthlyGrid');
+  
+  if (filtered.length === 0) {
+    grid.innerHTML = '';
+    return;
+  }
+  
+  // Group by period (YYYY-MM)
+  const byMonth = {};
+  filtered.forEach(t => {
+    if (!byMonth[t.period]) {
+      byMonth[t.period] = { total: 0, count: 0 };
+    }
+    byMonth[t.period].total += t.amount;
+    byMonth[t.period].count += 1;
+  });
+  
+  // Sort periods chronologically
+  const periods = Object.keys(byMonth).sort();
+  
+  // Calculate MoM changes
+  const cards = periods.map((period, idx) => {
+    const data = byMonth[period];
+    const prevPeriod = periods[idx - 1];
+    const prevData = prevPeriod ? byMonth[prevPeriod] : null;
+    
+    let changeHtml = '';
+    if (prevData) {
+      const pctChange = ((data.total - prevData.total) / prevData.total) * 100;
+      if (Math.abs(pctChange) < 0.5) {
+        changeHtml = `<span class="monthly-card-change neutral">—</span>`;
+      } else if (pctChange > 0) {
+        changeHtml = `<span class="monthly-card-change up">▲ ${pctChange.toFixed(1)}%</span>`;
+      } else {
+        changeHtml = `<span class="monthly-card-change down">▼ ${Math.abs(pctChange).toFixed(1)}%</span>`;
+      }
+    } else {
+      changeHtml = `<span class="monthly-card-change neutral">—</span>`;
+    }
+    
+    return `
+      <div class="monthly-card">
+        <div class="monthly-card-title">${getMonthName(period)}</div>
+        <div class="monthly-card-row">
+          <span class="monthly-card-label">Transactions</span>
+          <span class="monthly-card-value">${data.count}${changeHtml}</span>
+        </div>
+        <div class="monthly-card-row">
+          <span class="monthly-card-label">Total Spend</span>
+          <span class="monthly-card-value amount">${formatCurrency(data.total)}</span>
+        </div>
+      </div>
+    `;
+  });
+  
+  grid.innerHTML = cards.join('');
+}
+
 function renderTable() {
   const filtered = getFilteredTransactions();
   
-  // Update KPIs
-  const total = filtered.reduce((sum, t) => sum + t.amount, 0);
-  const uniqueVendors = new Set(filtered.map(t => t.vendor).filter(Boolean)).size;
-  const uniqueCategories = new Set(filtered.map(t => t.category)).size;
+  // Render monthly summary cards
+  renderMonthlyCards(filtered);
   
+  // Update total spend
+  const total = filtered.reduce((sum, t) => sum + t.amount, 0);
   document.getElementById('kpiTotal').textContent = formatCurrency(total);
   document.getElementById('kpiTotalNote').textContent = `${filtered.length} transactions`;
-  document.getElementById('kpiVendors').textContent = uniqueVendors;
-  document.getElementById('kpiCategories').textContent = uniqueCategories;
-  
-  if (filtered.length > 0) {
-    const dates = filtered.map(t => t.date).sort();
-    const minDate = new Date(dates[0]);
-    const maxDate = new Date(dates[dates.length - 1]);
-    const months = Math.ceil((maxDate - minDate) / (30 * 24 * 60 * 60 * 1000)) || 1;
-    document.getElementById('kpiRange').textContent = `${months} mo`;
-    document.getElementById('kpiRangeNote').textContent = `${formatDate(dates[0])} — ${formatDate(dates[dates.length - 1])}`;
-  } else {
-    document.getElementById('kpiRange').textContent = '—';
-    document.getElementById('kpiRangeNote').textContent = 'No data loaded';
-  }
   
   tableCount.textContent = `${filtered.length} transactions`;
   
@@ -944,26 +1130,50 @@ fileInput.addEventListener('change', (e) => {
 });
 
 function handleFile(file) {
-  if (!file.name.endsWith('.csv')) {
-    showToast('Please upload a CSV file', 'error');
+  const fileName = file.name.toLowerCase();
+  const isExcel = fileName.endsWith('.xlsx') || fileName.endsWith('.xls');
+  const isCSV = fileName.endsWith('.csv');
+  
+  if (!isExcel && !isCSV) {
+    showToast('Please upload a CSV or Excel file', 'error');
     return;
   }
   
-  const reader = new FileReader();
-  reader.onload = (e) => {
-    try {
-      const parsed = parseQBOExport(e.target.result);
-      if (parsed.length === 0) {
-        showToast('No valid transactions found in CSV', 'error');
-        return;
+  if (isExcel) {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const data = parseExcelFile(e.target.result);
+        const parsed = parseQBOExport(data, true);
+        if (parsed.length === 0) {
+          showToast('No valid transactions found in file', 'error');
+          return;
+        }
+        processUpload(parsed);
+      } catch (err) {
+        console.error(err);
+        showToast('Failed to parse Excel: ' + err.message, 'error');
       }
-      processUpload(parsed);
-    } catch (err) {
-      console.error(err);
-      showToast('Failed to parse CSV: ' + err.message, 'error');
-    }
-  };
-  reader.readAsText(file);
+    };
+    reader.readAsArrayBuffer(file);
+  } else {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const data = parseCSVFile(e.target.result);
+        const parsed = parseQBOExport(data, false);
+        if (parsed.length === 0) {
+          showToast('No valid transactions found in CSV', 'error');
+          return;
+        }
+        processUpload(parsed);
+      } catch (err) {
+        console.error(err);
+        showToast('Failed to parse CSV: ' + err.message, 'error');
+      }
+    };
+    reader.readAsText(file);
+  }
 }
 
 filterFrom.addEventListener('change', renderTable);
