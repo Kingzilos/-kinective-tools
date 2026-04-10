@@ -942,7 +942,8 @@
     </div>
 
     <!-- ── 4-column entity header bar ── -->
-    <div style="display:grid; grid-template-columns:1fr 1px 1fr 1px 1fr 1px 1fr; background:#222228; border-bottom:1px solid rgba(255,255,255,0.08);">
+    <div style="overflow-x:auto;">
+    <div style="display:grid; grid-template-columns:minmax(220px,1fr) 1px minmax(200px,1fr) 1px minmax(220px,1fr) 1px minmax(220px,1fr); min-width:860px; background:#222228; border-bottom:1px solid rgba(255,255,255,0.08);">
       <div style="padding:10px 24px; display:flex; align-items:center; gap:10px;">
         <span style="font-family:'Syne',sans-serif; font-size:10px; font-weight:700; letter-spacing:0.12em; text-transform:uppercase; color:var(--gold);">◈ Kinective El Paso</span>
       </div>
@@ -960,11 +961,11 @@
       </div>
     </div>
 
-    <!-- ── 3-column metrics grid ── -->
-    <div style="display:grid; grid-template-columns:1fr 1px 1fr 1px 1fr 1px 1fr; gap:0; background:var(--gray-200);">
+    <!-- ── 4-column metrics grid ── -->
+    <div style="display:grid; grid-template-columns:minmax(220px,1fr) 1px minmax(200px,1fr) 1px minmax(220px,1fr) 1px minmax(220px,1fr); min-width:860px; gap:0; background:var(--gray-200);">
 
       <!-- KINECTIVE EL PASO column -->
-      <div style="background:var(--white); padding:24px 28px; display:flex; flex-direction:column; gap:16px;">
+      <div style="background:var(--white); padding:18px 16px; display:flex; flex-direction:column; gap:12px;">
         <div style="font-family:'DM Mono',monospace; font-size:9px; font-weight:700; letter-spacing:0.12em; text-transform:uppercase; color:var(--gold); border-bottom:2px solid var(--gold); padding-bottom:6px; margin-bottom:4px;">Kinective El Paso</div>
         <div>
           <div style="font-family:'DM Mono',monospace; font-size:8px; letter-spacing:0.18em; text-transform:uppercase; color:var(--gray-400); margin-bottom:3px;">Income</div>
@@ -1000,7 +1001,7 @@
       <div style="background:var(--gray-200);"></div>
 
       <!-- KINECTIVE PLANO column -->
-      <div style="background:#f0f7ff; padding:24px 28px; display:flex; flex-direction:column; gap:16px;">
+      <div style="background:#f0f7ff; padding:18px 16px; display:flex; flex-direction:column; gap:12px;">
         <div style="font-family:'DM Mono',monospace; font-size:9px; font-weight:700; letter-spacing:0.12em; text-transform:uppercase; color:#3b82f6; border-bottom:2px solid #3b82f6; padding-bottom:6px; margin-bottom:4px;">Kinective Plano</div>
         <div>
           <div style="font-family:'DM Mono',monospace; font-size:8px; letter-spacing:0.18em; text-transform:uppercase; color:var(--gray-400); margin-bottom:3px;">Income</div>
@@ -1032,7 +1033,7 @@
       <div style="background:var(--gray-200);"></div>
 
       <!-- AMD CAPITAL column -->
-      <div style="background:var(--gray-50); padding:24px 28px; display:flex; flex-direction:column; gap:16px;">
+      <div style="background:var(--gray-50); padding:18px 16px; display:flex; flex-direction:column; gap:12px;">
         <div>
           <div style="font-family:'DM Mono',monospace; font-size:8px; letter-spacing:0.18em; text-transform:uppercase; color:var(--gray-400); margin-bottom:3px;">Income</div>
           <div style="font-family:'DM Mono',monospace; font-size:26px; font-weight:500; letter-spacing:-0.02em;" id="cf-amd-inc">$0.00</div>
@@ -1065,7 +1066,7 @@
       <div style="background:var(--gray-200);"></div>
 
       <!-- COMBINED column -->
-      <div style="background:#2d2d35; padding:24px 28px; display:flex; flex-direction:column; gap:16px;">
+      <div style="background:#2d2d35; padding:18px 16px; display:flex; flex-direction:column; gap:12px;">
         <div>
           <div style="font-family:'DM Mono',monospace; font-size:8px; letter-spacing:0.18em; text-transform:uppercase; color:rgba(255,255,255,0.4); margin-bottom:3px;">Income</div>
           <div style="font-family:'DM Mono',monospace; font-size:26px; font-weight:500; color:var(--white); letter-spacing:-0.02em;" id="cf-comb-inc">$0.00</div>
@@ -1083,19 +1084,20 @@
         </div>
         <div style="background:rgba(201,168,76,0.12); border-radius:8px; padding:12px 16px; border:1px solid rgba(201,168,76,0.3);">
           <div style="font-family:'DM Mono',monospace; font-size:8px; letter-spacing:0.14em; text-transform:uppercase; color:var(--gold); margin-bottom:8px;">All Accounts — Closing</div>
-          <table class="acct-close-table">
-            <tr><td class="acct-close-name" style="color:rgba(255,255,255,0.5);">Kinective El Paso</td><td class="acct-close-val" style="font-size:12px;" id="cb-comb-kin-sub">$0.00</td></tr>
-            <tr><td class="acct-close-name" style="color:rgba(255,255,255,0.5);">Kinective Plano</td><td class="acct-close-val" style="font-size:12px;" id="cb-comb-plano-sub">$0.00</td></tr>
-            <tr><td class="acct-close-name" style="color:rgba(255,255,255,0.5);">AMD Capital</td><td class="acct-close-val" style="font-size:12px;" id="cb-comb-amd-sub">$0.00</td></tr>
+          <table style="width:100%;border-collapse:collapse;">
+            <tr><td style="font-family:'DM Mono',monospace;font-size:9px;color:rgba(255,255,255,0.5);padding:5px 0;white-space:nowrap;width:52%;">Kinective El Paso</td><td style="font-family:'DM Mono',monospace;font-size:11px;text-align:right;padding:5px 0;" id="cb-comb-kin-sub">$0.00</td></tr>
+            <tr><td style="font-family:'DM Mono',monospace;font-size:9px;color:rgba(255,255,255,0.5);padding:5px 0;white-space:nowrap;">Kinective Plano</td><td style="font-family:'DM Mono',monospace;font-size:11px;text-align:right;padding:5px 0;" id="cb-comb-plano-sub">$0.00</td></tr>
+            <tr><td style="font-family:'DM Mono',monospace;font-size:9px;color:rgba(255,255,255,0.5);padding:5px 0;white-space:nowrap;">AMD Capital</td><td style="font-family:'DM Mono',monospace;font-size:11px;text-align:right;padding:5px 0;" id="cb-comb-amd-sub">$0.00</td></tr>
             <tr style="border-top:1px solid rgba(255,255,255,0.15);">
-              <td class="acct-close-name" style="font-weight:700; color:var(--gold);">Combined Total</td>
-              <td class="acct-close-val" style="font-size:16px; font-weight:700;" id="cb-combined">$0.00</td>
+              <td style="font-family:'DM Mono',monospace;font-size:9px;font-weight:700;color:var(--gold);padding:7px 0;white-space:nowrap;">Combined Total</td>
+              <td style="font-family:'DM Mono',monospace;font-size:14px;font-weight:700;text-align:right;padding:7px 0;" id="cb-combined">$0.00</td>
             </tr>
           </table>
         </div>
       </div>
 
     </div>
+    </div><!-- end scroll wrapper -->
   </div>
 
   <!-- CARD 5 – ANALYTICS & CAPEX -->
@@ -1336,7 +1338,7 @@
   .acct-dropdown-item .amd-tag { background: rgba(59,130,246,0.12); color: #60a5fa; }
 
   /* ── PER-ACCOUNT CLOSING BALANCE TABLE ───────────────── */
-  .acct-close-table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+  .acct-close-table { width: 100%; border-collapse: collapse; margin-top: 8px; table-layout: fixed; }
   .acct-close-table td {
     font-family: 'DM Mono', monospace;
     font-size: 11px;
@@ -1344,7 +1346,7 @@
     border-bottom: 1px solid var(--gray-100);
   }
   .acct-close-table tr:last-child td { border-bottom: none; }
-  .acct-close-table .acct-close-name { color: var(--gray-500); font-size: 10px; }
+  .acct-close-table .acct-close-name { color: var(--gray-500); font-size: 10px; white-space: nowrap; width: 58%; }
   .acct-close-table .acct-close-val  { text-align: right; font-weight: 600; color: var(--navy); }
   .acct-close-table .acct-close-entity {
     font-size: 8px; font-weight: 700; padding: 1px 6px;
@@ -2854,12 +2856,14 @@ function parseXLS(buffer, filename) {
 
     // Transfer = real cash movement between accounts (balance-only, never P&L)
     // Transfer From 8152 to 6280 = inter-account funding, not income
-    const isTransfer = descUp.includes('TRANSFER FROM') || descUp.includes('TRANSFER TO') ||
+    // "Transfer to Loan" = real loan payment expense, NOT an inter-account transfer
+    const isLoanPayment = descUp.includes('LOAN') || descUp.includes('LOAN ACCT');
+    const isTransfer = !isLoanPayment && (descUp.includes('TRANSFER FROM') || descUp.includes('TRANSFER TO') ||
                        (isTransitDebit  && !hasCheck) ||   // no check = real inter-account transfer
                        (isTransitCredit && !hasCheck) ||
                        (descUp.includes('TRANSIT') && !hasCheck && (debit > 50000 || credit > 50000)) ||
                        // Internal wire: "Requested by: ... Approved by: ..." — both fields required
-                       (descUp.includes('REQUESTED BY') && descUp.includes('APPROVED BY'));
+                       (descUp.includes('REQUESTED BY') && descUp.includes('APPROVED BY')));
 
     // Transit Debit WITH check number → treat as regular expense (a check written out)
     // Fall through to normal debit/credit handling below
@@ -2936,19 +2940,22 @@ function applyToReport(acctNum, expenses, incomeItems, transfers, filename) {
 }
 
 function updateHeroKPIs() {
-  const kinExp  = kinExpenses.reduce((s,x)=>s+x.amount,0);
-  const amdExp  = amdExpenses.reduce((s,x)=>s+x.amount,0);
-  const kinInc  = Object.values(incomeData.kin).reduce((s,x)=>s+x.amount,0);
-  const amdInc  = Object.values(incomeData.amd).reduce((s,x)=>s+x.amount,0);
-  const view    = activeView || 'combined';
+  const kinExp   = kinExpenses.reduce((s,x)=>s+x.amount,0);
+  const planoExp = planoExpenses.reduce((s,x)=>s+x.amount,0);
+  const amdExp   = amdExpenses.reduce((s,x)=>s+x.amount,0);
+  const kinIncAll = Object.values(incomeData.kin).reduce((s,x)=>s+x.amount,0);
+  const planoInc  = (incomeData.kin['6299']?.amount||0)+(incomeData.kin['6280']?.amount||0);
+  const kinInc    = kinIncAll - planoInc;
+  const amdInc    = Object.values(incomeData.amd).reduce((s,x)=>s+x.amount,0);
+  const view      = activeView || 'combined';
 
-  // Compute entity-specific values
+  // Compute entity-specific closing balances from saved snapshot
   const week = (typeof allWeeks !== 'undefined') ? allWeeks[currentWeekNum] : null;
   let cbKin = 0, cbAmd = 0;
-  if (week) {
-    const ob = week.openingBalances || {};
-    cbKin = (ob['8152']||0)+(ob['2213']||0)+(ob['9753']||0)+(ob['0211']||0)+(ob['3472']||0)+(ob['6299']||0)+(ob['6280']||0) + kinInc - kinExp;
-    cbAmd = (ob['3775']||0)+(ob['7698']||0)+(ob['2085']||0) + amdInc - amdExp;
+  if (week?.closingBalances?.accounts) {
+    const ac = week.closingBalances.accounts;
+    cbKin = (ac['8152']||0)+(ac['2213']||0)+(ac['9753']||0)+(ac['0211']||0)+(ac['3472']||0);
+    cbAmd = (ac['3775']||0)+(ac['7698']||0)+(ac['2085']||0);
   }
 
   let incTotal, expTotal, fcf, closing;
@@ -2957,7 +2964,10 @@ function updateHeroKPIs() {
   } else if (view === 'amd') {
     incTotal = amdInc; expTotal = amdExp; fcf = amdInc - amdExp; closing = cbAmd;
   } else {
-    incTotal = kinInc + amdInc; expTotal = kinExp + amdExp; fcf = incTotal - expTotal; closing = cbKin + cbAmd;
+    incTotal = kinIncAll + amdInc;
+    expTotal = kinExp + planoExp + amdExp;
+    fcf = incTotal - expTotal;
+    closing = cbKin + cbAmd;
   }
 
   function fmtK(n) {
