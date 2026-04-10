@@ -1829,20 +1829,20 @@ function updateTotals() {
     const cbPlanoEl4 = document.getElementById('cb-plano'); if(cbPlanoEl4) cbPlanoEl4.textContent = fmt(cbPlanoSnap2);
     const cbKinEl2   = document.getElementById('cb-kin');   if(cbKinEl2)   cbKinEl2.textContent   = fmt(cbKin);
     const cbAmdEl2   = document.getElementById('cb-amd');   if(cbAmdEl2)   cbAmdEl2.textContent   = fmt(cbAmd);
+    // Populate combined subtotals with correct Plano value
+    function setColorSnap(el, v) { if(!el) return; el.textContent=fmt(v); el.style.color=v<0?'#f87171':v>0?'#4ade80':'rgba(255,255,255,0.85)'; }
+    setColorSnap(document.getElementById('cb-comb-kin-sub'),   cbKin);
+    setColorSnap(document.getElementById('cb-comb-plano-sub'), cbPlanoSnap2);
+    setColorSnap(document.getElementById('cb-comb-amd-sub'),   cbAmd);
+    const cbCombSnap3 = document.getElementById('cb-combined');
+    if (cbCombSnap3) { const tot=cbKin+cbPlanoSnap2+cbAmd; cbCombSnap3.textContent=fmt(tot); cbCombSnap3.style.color=tot<0?'#f87171':'#F0D080'; }
   }
-  const cbComb=cbKin+cbAmd;
+  // cbPlanoSnap2 defined in non-XLS block, cbPlano in XLS block — use whichever is defined
+  const _cbPlanoVal = typeof cbPlanoSnap2 !== 'undefined' ? cbPlanoSnap2 : (typeof cbPlano !== 'undefined' ? cbPlano : 0);
+  const cbComb=cbKin+_cbPlanoVal+cbAmd;
   const combKinSub   = document.getElementById('cb-comb-kin-sub');
   const combPlanoSub = document.getElementById('cb-comb-plano-sub');
   const combAmdSub   = document.getElementById('cb-comb-amd-sub');
-  if (!window._xlsUploadedThisSession) {
-    const planoVal = typeof cbPlano !== 'undefined' ? cbPlano : 0;
-    function setColor(el, v) { if(!el) return; el.textContent=fmt(v); el.style.color=v<0?'#f87171':v>0?'#4ade80':'rgba(255,255,255,0.85)'; }
-    setColor(combKinSub, cbKin);
-    setColor(combPlanoSub, planoVal);
-    setColor(combAmdSub, cbAmd);
-    const cbCombEl2 = document.getElementById('cb-combined');
-    if (cbCombEl2) { const tot=cbKin+planoVal+cbAmd; cbCombEl2.textContent=fmt(tot); cbCombEl2.style.color=tot<0?'#f87171':'#F0D080'; }
-  }
 
   // Helper: colour a value element green/red based on sign
   function setVal(id, n) {
@@ -1869,6 +1869,16 @@ function updateTotals() {
   if (kinOcfEl) kinOcfEl.textContent = fmt(kinFCF) + ' + ' + fmt(capKin);
   const cbKinEl = document.getElementById('cb-kin');
   if (cbKinEl) cbKinEl.textContent = fmt(cbKin);
+
+  // ── Always recompute Combined Total from the 3 sub-rows ──
+  (function() {
+    const kinSub   = parseFmt(document.getElementById('cb-comb-kin-sub')?.textContent   || '0');
+    const planoSub = parseFmt(document.getElementById('cb-comb-plano-sub')?.textContent || '0');
+    const amdSub   = parseFmt(document.getElementById('cb-comb-amd-sub')?.textContent   || '0');
+    const tot = kinSub + planoSub + amdSub;
+    const el = document.getElementById('cb-combined');
+    if (el) { el.textContent = fmt(tot); el.style.color = tot < 0 ? '#f87171' : '#F0D080'; }
+  })();
 
   // ── Auto-update Accumulated Cash Flow ──
   // = prev week accumFlow + current week (El Paso OCF + Plano OCF)
@@ -1899,7 +1909,7 @@ function updateTotals() {
   const combOcfEl = document.getElementById('cf-ocf-formula');
   if (combOcfEl) combOcfEl.textContent = fmt(combFCF) + ' + ' + fmt(capex2026);
   const cbCombEl = document.getElementById('cb-combined');
-  if (cbCombEl) cbCombEl.textContent = fmt(cbComb);
+  if (cbCombEl) { cbCombEl.textContent = fmt(cbComb); cbCombEl.style.color = cbComb < 0 ? '#f87171' : '#F0D080'; }
 
   // Keep expense table total in sync
   const expDispEl = document.getElementById('total-exp-display');
@@ -2595,13 +2605,14 @@ function loadWeekIntoUI(weekNum, readOnly) {
       const el = document.getElementById('acct-close-' + k);
       if (el && cb.accounts[k] !== undefined) el.textContent = fmt(cb.accounts[k]);
     });
+    const planoC3 = (cb.accounts['6299']||0)+(cb.accounts['6280']||0);
     const kinC = (cb.accounts['8152']||0)+(cb.accounts['2213']||0)+(cb.accounts['9753']||0)+(cb.accounts['0211']||0)+(cb.accounts['3472']||0);
     const amdC = (cb.accounts['3775']||0)+(cb.accounts['7698']||0)+(cb.accounts['2085']||0);
     const planoC2 = (cb.accounts['6299']||0)+(cb.accounts['6280']||0);
     const cks = document.getElementById('cb-comb-kin-sub'); if(cks){cks.textContent=fmt(kinC-planoC2);cks.style.color=(kinC-planoC2)<0?'#f87171':'#4ade80';}
     const cps2 = document.getElementById('cb-comb-plano-sub'); if(cps2){cps2.textContent=fmt(planoC2);cps2.style.color=planoC2<0?'#f87171':planoC2>0?'#4ade80':'rgba(255,255,255,0.85)';}
     const cas = document.getElementById('cb-comb-amd-sub'); if(cas){cas.textContent=fmt(amdC);cas.style.color=amdC<0?'#f87171':'#4ade80';}
-    const cbCombSnap = document.getElementById('cb-combined'); if(cbCombSnap){const t=kinC+amdC;cbCombSnap.textContent=fmt(t);cbCombSnap.style.color=t<0?'#f87171':'#F0D080';}
+    const cbCombSnap = document.getElementById('cb-combined'); if(cbCombSnap){const t=kinC+planoC3+amdC;cbCombSnap.textContent=fmt(t);cbCombSnap.style.color=t<0?'#f87171':'#F0D080';}
     const cbPlanoSnap = document.getElementById('cb-plano'); if(cbPlanoSnap) cbPlanoSnap.textContent=fmt(planoC2);
   }
   if (incomeData.amd?.['amd-mm'] !== undefined) {
