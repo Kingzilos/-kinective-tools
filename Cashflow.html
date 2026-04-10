@@ -796,6 +796,14 @@
           <span class="acct-name"><strong>3472</strong> Investment — 4.09% Interest</span>
           <span class="acct-amount large" id="ob-3472">$4,111,595.77</span>
         </div>
+        <div class="account-row">
+          <span class="acct-name"><strong>6299</strong> Plano — Income</span>
+          <span class="acct-amount" id="ob-6299">$0.00</span>
+        </div>
+        <div class="account-row alt">
+          <span class="acct-name"><strong>6280</strong> Plano — Expenses</span>
+          <span class="acct-amount" id="ob-6280">$0.00</span>
+        </div>
         <div class="account-row total-row">
           <span class="acct-name total-label">Kinective Total</span>
           <span class="acct-amount total" id="ob-kin-total">$4,462,489.75</span>
@@ -889,6 +897,19 @@
                 style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:0.08em;background:rgba(201,168,76,0.15);border:1px solid rgba(201,168,76,0.4);color:var(--gold-light);padding:3px 10px;border-radius:10px;cursor:pointer;">+ ADD ROW</button>
             </td>
           </tr>
+          <!-- ── KINECTIVE PLANO GROUP HEADER ── -->
+          <tr class="group-header" id="hdr-plano" onclick="toggleGroup('plano')">
+            <td class="group-header-cell" colspan="3">
+              <span class="group-chevron" id="chev-plano">▶</span>
+              <span class="group-label-plano">KINECTIVE PLANO</span>
+              <span class="group-count" id="plano-count">0 transactions</span>
+              <span class="group-subtotal" id="plano-subtotal">$0.00</span>
+            </td>
+            <td style="text-align:right;padding-right:12px;">
+              <button onclick="event.stopPropagation();addExpenseRow('plano')"
+                style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:0.08em;background:rgba(59,130,246,0.1);border:1px solid rgba(59,130,246,0.35);color:#3b82f6;padding:3px 10px;border-radius:10px;cursor:pointer;">+ ADD ROW</button>
+            </td>
+          </tr>
           <!-- ── AMD GROUP HEADER ── -->
           <tr class="group-header" id="hdr-amd" onclick="toggleGroup('amd')">
             <td class="group-header-cell" colspan="3">
@@ -920,10 +941,14 @@
       <div class="card-header-meta" id="cashflow-meta">Week 8 · Feb 13–19, 2026</div>
     </div>
 
-    <!-- ── 3-column entity header bar ── -->
-    <div style="display:grid; grid-template-columns:1fr 1px 1fr 1px 1fr; background:#222228; border-bottom:1px solid rgba(255,255,255,0.08);">
+    <!-- ── 4-column entity header bar ── -->
+    <div style="display:grid; grid-template-columns:1fr 1px 1fr 1px 1fr 1px 1fr; background:#222228; border-bottom:1px solid rgba(255,255,255,0.08);">
       <div style="padding:10px 24px; display:flex; align-items:center; gap:10px;">
-        <span style="font-family:'Syne',sans-serif; font-size:10px; font-weight:700; letter-spacing:0.12em; text-transform:uppercase; color:var(--gold);">◈ Kinective</span>
+        <span style="font-family:'Syne',sans-serif; font-size:10px; font-weight:700; letter-spacing:0.12em; text-transform:uppercase; color:var(--gold);">◈ Kinective El Paso</span>
+      </div>
+      <div style="background:rgba(255,255,255,0.08);"></div>
+      <div style="padding:10px 24px; display:flex; align-items:center; gap:10px;">
+        <span style="font-family:'Syne',sans-serif; font-size:10px; font-weight:700; letter-spacing:0.12em; text-transform:uppercase; color:#60a5fa;">◈ Kinective Plano</span>
       </div>
       <div style="background:rgba(255,255,255,0.08);"></div>
       <div style="padding:10px 24px; display:flex; align-items:center; gap:10px;">
@@ -936,10 +961,11 @@
     </div>
 
     <!-- ── 3-column metrics grid ── -->
-    <div style="display:grid; grid-template-columns:1fr 1px 1fr 1px 1fr; gap:0; background:var(--gray-200);">
+    <div style="display:grid; grid-template-columns:1fr 1px 1fr 1px 1fr 1px 1fr; gap:0; background:var(--gray-200);">
 
-      <!-- KINECTIVE column -->
+      <!-- KINECTIVE EL PASO column -->
       <div style="background:var(--white); padding:24px 28px; display:flex; flex-direction:column; gap:16px;">
+        <div style="font-family:'DM Mono',monospace; font-size:9px; font-weight:700; letter-spacing:0.12em; text-transform:uppercase; color:var(--gold); border-bottom:2px solid var(--gold); padding-bottom:6px; margin-bottom:4px;">Kinective El Paso</div>
         <div>
           <div style="font-family:'DM Mono',monospace; font-size:8px; letter-spacing:0.18em; text-transform:uppercase; color:var(--gray-400); margin-bottom:3px;">Income</div>
           <div style="font-family:'DM Mono',monospace; font-size:26px; font-weight:500; letter-spacing:-0.02em;" id="cf-kin-inc">$0.00</div>
@@ -958,14 +984,46 @@
         <div style="background:var(--gray-50); border-radius:8px; padding:12px 16px; border:1px solid var(--gray-200);">
           <div style="font-family:'DM Mono',monospace; font-size:8px; letter-spacing:0.14em; text-transform:uppercase; color:var(--gray-400); margin-bottom:8px;" id="closing-label">Closing Balance — Per Account</div>
           <table class="acct-close-table" id="acct-close-kin-table">
-            <tr><td class="acct-close-name">8152 WestStar — Income</td><td class="acct-close-val" id="acct-close-8152">$0.00</td></tr>
-            <tr><td class="acct-close-name">2213 WestStar — Expenses</td><td class="acct-close-val" id="acct-close-2213">$0.00</td></tr>
+            <tr><td class="acct-close-name">8152 El Paso — Income</td><td class="acct-close-val" id="acct-close-8152">$0.00</td></tr>
+            <tr><td class="acct-close-name">2213 El Paso — Expenses</td><td class="acct-close-val" id="acct-close-2213">$0.00</td></tr>
             <tr><td class="acct-close-name">9753 Wells Fargo — Income</td><td class="acct-close-val" id="acct-close-9753">$0.00</td></tr>
             <tr><td class="acct-close-name">0211 Wells Fargo — Exp.</td><td class="acct-close-val" id="acct-close-0211">$0.00</td></tr>
             <tr><td class="acct-close-name">3472 Investment</td><td class="acct-close-val" id="acct-close-3472">$0.00</td></tr>
             <tr style="border-top:2px solid var(--gray-200);">
-              <td class="acct-close-name" style="font-weight:700; color:var(--navy);">Kinective Total</td>
+              <td class="acct-close-name" style="font-weight:700; color:var(--navy);">El Paso Total</td>
               <td class="acct-close-val" style="font-size:13px; color:var(--navy);" id="cb-kin">$0.00</td>
+            </tr>
+          </table>
+        </div>
+      </div>
+
+      <div style="background:var(--gray-200);"></div>
+
+      <!-- KINECTIVE PLANO column -->
+      <div style="background:#f0f7ff; padding:24px 28px; display:flex; flex-direction:column; gap:16px;">
+        <div style="font-family:'DM Mono',monospace; font-size:9px; font-weight:700; letter-spacing:0.12em; text-transform:uppercase; color:#3b82f6; border-bottom:2px solid #3b82f6; padding-bottom:6px; margin-bottom:4px;">Kinective Plano</div>
+        <div>
+          <div style="font-family:'DM Mono',monospace; font-size:8px; letter-spacing:0.18em; text-transform:uppercase; color:var(--gray-400); margin-bottom:3px;">Income</div>
+          <div style="font-family:'DM Mono',monospace; font-size:26px; font-weight:500; letter-spacing:-0.02em;" id="cf-plano-inc">$0.00</div>
+        </div>
+        <div>
+          <div style="font-family:'DM Mono',monospace; font-size:8px; letter-spacing:0.18em; text-transform:uppercase; color:var(--gray-400); margin-bottom:3px;">Expenses</div>
+          <div style="font-family:'DM Mono',monospace; font-size:26px; font-weight:500; color:var(--red); letter-spacing:-0.02em;" id="cf-plano-exp">$0.00</div>
+        </div>
+        <div style="border-top:1px solid var(--gray-200); padding-top:14px;">
+          <div style="font-family:'DM Mono',monospace; font-size:8px; letter-spacing:0.18em; text-transform:uppercase; color:var(--gray-400); margin-bottom:3px;">Free Cash Flow</div>
+          <div style="font-family:'DM Mono',monospace; font-size:22px; font-weight:600; letter-spacing:-0.02em;" id="cf-plano-fcf">$0.00</div>
+          <div style="font-family:'DM Mono',monospace; font-size:8px; letter-spacing:0.18em; text-transform:uppercase; color:var(--gray-400); margin-top:12px; margin-bottom:3px;">Operating Cash Flow</div>
+          <div style="font-family:'DM Mono',monospace; font-size:18px; font-weight:500; letter-spacing:-0.02em;" id="cf-plano-ocf">$0.00</div>
+        </div>
+        <div style="background:rgba(59,130,246,0.08); border-radius:8px; padding:12px 16px; border:1px solid rgba(59,130,246,0.2);">
+          <div style="font-family:'DM Mono',monospace; font-size:8px; letter-spacing:0.14em; text-transform:uppercase; color:#3b82f6; margin-bottom:8px;">Closing Balance — Plano</div>
+          <table class="acct-close-table">
+            <tr><td class="acct-close-name">6299 Plano — Income</td><td class="acct-close-val" id="acct-close-6299">$0.00</td></tr>
+            <tr><td class="acct-close-name">6280 Plano — Expenses</td><td class="acct-close-val" id="acct-close-6280">$0.00</td></tr>
+            <tr style="border-top:2px solid var(--gray-200);">
+              <td class="acct-close-name" style="font-weight:700; color:#3b82f6;">Plano Total</td>
+              <td class="acct-close-val" style="font-size:13px; color:#3b82f6;" id="cb-plano">$0.00</td>
             </tr>
           </table>
         </div>
@@ -1026,11 +1084,12 @@
         <div style="background:rgba(201,168,76,0.12); border-radius:8px; padding:12px 16px; border:1px solid rgba(201,168,76,0.3);">
           <div style="font-family:'DM Mono',monospace; font-size:8px; letter-spacing:0.14em; text-transform:uppercase; color:var(--gold); margin-bottom:8px;">All Accounts — Closing</div>
           <table class="acct-close-table">
-            <tr><td class="acct-close-name" style="color:rgba(255,255,255,0.5);">Kinective</td><td class="acct-close-val" style="color:rgba(255,255,255,0.85); font-size:12px;" id="cb-comb-kin-sub">$0.00</td></tr>
-            <tr><td class="acct-close-name" style="color:rgba(255,255,255,0.5);">AMD Capital</td><td class="acct-close-val" style="color:rgba(255,255,255,0.85); font-size:12px;" id="cb-comb-amd-sub">$0.00</td></tr>
+            <tr><td class="acct-close-name" style="color:rgba(255,255,255,0.5);">Kinective El Paso</td><td class="acct-close-val" style="font-size:12px;" id="cb-comb-kin-sub">$0.00</td></tr>
+            <tr><td class="acct-close-name" style="color:rgba(255,255,255,0.5);">Kinective Plano</td><td class="acct-close-val" style="font-size:12px;" id="cb-comb-plano-sub">$0.00</td></tr>
+            <tr><td class="acct-close-name" style="color:rgba(255,255,255,0.5);">AMD Capital</td><td class="acct-close-val" style="font-size:12px;" id="cb-comb-amd-sub">$0.00</td></tr>
             <tr style="border-top:1px solid rgba(255,255,255,0.15);">
               <td class="acct-close-name" style="font-weight:700; color:var(--gold);">Combined Total</td>
-              <td class="acct-close-val" style="font-size:16px; color:var(--gold-light); font-weight:700;" id="cb-combined">$0.00</td>
+              <td class="acct-close-val" style="font-size:16px; font-weight:700;" id="cb-combined">$0.00</td>
             </tr>
           </table>
         </div>
@@ -1302,6 +1361,7 @@
   .group-chevron.open { transform:rotate(90deg); color:var(--gold); }
   .group-label-kin { font-family:'DM Mono',monospace; font-size:10px; font-weight:600; letter-spacing:0.12em; color:var(--char); background:var(--gold-pale); border:1px solid rgba(201,168,76,0.4); padding:2px 10px; border-radius:10px; }
   .group-label-amd { font-family:'DM Mono',monospace; font-size:10px; font-weight:600; letter-spacing:0.12em; color:var(--char); background:var(--gray-200); border:1px solid var(--gray-300); padding:2px 10px; border-radius:10px; }
+  .group-label-plano { font-family:'DM Mono',monospace; font-size:10px; font-weight:600; letter-spacing:0.12em; color:#1d4ed8; background:rgba(59,130,246,0.1); border:1px solid rgba(59,130,246,0.35); padding:2px 10px; border-radius:10px; }
   .group-count { font-family:'DM Mono',monospace; font-size:10px; color:var(--gray-400); }
   .group-subtotal { margin-left:auto; font-family:'DM Mono',monospace; font-size:13px; font-weight:600; color:var(--red); padding-right:16px; }
 
@@ -1376,11 +1436,13 @@ const activeView = 'combined'; // always combined — single-page layout
 
 let incomeData = {
   kin: {
-    '8152': { label: '8152 WestStar — Weekly Receipts', amount: 113935.39 },
-    '2213': { label: '2213 WestStar — Credit',          amount: 46.47 },
-    '9753': { label: '9753 Wells Fargo — Income',       amount: 0 },
-    '3472': { label: '3472 Money Market — Interest',      amount: 0 },
-    '0211': { label: '0211 Wells Fargo — Credit',       amount: 84.15 },
+    '8152': { label: '8152 El Paso — Income',           amount: 113935.39 },
+    '2213': { label: '2213 El Paso — Expenses',          amount: 46.47 },
+    '9753': { label: '9753 Wells Fargo — Income',        amount: 0 },
+    '3472': { label: '3472 Money Market — Interest',     amount: 0 },
+    '0211': { label: '0211 Wells Fargo — Credit',        amount: 84.15 },
+    '6280': { label: '6280 Plano — Expenses',            amount: 0 },
+    '6299': { label: '6299 Plano — Income',              amount: 0 },
   },
   amd: {
     '3775': { label: '3775 WestStar — Credit',          amount: 0 },
@@ -1415,6 +1477,7 @@ const kinExpenses = [
   { name:'Transit Debit',                       amount:100.00,   account:'2213 WestStar' },
 ];
 
+const planoExpenses = [];  // Kinective Plano (6280, 6299)
 const amdExpenses = [
   { name:'UES — AMD Capital LLC CCD',   amount:7142.63, account:'3775 WestStar' },
   { name:'IN662-30 — T&T Staffing CCD', amount:5445.32, account:'3775 WestStar' },
@@ -1431,11 +1494,13 @@ function fmt(n) {
 
 // All 8 accounts available for assignment
 const ACCT_OPTIONS = [
-  { key: '8152', label: '8152 WestStar — Income',    entity: 'kin' },
-  { key: '2213', label: '2213 WestStar — Expenses',  entity: 'kin' },
+  { key: '8152', label: '8152 El Paso — Income',    entity: 'kin' },
+  { key: '2213', label: '2213 El Paso — Expenses',  entity: 'kin' },
   { key: '9753', label: '9753 Wells Fargo — Income', entity: 'kin' },
   { key: '0211', label: '0211 Wells Fargo — Exp.',   entity: 'kin' },
   { key: '3472', label: '3472 Investment — 4.09%',   entity: 'kin' },
+  { key: '6299', label: '6299 Plano — Income',       entity: 'kin' },
+  { key: '6280', label: '6280 Plano — Expenses',     entity: 'kin' },
   { key: '3775', label: '3775 WestStar (AMD)',        entity: 'amd' },
   { key: '7698', label: '7698 Wells Fargo (AMD)',     entity: 'amd' },
   { key: '2085',    label: '2085 Money Market',      entity: 'amd' },
@@ -1470,7 +1535,7 @@ function openAcctDropdown(pill, group, idx) {
 }
 
 function selectAcct(ddItem, group, idx, acctKey, acctLabel) {
-  const arr  = group === 'kin' ? kinExpenses : amdExpenses;
+  const arr  = group === 'kin' ? kinExpenses : group === 'plano' ? planoExpenses : amdExpenses;
   if (arr[idx]) arr[idx].account = acctKey;
   // Update the pill
   const dd   = ddItem.closest('.acct-dropdown');
@@ -1601,14 +1666,22 @@ function renderExpenses() {
   const tbody = document.querySelector('#exp-table tbody');
   tbody.querySelectorAll('.exp-row').forEach(r => r.remove());
 
-  const hdrKin = document.getElementById('hdr-kin');
-  const hdrAmd = document.getElementById('hdr-amd');
-  const kinOpen = document.getElementById('chev-kin').classList.contains('open');
-  const amdOpen = document.getElementById('chev-amd').classList.contains('open');
+  const hdrKin   = document.getElementById('hdr-kin');
+  const hdrPlano = document.getElementById('hdr-plano');
+  const hdrAmd   = document.getElementById('hdr-amd');
+  const kinOpen   = document.getElementById('chev-kin')?.classList.contains('open') || false;
+  const planoOpen = document.getElementById('chev-plano')?.classList.contains('open') || false;
+  const amdOpen   = document.getElementById('chev-amd')?.classList.contains('open') || false;
 
   kinExpenses.forEach((item, i) => {
     const tr = makeRow(item, 'kin', i);
     if (kinOpen) tr.style.display = '';
+    tbody.insertBefore(tr, hdrPlano);
+  });
+
+  planoExpenses.forEach((item, i) => {
+    const tr = makeRow(item, 'plano', i);
+    if (planoOpen) tr.style.display = '';
     tbody.insertBefore(tr, hdrAmd);
   });
 
@@ -1622,13 +1695,13 @@ function renderExpenses() {
 }
 
 function syncExpenseEdit(el, field, group, idx) {
-  const arr = group==='kin' ? kinExpenses : amdExpenses;
+  const arr = group==='kin' ? kinExpenses : group==='plano' ? planoExpenses : amdExpenses;
   if (arr[idx]) arr[idx][field] = el.textContent.trim();
 }
 
 function syncExpenseAmount(el, group, idx) {
   window._xlsUploadedThisSession = true; // manual expense edit — recompute closing balances
-  const arr = group==='kin' ? kinExpenses : amdExpenses;
+  const arr = group==='kin' ? kinExpenses : group==='plano' ? planoExpenses : amdExpenses;
   const raw = parseFloat(el.textContent.replace(/[$,]/g,'')) || 0;
   el.textContent = fmt(raw);
   if (arr[idx]) arr[idx].amount = raw;
@@ -1637,14 +1710,14 @@ function syncExpenseAmount(el, group, idx) {
 }
 
 function deleteExpenseRow(btn, group, idx) {
-  const arr = group==='kin' ? kinExpenses : amdExpenses;
+  const arr = group==='kin' ? kinExpenses : group==='plano' ? planoExpenses : amdExpenses;
   arr.splice(idx, 1);
   renderExpenses();
   updateHeroKPIs();
 }
 
 function addExpenseRow(group) {
-  const arr = group==='kin' ? kinExpenses : amdExpenses;
+  const arr = group==='kin' ? kinExpenses : group==='plano' ? planoExpenses : amdExpenses;
   arr.push({ name: 'New Expense', amount: 0, account: '' }); // blank — force manual account selection
   // Expand the group if collapsed
   const chev = document.getElementById('chev-'+group);
@@ -1673,24 +1746,31 @@ function recalcVariance() {
 }
 
 function updateTotals() {
-  const kinTotal = kinExpenses.reduce((s, x) => s + x.amount, 0);
-  const amdTotal = amdExpenses.reduce((s, x) => s + x.amount, 0);
-  const expTotal = kinTotal + amdTotal;
+  const kinTotal   = kinExpenses.reduce((s, x) => s + x.amount, 0);
+  const planoTotal = planoExpenses.reduce((s, x) => s + x.amount, 0);
+  const amdTotal   = amdExpenses.reduce((s, x) => s + x.amount, 0);
+  const expTotal   = kinTotal + planoTotal + amdTotal;
 
   // Expense table subtotals
-  document.getElementById('kin-count').textContent    = kinExpenses.length + ' transactions';
-  document.getElementById('amd-count').textContent    = amdExpenses.length + ' transactions';
-  document.getElementById('kin-subtotal').textContent = fmt(kinTotal);
-  document.getElementById('amd-subtotal').textContent = fmt(amdTotal);
+  document.getElementById('kin-count').textContent     = kinExpenses.length + ' transactions';
+  const planoCountEl = document.getElementById('plano-count'); if(planoCountEl) planoCountEl.textContent = planoExpenses.length + ' transactions';
+  document.getElementById('amd-count').textContent     = amdExpenses.length + ' transactions';
+  document.getElementById('kin-subtotal').textContent  = fmt(kinTotal);
+  const planoSubEl = document.getElementById('plano-subtotal'); if(planoSubEl) planoSubEl.textContent = fmt(planoTotal);
+  document.getElementById('amd-subtotal').textContent  = fmt(amdTotal);
 
   // Income totals
-  const kinInc = Object.values(incomeData.kin).reduce((s,x)=>s+x.amount,0);
-  const amdInc = Object.values(incomeData.amd).reduce((s,x)=>s+x.amount,0);
-  const combInc = kinInc + amdInc;
+  const kinIncAll = Object.values(incomeData.kin).reduce((s,x)=>s+x.amount,0);
+  const amdInc    = Object.values(incomeData.amd).reduce((s,x)=>s+x.amount,0);
+  // Split Kinective income: El Paso vs Plano
+  const planoInc  = (incomeData.kin['6299']?.amount||0) + (incomeData.kin['6280']?.amount||0);
+  const kinInc    = kinIncAll - planoInc;  // El Paso only
+  const combInc   = kinIncAll + amdInc;
 
   // FCF per entity
-  const kinFCF  = kinInc - kinTotal;
-  const amdFCF  = amdInc - amdTotal;
+  const kinFCF   = kinInc - kinTotal;     // El Paso FCF
+  const planoFCF = planoInc - planoTotal; // Plano FCF
+  const amdFCF   = amdInc - amdTotal;
   const combFCF = combInc - expTotal;
 
   // OCF — each entity adds its own assigned CAPEX
@@ -1713,27 +1793,54 @@ function updateTotals() {
     function xferForAcct(k) { return (window.transferAdjustments||{})[k]||0; }
     const ac={};
     ['8152','2213','9753','0211'].forEach(k=>{ac[k]=(ob[k]||0)+incForAcct(k)-expForAcct(k)+xferForAcct(k);});
+    // Plano accounts — use planoExpenses array
+    function planoExpForAcct(k) { return planoExpenses.filter(e=>(e.account||'').startsWith(k)).reduce((s,x)=>s+x.amount,0); }
+    ['6299','6280'].forEach(k=>{ac[k]=(ob[k]||0)+incForAcct(k)-planoExpForAcct(k)+xferForAcct(k);});
     ac['3472']=(ob['3472']||0)+incForAcct('3472')+xferForAcct('3472');
     ['3775','7698'].forEach(k=>{ac[k]=(ob[k]||0)+incForAcct(k)-expForAcct(k)+xferForAcct(k);});
     ac['2085']=(ob['2085']||0)+incForAcct('2085')+xferForAcct('2085');
     cbKin=(ac['8152']||0)+(ac['2213']||0)+(ac['9753']||0)+(ac['0211']||0)+(ac['3472']||0);
+    const cbPlano=(ac['6299']||0)+(ac['6280']||0);
+    // Update Plano closing cell
+    const cbPlanoXls=document.getElementById('cb-plano'); if(cbPlanoXls) cbPlanoXls.textContent=fmt((ac['6299']||0)+(ac['6280']||0));
     cbAmd=(ac['3775']||0)+(ac['7698']||0)+(ac['2085']||0);
-    ['8152','2213','9753','0211','3472','3775','7698','2085'].forEach(k=>{const el=document.getElementById('acct-close-'+k);if(el)el.textContent=fmt(ac[k]||0);});
-    const cbCombVal=cbKin+cbAmd;
-    const cks=document.getElementById('cb-comb-kin-sub');if(cks)cks.textContent=fmt(cbKin);
-    const cas=document.getElementById('cb-comb-amd-sub');if(cas)cas.textContent=fmt(cbAmd);
+    ['8152','2213','9753','0211','3472','6299','6280','3775','7698','2085'].forEach(k=>{const el=document.getElementById('acct-close-'+k);if(el)el.textContent=fmt(ac[k]||0);});
+    function colorSet(id,v){const el=document.getElementById(id);if(!el)return;el.textContent=fmt(v);el.style.color=v<0?'#f87171':v>0?'#4ade80':'rgba(255,255,255,0.85)';}
+    const cks=document.getElementById('cb-comb-kin-sub');if(cks){cks.textContent=fmt(cbKin);cks.style.color=cbKin<0?'#f87171':cbKin>0?'#4ade80':'rgba(255,255,255,0.85)';}
+    const cps=document.getElementById('cb-comb-plano-sub');if(cps){cps.textContent=fmt(cbPlano);cps.style.color=cbPlano<0?'#f87171':cbPlano>0?'#4ade80':'rgba(255,255,255,0.85)';}
+    const cas=document.getElementById('cb-comb-amd-sub');if(cas){cas.textContent=fmt(cbAmd);cas.style.color=cbAmd<0?'#f87171':cbAmd>0?'#4ade80':'rgba(255,255,255,0.85)';}
     const cbKinEl=document.getElementById('cb-kin');if(cbKinEl)cbKinEl.textContent=fmt(cbKin);
     const cbAmdEl=document.getElementById('cb-amd');if(cbAmdEl)cbAmdEl.textContent=fmt(cbAmd);
-    const cbCEl=document.getElementById('cb-combined');if(cbCEl)cbCEl.textContent=fmt(cbCombVal);
+    const cbPlanoEl3=document.getElementById('cb-plano');if(cbPlanoEl3)cbPlanoEl3.textContent=fmt(cbPlano);
+    const cbCombVal=cbKin+cbPlano+cbAmd;
+    const cbCEl=document.getElementById('cb-combined');if(cbCEl){cbCEl.textContent=fmt(cbCombVal);cbCEl.style.color=cbCombVal<0?'#f87171':'#F0D080';}
   } else {
-    // Read from DOM — already restored by loadWeekIntoUI
-    cbKin=parseFmt(document.getElementById('cb-kin')?.textContent||'0');
-    cbAmd=parseFmt(document.getElementById('cb-amd')?.textContent||'0');
+    // No XLS uploaded — restore per-account cells from saved snapshot
+    const savedCB = week?.closingBalances?.accounts || {};
+    ['8152','2213','9753','0211','3472','6299','6280','3775','7698','2085'].forEach(k => {
+      const el = document.getElementById('acct-close-' + k);
+      if (el && savedCB[k] !== undefined) el.textContent = fmt(savedCB[k]);
+    });
+    cbKin = (savedCB['8152']||0)+(savedCB['2213']||0)+(savedCB['9753']||0)+(savedCB['0211']||0)+(savedCB['3472']||0);
+    const cbPlanoSnap2 = (savedCB['6299']||0)+(savedCB['6280']||0);
+    cbAmd = (savedCB['3775']||0)+(savedCB['7698']||0)+(savedCB['2085']||0);
+    const cbPlanoEl4 = document.getElementById('cb-plano'); if(cbPlanoEl4) cbPlanoEl4.textContent = fmt(cbPlanoSnap2);
+    const cbKinEl2   = document.getElementById('cb-kin');   if(cbKinEl2)   cbKinEl2.textContent   = fmt(cbKin);
+    const cbAmdEl2   = document.getElementById('cb-amd');   if(cbAmdEl2)   cbAmdEl2.textContent   = fmt(cbAmd);
   }
   const cbComb=cbKin+cbAmd;
-  const combKinSub=document.getElementById('cb-comb-kin-sub');
-  const combAmdSub=document.getElementById('cb-comb-amd-sub');
-  if(!window._xlsUploadedThisSession){if(combKinSub)combKinSub.textContent=fmt(cbKin);if(combAmdSub)combAmdSub.textContent=fmt(cbAmd);}
+  const combKinSub   = document.getElementById('cb-comb-kin-sub');
+  const combPlanoSub = document.getElementById('cb-comb-plano-sub');
+  const combAmdSub   = document.getElementById('cb-comb-amd-sub');
+  if (!window._xlsUploadedThisSession) {
+    const planoVal = typeof cbPlano !== 'undefined' ? cbPlano : 0;
+    function setColor(el, v) { if(!el) return; el.textContent=fmt(v); el.style.color=v<0?'#f87171':v>0?'#4ade80':'rgba(255,255,255,0.85)'; }
+    setColor(combKinSub, cbKin);
+    setColor(combPlanoSub, planoVal);
+    setColor(combAmdSub, cbAmd);
+    const cbCombEl2 = document.getElementById('cb-combined');
+    if (cbCombEl2) { const tot=cbKin+planoVal+cbAmd; cbCombEl2.textContent=fmt(tot); cbCombEl2.style.color=tot<0?'#f87171':'#F0D080'; }
+  }
 
   // Helper: colour a value element green/red based on sign
   function setVal(id, n) {
@@ -1745,6 +1852,12 @@ function updateTotals() {
     }
   }
 
+  // ── Kinective Plano column ──
+  setVal('cf-plano-inc', planoInc);
+  setVal('cf-plano-exp', planoTotal);
+  setVal('cf-plano-fcf', planoFCF);
+  setVal('cf-plano-ocf', planoFCF); // no CAPEX for plano yet
+
   // ── Kinective column ──
   setVal('cf-kin-inc',         kinInc);
   setVal('cf-kin-exp',         kinTotal);
@@ -1754,6 +1867,16 @@ function updateTotals() {
   if (kinOcfEl) kinOcfEl.textContent = fmt(kinFCF) + ' + ' + fmt(capKin);
   const cbKinEl = document.getElementById('cb-kin');
   if (cbKinEl) cbKinEl.textContent = fmt(cbKin);
+
+  // ── Auto-update Accumulated Cash Flow ──
+  // = prev week accumFlow + current week (El Paso OCF + Plano OCF)
+  const prevAccum = (allWeeks[currentWeekNum - 1]?.accumFlow) || 0;
+  const newAccum  = prevAccum + kinOCF + planoFCF;
+  const accumEl   = document.getElementById('accum-2026');
+  if (accumEl) {
+    accumEl.textContent = fmt(newAccum);
+    recalcVariance();
+  }
 
   // ── AMD Capital column ──
   setVal('cf-amd-inc',         amdInc);
@@ -2021,8 +2144,8 @@ function buildWeek8Snapshot() {
       total: 114656.05,
       data: {
         kin: {
-          '8152': { label: '8152 WestStar — Weekly Receipts', amount: 113935.39 },
-          '2213': { label: '2213 WestStar — Credit',          amount: 46.47 },
+          '8152': { label: '8152 El Paso — Income', amount: 113935.39 },
+          '2213': { label: '2213 El Paso — Expenses',          amount: 46.47 },
           '9753': { label: '9753 Wells Fargo — Income',       amount: 0 },
           '3472': { label: '3472 Money Market — Interest',    amount: 0 },
           '0211': { label: '0211 Wells Fargo — Credit',       amount: 84.15 },
@@ -2034,20 +2157,17 @@ function buildWeek8Snapshot() {
         }
       }
     },
-    expenses: {
-      kin: JSON.parse(JSON.stringify(kinExpenses)),
-      amd: JSON.parse(JSON.stringify(amdExpenses))
-    },
+    expenses: { kin: [], plano: [], amd: [] },
     openingBalances: {
       '8152': 213574.97, '2213': 69529.06,  '9753': 18078.91,
-      '0211': 49711.04,  '3472': 4111595.77,
+      '0211': 49711.04,  '3472': 4111595.77,'6299':0,'6280':0,
       '3775': 68319.42,  '7698': 25467.65,  '2085':    3516613.27
     },
     closingBalances: {
       kin: 4442968.04, amd: 3598305.54, combined: 8037980.45,
       accounts: {
         '8152': 225810.97, '2213': 34394.07, '9753': 18078.91,
-        '0211': 49795.19,  '3472': 4111595.77,
+        '0211': 49795.19,  '3472': 4111595.77,'6299':0,'6280':0,
         '3775': 55634.58,  '7698': 26057.69,  '2085':    3516613.27
       }
     },
@@ -2108,9 +2228,9 @@ async function initWeekSystem() {
 function buildWeek9Snapshot() {
   return {
     weekNum:9, label:'Feb 20 – Feb 26', saved:true,
-    openingBalances: { '8152':225810.97, '2213':34394.07, '9753':18078.91, '0211':49795.19, '3472':4111595.77, '3775':55634.58, '7698':26057.69, '2085':3516613.27 },
+    openingBalances: { '8152':225810.97, '2213':34394.07, '9753':18078.91, '0211':49795.19, '3472':4111595.77,'6299':0,'6280':0, '3775':55634.58, '7698':26057.69, '2085':3516613.27 },
     income: { total:122344.81999999999, data: {
-      kin: { '8152':{ label:'8152 WestStar — Weekly Receipts', amount:120662.65 }, '2213':{ label:'2213 WestStar — Credit', amount:1682.17 }, '9753':{ label:'9753 Wells Fargo — Income', amount:0 }, '3472':{ label:'3472 Money Market — Interest', amount:0 }, '0211':{ label:'0211 Wells Fargo — Credit', amount:0 } },
+      kin: { '8152':{ label:'8152 El Paso — Income', amount:120662.65 }, '2213':{ label:'2213 El Paso — Expenses', amount:1682.17 }, '9753':{ label:'9753 Wells Fargo — Income', amount:0 }, '3472':{ label:'3472 Money Market — Interest', amount:0 }, '0211':{ label:'0211 Wells Fargo — Credit', amount:0 } ,'6299':{ label:'6299 Plano — Income', amount:0 },'6280':{ label:'6280 Plano — Expenses', amount:0 }},
       amd: { '3775':{ label:'3775 WestStar — Credit', amount:0 }, '7698':{ label:'7698 Wells Fargo — Credit', amount:0 }, '2085':{ label:'2085 Money Market — Interest', amount:0 } }
     }},
     expenses: { kin:[{name:'IN571-269 — T&T Staffing CCD', amount:5896.96, account:'2213 WestStar'}, {name:'OPER — Labatt Food Service PPD', amount:2875.44, account:'2213 WestStar'}, {name:'FintechEFT — L&F Distributors CCD', amount:1500.0, account:'2213 WestStar'}, {name:'AdWords — Google CCD', amount:350.0, account:'2213 WestStar'}, {name:'LuLu — Kinective Fitness CCD', amount:1301.96, account:'2213 WestStar'}, {name:'Molton — Kinective Fitness CCD', amount:1361.73, account:'2213 WestStar'}, {name:'iClub Fees — ClubWorks MXM PPD', amount:150.0, account:'2213 WestStar'}, {name:'INTERNET — Amazon Business CCD', amount:973.98, account:'2213 WestStar'}, {name:'UTIL — One Gas Texas PPD', amount:761.99, account:'2213 WestStar'}, {name:'Account Analysis Fee', amount:48.01, account:'8152 WestStar'}], amd:[] },
@@ -2118,15 +2238,15 @@ function buildWeek9Snapshot() {
     accumFlow:179745.1, accumFlow2025:285205.35,
     transferAdjustments:{},
     closingBalances:{ kin:4546799.66, amd:3598305.54, combined:8145105.2,
-      accounts:{ '8152':346473.62, '2213':20856.17, '9753':18078.91, '0211':49795.19, '3472':4111595.77, '3775':55634.58, '7698':26057.69, '2085':3516613.27 } }
+      accounts:{ '8152':346473.62, '2213':20856.17, '9753':18078.91, '0211':49795.19, '3472':4111595.77,'6299':0,'6280':0, '3775':55634.58, '7698':26057.69, '2085':3516613.27 } }
   };
 }
 function buildWeek10Snapshot() {
   return {
     weekNum:10, label:'Feb 27 – Mar 5', saved:true,
-    openingBalances: { '8152':346473.62, '2213':20856.17, '9753':18078.91, '0211':49795.19, '3472':4111595.77, '3775':55634.58, '7698':26057.69, '2085':3516613.27 },
+    openingBalances: { '8152':346473.62, '2213':20856.17, '9753':18078.91, '0211':49795.19, '3472':4111595.77,'6299':0,'6280':0, '3775':55634.58, '7698':26057.69, '2085':3516613.27 },
     income: { total:350170.9, data: {
-      kin: { '8152':{ label:'8152 WestStar — Weekly Receipts', amount:214435.29 }, '2213':{ label:'2213 WestStar — Credit', amount:2.87 }, '9753':{ label:'9753 Wells Fargo — Income', amount:0.14 }, '3472':{ label:'3472 Money Market — Interest', amount:11176.78 }, '0211':{ label:'0211 Wells Fargo — Credit', amount:0 } },
+      kin: { '8152':{ label:'8152 El Paso — Income', amount:214435.29 }, '2213':{ label:'2213 El Paso — Expenses', amount:2.87 }, '9753':{ label:'9753 Wells Fargo — Income', amount:0.14 }, '3472':{ label:'3472 Money Market — Interest', amount:11176.78 }, '0211':{ label:'0211 Wells Fargo — Credit', amount:0 } ,'6299':{ label:'6299 Plano — Income', amount:0 },'6280':{ label:'6280 Plano — Expenses', amount:0 }},
       amd: { '3775':{ label:'3775 WestStar — Credit', amount:114996.21 }, '7698':{ label:'7698 Wells Fargo — Credit', amount:0.2 }, '2085':{ label:'2085 Money Market — Interest', amount:9559.41 } }
     }},
     expenses: { kin:[{name:'Kinective — 21 transactions', amount:234295.08, account:'8152 WestStar'}], amd:[{name:'AMD Capital — 3 transactions', amount:46340.54, account:'3775 WestStar'}] },
@@ -2134,15 +2254,15 @@ function buildWeek10Snapshot() {
     accumFlow:389434.15, accumFlow2025:421441.81,
     transferAdjustments:{},
     closingBalances:{ kin:4538119.66, amd:3676520.82, combined:8214640.48,
-      accounts:{ '8152':244153.71, '2213':100795.01, '9753':18079.05, '0211':45758.66, '3472':4122772.25, '3775':46290.25, '7698':26057.89, '2085':3526172.68 } }
+      accounts:{ '8152':244153.71, '2213':100795.01, '9753':18079.05, '0211':45758.66, '3472':4122772.25,'6299':0,'6280':0, '3775':46290.25, '7698':26057.89, '2085':3526172.68 } }
   };
 }
 function buildWeek11Snapshot() {
   return {
     weekNum:11, label:'Mar 6 – Mar 12', saved:true,
-    openingBalances: { '8152':244153.71, '2213':100795.01, '9753':18079.05, '0211':45758.66, '3472':4122772.25, '3775':46290.25, '7698':26057.89, '2085':3526172.68 },
+    openingBalances: { '8152':244153.71, '2213':100795.01, '9753':18079.05, '0211':45758.66, '3472':4122772.25,'6299':0,'6280':0, '3775':46290.25, '7698':26057.89, '2085':3526172.68 },
     income: { total:132302.31, data: {
-      kin: { '8152':{ label:'8152 WestStar — Weekly Receipts', amount:132266.48 }, '2213':{ label:'2213 WestStar — Credit', amount:35.83 }, '9753':{ label:'9753 Wells Fargo — Income', amount:0 }, '3472':{ label:'3472 Money Market — Interest', amount:0 }, '0211':{ label:'0211 Wells Fargo — Credit', amount:0 } },
+      kin: { '8152':{ label:'8152 El Paso — Income', amount:132266.48 }, '2213':{ label:'2213 El Paso — Expenses', amount:35.83 }, '9753':{ label:'9753 Wells Fargo — Income', amount:0 }, '3472':{ label:'3472 Money Market — Interest', amount:0 }, '0211':{ label:'0211 Wells Fargo — Credit', amount:0 } ,'6299':{ label:'6299 Plano — Income', amount:0 },'6280':{ label:'6280 Plano — Expenses', amount:0 }},
       amd: { '3775':{ label:'3775 WestStar — Credit', amount:0 }, '7698':{ label:'7698 Wells Fargo — Credit', amount:0 }, '2085':{ label:'2085 Money Market — Interest', amount:0 } }
     }},
     expenses: { kin:[{name:'Kinective — 18 transactions', amount:28720.67, account:'8152 WestStar'}], amd:[{name:'Construction — Plano (AMD) Payment', amount:1064800.0, account:'3775 WestStar'}] },
@@ -2150,15 +2270,15 @@ function buildWeek11Snapshot() {
     accumFlow:493015.79, accumFlow2025:525575.02,
     transferAdjustments:{},
     closingBalances:{ kin:4635140.32, amd:2533720.82, combined:7168861.14,
-      accounts:{ '8152':176415.19, '2213':172172.67, '9753':18079.05, '0211':45701.16, '3472':4222772.25, '3775':46290.68, '7698':26057.89, '2085':2461372.25 } }
+      accounts:{ '8152':176415.19, '2213':172172.67, '9753':18079.05, '0211':45701.16, '3472':4222772.25,'6299':0,'6280':0, '3775':46290.68, '7698':26057.89, '2085':2461372.25 } }
   };
 }
 function buildWeek12Snapshot() {
   return {
     weekNum:12, label:'Mar 13 – Mar 19', saved:true,
-    openingBalances: { '8152':176415.19, '2213':172172.67, '9753':18079.05, '0211':45701.16, '3472':4222772.25, '3775':46290.68, '7698':26057.89, '2085':2461372.25 },
+    openingBalances: { '8152':176415.19, '2213':172172.67, '9753':18079.05, '0211':45701.16, '3472':4222772.25,'6299':0,'6280':0, '3775':46290.68, '7698':26057.89, '2085':2461372.25 },
     income: { total:118994.43, data: {
-      kin: { '8152':{ label:'8152 WestStar — Weekly Receipts', amount:118717.9 }, '2213':{ label:'2213 WestStar — Credit', amount:51.6 }, '9753':{ label:'9753 Wells Fargo — Income', amount:0 }, '3472':{ label:'3472 Money Market — Interest', amount:0 }, '0211':{ label:'0211 Wells Fargo — Credit', amount:76.0 } },
+      kin: { '8152':{ label:'8152 El Paso — Income', amount:118717.9 }, '2213':{ label:'2213 El Paso — Expenses', amount:51.6 }, '9753':{ label:'9753 Wells Fargo — Income', amount:0 }, '3472':{ label:'3472 Money Market — Interest', amount:0 }, '0211':{ label:'0211 Wells Fargo — Credit', amount:76.0 } ,'6299':{ label:'6299 Plano — Income', amount:0 },'6280':{ label:'6280 Plano — Expenses', amount:0 }},
       amd: { '3775':{ label:'3775 WestStar — Credit', amount:0 }, '7698':{ label:'7698 Wells Fargo — Credit', amount:148.93 }, '2085':{ label:'2085 Money Market — Interest', amount:0 } }
     }},
     expenses: { kin:[{name:'Kinective — 16 transactions', amount:160975.64, account:'8152 WestStar'}], amd:[{name:'AMD Capital — 3 transactions', amount:9382.79, account:'3775 WestStar'}] },
@@ -2166,15 +2286,16 @@ function buildWeek12Snapshot() {
     accumFlow:473385.65, accumFlow2025:524073.14,
     transferAdjustments:{},
     closingBalances:{ kin:4593010.18, amd:2524486.96, combined:7117497.14,
-      accounts:{ '8152':193466.42, '2213':112915.3, '9753':18079.05, '0211':45777.16, '3472':4222772.25, '3775':36907.89, '7698':26206.82, '2085':2461372.25 } }
+      accounts:{ '8152':193466.42, '2213':112915.3, '9753':18079.05, '0211':45777.16, '3472':4222772.25,'6299':0,'6280':0, '3775':36907.89, '7698':26206.82, '2085':2461372.25 } }
   };
 }function snapshotCurrentUI() {
   const week = allWeeks[currentWeekNum] || { weekNum: currentWeekNum };
 
   week.label    = WEEK_DATES[currentWeekNum] || 'Week ' + currentWeekNum;
   week.expenses = {
-    kin: JSON.parse(JSON.stringify(kinExpenses)),
-    amd: JSON.parse(JSON.stringify(amdExpenses))
+    kin:   JSON.parse(JSON.stringify(kinExpenses)),
+    plano: JSON.parse(JSON.stringify(planoExpenses)),
+    amd:   JSON.parse(JSON.stringify(amdExpenses))
   };
   week.income = {
     total: getIncomeTotal(),
@@ -2189,7 +2310,7 @@ function buildWeek12Snapshot() {
   const cbComb = parseFmt(document.getElementById('cb-combined')?.textContent);
 
   const acctClose = {};
-  ['8152','2213','9753','0211','3472','3775','7698','2085'].forEach(k => {
+  ['8152','2213','9753','0211','3472','6299','6280','3775','7698','2085'].forEach(k => {
     const el = document.getElementById('acct-close-' + k);
     acctClose[k] = el ? parseFmt(el.textContent) : 0;
   });
@@ -2220,7 +2341,7 @@ function buildWeek12Snapshot() {
 }
 
 function readOpeningBalancesFromDOM() {
-  const ids = ['8152','2213','9753','0211','3472','3775','7698','2085'];
+  const ids = ['8152','2213','9753','0211','3472','6299','6280','3775','7698','2085'];
   const ob  = {};
   ids.forEach(id => {
     const el = document.getElementById('ob-' + id);
@@ -2317,6 +2438,8 @@ async function createNextWeek() {
       '9753':    pc.accounts?.['9753']    || 0,
       '0211':    pc.accounts?.['0211']    || 0,
       '3472':    pc.accounts?.['3472']    || 0,
+      '6299':    pc.accounts?.['6299']    || 0,
+      '6280':    pc.accounts?.['6280']    || 0,
       '3775':    pc.accounts?.['3775']    || 0,
       '7698':    pc.accounts?.['7698']    || 0,
       '2085':    pc.accounts?.['2085']    || 0
@@ -2390,10 +2513,10 @@ function loadWeekIntoUI(weekNum, readOnly) {
 
   // Opening balances
   const ob = week.openingBalances || {};
-  ['8152','2213','9753','0211','3472','3775','7698','2085'].forEach(id => {
+  ['8152','2213','9753','0211','3472','6299','6280','3775','7698','2085'].forEach(id => {
     if (ob[id] !== undefined) setEl('ob-' + id, fmt(ob[id]));
   });
-  const kinOB = (ob['8152']||0)+(ob['2213']||0)+(ob['9753']||0)+(ob['0211']||0)+(ob['3472']||0);
+  const kinOB = (ob['8152']||0)+(ob['2213']||0)+(ob['9753']||0)+(ob['0211']||0)+(ob['3472']||0)+(ob['6299']||0)+(ob['6280']||0);
   const amdOB = (ob['3775']||0)+(ob['7698']||0)+(ob['2085']||0);
   setEl('ob-kin-total', fmt(kinOB));
   setEl('ob-kin-pill',  fmt(kinOB));
@@ -2410,11 +2533,13 @@ function loadWeekIntoUI(weekNum, readOnly) {
   }
   // Always ensure new accounts added after save are present
   const defaultKin = {
-    '8152': { label: '8152 WestStar — Weekly Receipts', amount: 0 },
-    '2213': { label: '2213 WestStar — Credit',          amount: 0 },
+    '8152': { label: '8152 El Paso — Income', amount: 0 },
+    '2213': { label: '2213 El Paso — Expenses',          amount: 0 },
     '9753': { label: '9753 Wells Fargo — Income',       amount: 0 },
     '3472': { label: '3472 Money Market — Interest',    amount: 0 },
     '0211': { label: '0211 Wells Fargo — Credit',       amount: 0 },
+    '6299': { label: '6299 Plano — Income',               amount: 0 },
+    '6280': { label: '6280 Plano — Expenses',             amount: 0 },
   };
   const defaultAmd = {
     '3775':   { label: '3775 WestStar — Credit',        amount: 0 },
@@ -2426,10 +2551,12 @@ function loadWeekIntoUI(weekNum, readOnly) {
   renderIncome();
 
   // Expenses
-  kinExpenses.length = 0;
-  amdExpenses.length = 0;
-  (week.expenses?.kin || []).forEach(e => kinExpenses.push(e));
-  (week.expenses?.amd || []).forEach(e => amdExpenses.push(e));
+  kinExpenses.length   = 0;
+  planoExpenses.length = 0;
+  amdExpenses.length   = 0;
+  (week.expenses?.kin   || []).forEach(e => kinExpenses.push(e));
+  (week.expenses?.plano || []).forEach(e => planoExpenses.push(e));
+  (week.expenses?.amd   || []).forEach(e => amdExpenses.push(e));
   renderExpenses();
 
   // CAPEX
@@ -2462,14 +2589,18 @@ function loadWeekIntoUI(weekNum, readOnly) {
   setEl('cb-amd',      fmt(cb.amd      || 0));
   setEl('cb-combined', fmt(cb.combined || 0));
   if (cb.accounts) {
-    ['8152','2213','9753','0211','3472','3775','7698','2085'].forEach(k => {
+    ['8152','2213','9753','0211','3472','6299','6280','3775','7698','2085'].forEach(k => {
       const el = document.getElementById('acct-close-' + k);
       if (el && cb.accounts[k] !== undefined) el.textContent = fmt(cb.accounts[k]);
     });
     const kinC = (cb.accounts['8152']||0)+(cb.accounts['2213']||0)+(cb.accounts['9753']||0)+(cb.accounts['0211']||0)+(cb.accounts['3472']||0);
     const amdC = (cb.accounts['3775']||0)+(cb.accounts['7698']||0)+(cb.accounts['2085']||0);
-    const cks = document.getElementById('cb-comb-kin-sub'); if(cks) cks.textContent = fmt(kinC);
-    const cas = document.getElementById('cb-comb-amd-sub'); if(cas) cas.textContent = fmt(amdC);
+    const planoC2 = (cb.accounts['6299']||0)+(cb.accounts['6280']||0);
+    const cks = document.getElementById('cb-comb-kin-sub'); if(cks){cks.textContent=fmt(kinC-planoC2);cks.style.color=(kinC-planoC2)<0?'#f87171':'#4ade80';}
+    const cps2 = document.getElementById('cb-comb-plano-sub'); if(cps2){cps2.textContent=fmt(planoC2);cps2.style.color=planoC2<0?'#f87171':planoC2>0?'#4ade80':'rgba(255,255,255,0.85)';}
+    const cas = document.getElementById('cb-comb-amd-sub'); if(cas){cas.textContent=fmt(amdC);cas.style.color=amdC<0?'#f87171':'#4ade80';}
+    const cbCombSnap = document.getElementById('cb-combined'); if(cbCombSnap){const t=kinC+amdC;cbCombSnap.textContent=fmt(t);cbCombSnap.style.color=t<0?'#f87171':'#F0D080';}
+    const cbPlanoSnap = document.getElementById('cb-plano'); if(cbPlanoSnap) cbPlanoSnap.textContent=fmt(planoC2);
   }
   if (incomeData.amd?.['amd-mm'] !== undefined) {
     incomeData.amd['2085'] = incomeData.amd['amd-mm'];
@@ -2503,6 +2634,8 @@ async function rippleForward(fromWeekNum) {
       '9753':    pc.accounts?.['9753']    || 0,
       '0211':    pc.accounts?.['0211']    || 0,
       '3472':    pc.accounts?.['3472']    || 0,
+      '6299':    pc.accounts?.['6299']    || 0,
+      '6280':    pc.accounts?.['6280']    || 0,
       '3775':    pc.accounts?.['3775']    || 0,
       '7698':    pc.accounts?.['7698']    || 0,
       '2085':    pc.accounts?.['2085']    || 0
@@ -2613,9 +2746,9 @@ if (document.readyState === 'loading') {
 function buildWeek13Snapshot() {
   return {
     weekNum:13, label:'Mar 20 – Mar 26', saved:true,
-    openingBalances: { '8152':193466.42,'2213':112915.30,'9753':18079.05,'0211':45777.16,'3472':4222772.25,'3775':36907.89,'7698':26206.82,'2085':2461372.25 },
+    openingBalances: { '8152':193466.42,'2213':112915.30,'9753':18079.05,'0211':45777.16,'3472':4222772.25,'6299':0,'6280':0,'3775':36907.89,'7698':26206.82,'2085':2461372.25 },
     income: { total: 129606.52, data: {
-      kin: { '8152':{ label:'8152 WestStar — Weekly Receipts', amount:129567.16 }, '2213':{ label:'2213 WestStar — Credit', amount:38.66 }, '9753':{ label:'9753 Wells Fargo — Income', amount:0 }, '3472':{ label:'3472 Money Market — Interest', amount:0 }, '0211':{ label:'0211 Wells Fargo — Credit', amount:0 } },
+      kin: { '8152':{ label:'8152 El Paso — Income', amount:129567.16 }, '2213':{ label:'2213 El Paso — Expenses', amount:38.66 }, '9753':{ label:'9753 Wells Fargo — Income', amount:0 }, '3472':{ label:'3472 Money Market — Interest', amount:0 }, '0211':{ label:'0211 Wells Fargo — Credit', amount:0 } ,'6299':{ label:'6299 Plano — Income', amount:0 },'6280':{ label:'6280 Plano — Expenses', amount:0 }},
       amd: { '3775':{ label:'3775 WestStar — Credit', amount:0.70 }, '7698':{ label:'7698 Wells Fargo — Credit', amount:0 }, '2085':{ label:'2085 Money Market — Interest', amount:0 } }
     }},
     expenses: { kin:[{ name:'Kinective — 14 transactions', amount:37200.59, account:'8152 WestStar' }], amd:[{ name:'AMD Capital — 1 transaction', amount:0.70, account:'3775 WestStar' }] },
@@ -2623,7 +2756,7 @@ function buildWeek13Snapshot() {
     accumFlow:565826.71, accumFlow2025:628267.94,
     transferAdjustments:{},
     closingBalances:{ kin:4685415.41, amd:2524486.96, combined:7209902.37,
-      accounts:{ '8152':123033.58,'2213':175902.37,'9753':18079.05,'0211':45628.16,'3472':4322772.25,'3775':36907.89,'7698':26206.82,'2085':2461372.25 }
+      accounts:{ '8152':123033.58,'2213':175902.37,'9753':18079.05,'0211':45628.16,'3472':4322772.25,'6299':0,'6280':0,'3775':36907.89,'7698':26206.82,'2085':2461372.25 }
     }
   };
 }
@@ -2632,9 +2765,9 @@ function buildWeek13Snapshot() {
 function buildWeek14Snapshot() {
   return {
     weekNum:14, label:'Mar 27 – Apr 2', saved:false,
-    openingBalances: { '8152':123033.58,'2213':175902.37,'9753':18079.05,'0211':45628.16,'3472':4322772.25,'3775':36907.89,'7698':26206.82,'2085':2461372.25 },
+    openingBalances: { '8152':123033.58,'2213':175902.37,'9753':18079.05,'0211':45628.16,'3472':4322772.25,'6299':0,'6280':0,'3775':36907.89,'7698':26206.82,'2085':2461372.25 },
     income: { total:0, data: {
-      kin: { '8152':{ label:'8152 WestStar — Weekly Receipts', amount:0 }, '2213':{ label:'2213 WestStar — Credit', amount:0 }, '9753':{ label:'9753 Wells Fargo — Income', amount:0 }, '3472':{ label:'3472 Money Market — Interest', amount:0 }, '0211':{ label:'0211 Wells Fargo — Credit', amount:0 } },
+      kin: { '8152':{ label:'8152 El Paso — Income', amount:0 }, '2213':{ label:'2213 El Paso — Expenses', amount:0 }, '9753':{ label:'9753 Wells Fargo — Income', amount:0 }, '3472':{ label:'3472 Money Market — Interest', amount:0 }, '0211':{ label:'0211 Wells Fargo — Credit', amount:0 } ,'6299':{ label:'6299 Plano — Income', amount:0 },'6280':{ label:'6280 Plano — Expenses', amount:0 }},
       amd: { '3775':{ label:'3775 WestStar — Credit', amount:0 }, '7698':{ label:'7698 Wells Fargo — Credit', amount:0 }, '2085':{ label:'2085 Money Market — Interest', amount:0 } }
     }},
     expenses:{ kin:[], amd:[] },
@@ -2642,7 +2775,7 @@ function buildWeek14Snapshot() {
     accumFlow:0, accumFlow2025:0,
     transferAdjustments:{},
     closingBalances:{ kin:4685415.41, amd:2524486.96, combined:7209902.37,
-      accounts:{ '8152':123033.58,'2213':175902.37,'9753':18079.05,'0211':45628.16,'3472':4322772.25,'3775':36907.89,'7698':26206.82,'2085':2461372.25 }
+      accounts:{ '8152':123033.58,'2213':175902.37,'9753':18079.05,'0211':45628.16,'3472':4322772.25,'6299':0,'6280':0,'3775':36907.89,'7698':26206.82,'2085':2461372.25 }
     }
   };
 
@@ -2720,6 +2853,7 @@ function parseXLS(buffer, filename) {
     const isTransitCredit = descUp.includes('TRANSIT CREDIT');
 
     // Transfer = real cash movement between accounts (balance-only, never P&L)
+    // Transfer From 8152 to 6280 = inter-account funding, not income
     const isTransfer = descUp.includes('TRANSFER FROM') || descUp.includes('TRANSFER TO') ||
                        (isTransitDebit  && !hasCheck) ||   // no check = real inter-account transfer
                        (isTransitCredit && !hasCheck) ||
@@ -2774,8 +2908,9 @@ function applyToReport(acctNum, expenses, incomeItems, transfers, filename) {
   window.transferAdjustments[normAcct] = xferNet;
   if (acctNum !== normAcct) window.transferAdjustments[acctNum] = xferNet;
 
-  const isKin = ['2213','8152','9753','0211','3472'].includes(acctNum);
-  const arr = isKin ? kinExpenses : amdExpenses;
+  const isKin   = ['2213','8152','9753','0211','3472'].includes(acctNum);
+  const isPlano = ['6280','6299'].includes(acctNum);
+  const arr = isKin ? kinExpenses : isPlano ? planoExpenses : amdExpenses;
   for (let i = arr.length-1; i >= 0; i--) {
     if (arr[i].account && arr[i].account.startsWith(acctNum)) arr.splice(i,1);
   }
@@ -2787,7 +2922,9 @@ function applyToReport(acctNum, expenses, incomeItems, transfers, filename) {
   const incomeTotal = incomeItems.reduce((s,x)=>s+x.amount,0);
   if (isKin && incomeData.kin[acctNum] !== undefined) {
     incomeData.kin[acctNum].amount = incomeTotal;
-  } else if (!isKin && incomeData.amd[acctNum] !== undefined) {
+  } else if (isPlano && incomeData.kin[acctNum] !== undefined) {
+    incomeData.kin[acctNum].amount = incomeTotal;
+  } else if (!isKin && !isPlano && incomeData.amd[acctNum] !== undefined) {
     incomeData.amd[acctNum].amount = incomeTotal;
   }
 
@@ -2810,7 +2947,7 @@ function updateHeroKPIs() {
   let cbKin = 0, cbAmd = 0;
   if (week) {
     const ob = week.openingBalances || {};
-    cbKin = (ob['8152']||0)+(ob['2213']||0)+(ob['9753']||0)+(ob['0211']||0)+(ob['3472']||0) + kinInc - kinExp;
+    cbKin = (ob['8152']||0)+(ob['2213']||0)+(ob['9753']||0)+(ob['0211']||0)+(ob['3472']||0)+(ob['6299']||0)+(ob['6280']||0) + kinInc - kinExp;
     cbAmd = (ob['3775']||0)+(ob['7698']||0)+(ob['2085']||0) + amdInc - amdExp;
   }
 
@@ -2988,8 +3125,8 @@ function downloadExcel() {
     // ── 01 Opening Balances ─────────────────────────────────────────────
     SEC('01   OPENING BALANCES — Prior Week Closing');
     HDR('Account','Entity','','Amount','');
-    DR('8152 WestStar — Income',     'Kinective','',ob.k8152,false);
-    DR('2213 WestStar — Expenses',   'Kinective','',ob.k2213,true);
+    DR('8152 El Paso — Income',     'Kinective','',ob.k8152,false);
+    DR('2213 El Paso — Expenses',   'Kinective','',ob.k2213,true);
     DR('9753 Wells Fargo — Income',  'Kinective','',ob.k9753,false);
     DR('0211 Wells Fargo — Expenses','Kinective','',ob.k0211,true);
     DR('3472 Investment — 4.09% Int.','Kinective','',ob.k3472,false);
