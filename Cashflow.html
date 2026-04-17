@@ -1133,16 +1133,29 @@
         </div>
       </div>
 
-      <!-- CAPEX BLOCK -->
+      <!-- CAPEX & FINANCING BLOCK -->
       <div class="analytic-block" id="capex-block">
-        <div class="analytic-title">Capital Expenditures (CAPEX)</div>
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;">
+          <div class="analytic-title" style="margin-bottom:0;">Capital Expenditures &amp; Financing Activities</div>
+        </div>
+
+        <!-- Tab toggles: CAPEX / Financing -->
+        <div style="display:flex; gap:6px; margin-bottom:12px;">
+          <button id="tab-capex" onclick="switchCFTab('capex')"
+            style="font-family:'DM Mono',monospace;font-size:9px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;padding:4px 12px;border-radius:20px;cursor:pointer;border:1px solid var(--gold);background:var(--gold);color:var(--navy);">CAPEX</button>
+          <button id="tab-financing" onclick="switchCFTab('financing')"
+            style="font-family:'DM Mono',monospace;font-size:9px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;padding:4px 12px;border-radius:20px;cursor:pointer;border:1px solid var(--gray-300);background:transparent;color:var(--gray-500);">Financing</button>
+        </div>
+
+        <!-- Column headers -->
         <div style="display:flex; justify-content:flex-end; gap:8px; margin-bottom:8px; align-items:center;">
-          <span style="font-family:'DM Mono',monospace; font-size:8px; letter-spacing:0.1em; text-transform:uppercase; color:var(--gray-400); margin-right:4px;">Entity</span>
+          <span style="font-family:'DM Mono',monospace;font-size:8px;letter-spacing:0.1em;text-transform:uppercase;color:var(--gray-400);margin-right:4px;">Entity</span>
           <span class="analytic-col-hdr">2026 YTD</span>
           <span style="width:28px;"></span>
         </div>
-        <div id="capex-rows">
 
+        <!-- CAPEX rows -->
+        <div id="capex-rows">
           <div class="analytic-row capex-item">
             <span class="analytic-name editable" contenteditable="true">Construction — Plano (AMD)</span>
             <div class="analytic-vals" style="gap:8px; align-items:center;">
@@ -1151,25 +1164,22 @@
               <span class="comment-btn" title="Add comment" onclick="openComment(this)">💬</span>
             </div>
           </div>
-
           <div class="analytic-row capex-item">
             <span class="analytic-name editable" contenteditable="true">Fitness Equipment (El Paso)</span>
             <div class="analytic-vals" style="gap:8px; align-items:center;">
-              <span class="capex-entity-toggle" data-entity="kin" onclick="toggleCapexEntity(this)" title="Click to switch entity">KIN</span>
+              <span class="capex-entity-toggle" data-entity="kin" onclick="toggleCapexEntity(this)" title="Click to switch entity">KIN EP</span>
               <span class="analytic-val capex-amount editable" contenteditable="true" data-comment="" oninput="recalcCapex()" onblur="capexBlur(this)">—</span>
               <span class="comment-btn" title="Add comment" onclick="openComment(this)">💬</span>
             </div>
           </div>
-
           <div class="analytic-row capex-item">
             <span class="analytic-name editable" contenteditable="true">Sauna Equipment (El Paso)</span>
             <div class="analytic-vals" style="gap:8px; align-items:center;">
-              <span class="capex-entity-toggle" data-entity="kin" onclick="toggleCapexEntity(this)" title="Click to switch entity">KIN</span>
+              <span class="capex-entity-toggle" data-entity="kin" onclick="toggleCapexEntity(this)" title="Click to switch entity">KIN EP</span>
               <span class="analytic-val capex-amount editable" contenteditable="true" data-comment="" oninput="recalcCapex()" onblur="capexBlur(this)">—</span>
               <span class="comment-btn" title="Add comment" onclick="openComment(this)">💬</span>
             </div>
           </div>
-
           <div class="analytic-row capex-item">
             <span class="analytic-name editable" contenteditable="true">Land — Plano (AMD)</span>
             <div class="analytic-vals" style="gap:8px; align-items:center;">
@@ -1178,29 +1188,65 @@
               <span class="comment-btn" title="Add comment" onclick="openComment(this)">💬</span>
             </div>
           </div>
-
         </div>
 
-        <!-- Total rows by entity -->
-        <div class="analytic-row" style="margin-top:4px; border-top:1px solid var(--gray-200); padding-top:8px;">
-          <span class="analytic-name" style="font-size:10px; color:var(--gray-500);">Kinective CAPEX</span>
-          <div class="analytic-vals" style="gap:8px;">
-            <span class="analytic-val" style="font-weight:600; min-width:120px; text-align:right; font-size:11px;" id="capex-kin-display">—</span>
-            <span style="width:28px;"></span>
+        <!-- Financing rows -->
+        <div id="financing-rows" style="display:none;">
+          <div class="analytic-row financing-item">
+            <span class="analytic-name editable" contenteditable="true">Loan Payment — Plano</span>
+            <div class="analytic-vals" style="gap:8px; align-items:center;">
+              <span class="capex-entity-toggle" data-entity="amd" onclick="toggleCapexEntity(this)" title="Click to switch entity">AMD</span>
+              <span class="analytic-val financing-amount editable" contenteditable="true" oninput="recalcFinancing()" onblur="recalcFinancing()">—</span>
+              <span class="comment-btn" title="Add comment" onclick="openComment(this)">💬</span>
+            </div>
+          </div>
+          <div class="analytic-row financing-item">
+            <span class="analytic-name editable" contenteditable="true">Loan Payment — El Paso</span>
+            <div class="analytic-vals" style="gap:8px; align-items:center;">
+              <span class="capex-entity-toggle" data-entity="kin" onclick="toggleCapexEntity(this)" title="Click to switch entity">KIN EP</span>
+              <span class="analytic-val financing-amount editable" contenteditable="true" oninput="recalcFinancing()" onblur="recalcFinancing()">—</span>
+              <span class="comment-btn" title="Add comment" onclick="openComment(this)">💬</span>
+            </div>
+          </div>
+          <div class="analytic-row financing-item">
+            <span class="analytic-name editable" contenteditable="true">Loan Payment — Plano (KIN)</span>
+            <div class="analytic-vals" style="gap:8px; align-items:center;">
+              <span class="capex-entity-toggle" data-entity="plano" onclick="toggleCapexEntity(this)" title="Click to switch entity">KIN PL</span>
+              <span class="analytic-val financing-amount editable" contenteditable="true" oninput="recalcFinancing()" onblur="recalcFinancing()">—</span>
+              <span class="comment-btn" title="Add comment" onclick="openComment(this)">💬</span>
+            </div>
           </div>
         </div>
-        <div class="analytic-row" style="margin-top:2px;">
-          <span class="analytic-name" style="font-size:10px; color:var(--gray-500);">AMD Capital CAPEX</span>
-          <div class="analytic-vals" style="gap:8px;">
-            <span class="analytic-val" style="font-weight:600; min-width:120px; text-align:right; font-size:11px;" id="capex-amd-display">—</span>
-            <span style="width:28px;"></span>
+
+        <!-- Totals by entity -->
+        <div style="margin-top:8px; border-top:1px solid var(--gray-200); padding-top:8px;">
+          <div class="analytic-row" style="margin-top:2px;">
+            <span class="analytic-name" style="font-size:10px; color:var(--gray-500);">KIN El Paso</span>
+            <div class="analytic-vals" style="gap:8px;">
+              <span class="analytic-val" style="font-weight:600; min-width:120px; text-align:right; font-size:11px;" id="capex-kin-display">—</span>
+              <span style="width:28px;"></span>
+            </div>
           </div>
-        </div>
-        <div class="analytic-row total-row" style="margin-top:4px;">
-          <span class="analytic-name">Total CAPEX</span>
-          <div class="analytic-vals" style="gap:8px;">
-            <span class="analytic-val" style="font-weight:700; min-width:120px; text-align:right;" id="capex-total-display">—</span>
-            <span style="width:28px;"></span>
+          <div class="analytic-row" style="margin-top:2px;">
+            <span class="analytic-name" style="font-size:10px; color:var(--gray-500);">KIN Plano</span>
+            <div class="analytic-vals" style="gap:8px;">
+              <span class="analytic-val" style="font-weight:600; min-width:120px; text-align:right; font-size:11px;" id="capex-plano-display">—</span>
+              <span style="width:28px;"></span>
+            </div>
+          </div>
+          <div class="analytic-row" style="margin-top:2px;">
+            <span class="analytic-name" style="font-size:10px; color:var(--gray-500);">AMD Capital</span>
+            <div class="analytic-vals" style="gap:8px;">
+              <span class="analytic-val" style="font-weight:600; min-width:120px; text-align:right; font-size:11px;" id="capex-amd-display">—</span>
+              <span style="width:28px;"></span>
+            </div>
+          </div>
+          <div class="analytic-row total-row" style="margin-top:4px;">
+            <span class="analytic-name" id="capex-total-label">Total CAPEX &amp; Financing</span>
+            <div class="analytic-vals" style="gap:8px;">
+              <span class="analytic-val" style="font-weight:700; min-width:120px; text-align:right;" id="capex-total-display">—</span>
+              <span style="width:28px;"></span>
+            </div>
           </div>
         </div>
       </div>
@@ -1244,6 +1290,11 @@
   }
   .capex-entity-toggle[data-entity="kin"]:hover {
     background: rgba(201,168,76,0.28);
+  }
+  .capex-entity-toggle[data-entity="plano"] {
+    background: rgba(59,130,246,0.12);
+    color: #60a5fa;
+    border: 1px solid rgba(59,130,246,0.3);
   }
   .capex-entity-toggle[data-entity="amd"] {
     background: rgba(59,130,246,0.12);
@@ -1932,15 +1983,63 @@ function capexBlur(el) {
   recalcCapex();
 }
 
+function switchCFTab(tab) {
+  const capexRows    = document.getElementById('capex-rows');
+  const finRows      = document.getElementById('financing-rows');
+  const tabCapex     = document.getElementById('tab-capex');
+  const tabFinancing = document.getElementById('tab-financing');
+  const totalLabel   = document.getElementById('capex-total-label');
+  if (tab === 'capex') {
+    capexRows.style.display    = '';
+    finRows.style.display      = 'none';
+    tabCapex.style.background  = 'var(--gold)';
+    tabCapex.style.color       = 'var(--navy)';
+    tabCapex.style.border      = '1px solid var(--gold)';
+    tabFinancing.style.background = 'transparent';
+    tabFinancing.style.color   = 'var(--gray-500)';
+    tabFinancing.style.border  = '1px solid var(--gray-300)';
+    if (totalLabel) totalLabel.textContent = 'Total CAPEX & Financing';
+  } else {
+    capexRows.style.display    = 'none';
+    finRows.style.display      = '';
+    tabFinancing.style.background = 'var(--gold)';
+    tabFinancing.style.color   = 'var(--navy)';
+    tabFinancing.style.border  = '1px solid var(--gold)';
+    tabCapex.style.background  = 'transparent';
+    tabCapex.style.color       = 'var(--gray-500)';
+    tabCapex.style.border      = '1px solid var(--gray-300)';
+    if (totalLabel) totalLabel.textContent = 'Total Financing Activities';
+  }
+  recalcFinancing();
+}
+
+function recalcFinancing() {
+  const items = document.querySelectorAll('#financing-rows .financing-amount');
+  let kinEP = 0, kinPL = 0, amd = 0;
+  items.forEach(el => {
+    const row    = el.closest('.financing-item');
+    const entity = row?.querySelector('.capex-entity-toggle')?.dataset?.entity || 'amd';
+    const val    = parseFloat(el.textContent.replace(/[$,—()]/g,'').trim()) || 0;
+    if (entity === 'kin')   kinEP += val;
+    else if (entity === 'plano') kinPL += val;
+    else amd += val;
+  });
+  const total = kinEP + kinPL + amd;
+  // Add to existing CAPEX totals
+  recalcCapex();
+}
+
 function toggleCapexEntity(pill) {
-  const current = pill.dataset.entity;
-  pill.dataset.entity = current === 'kin' ? 'amd' : 'kin';
-  pill.textContent    = pill.dataset.entity === 'kin' ? 'KIN' : 'AMD';
+  const cycle  = { 'kin':'plano', 'plano':'amd', 'amd':'kin' };
+  const labels = { 'kin':'KIN EP', 'plano':'KIN PL', 'amd':'AMD' };
+  const next   = cycle[pill.dataset.entity] || 'kin';
+  pill.dataset.entity = next;
+  pill.textContent    = labels[next];
   recalcCapex();
 }
 
 function recalcCapex() {
-  let kinTotal = 0, amdTotal = 0;
+  let kinTotal = 0, planoTotal = 0, amdTotal = 0;
 
   document.querySelectorAll(".capex-item").forEach(row => {
     const amtEl    = row.querySelector('.capex-amount');
@@ -1950,24 +2049,38 @@ function recalcCapex() {
     const n   = parseFloat(raw);
     if (isNaN(n) || n <= 0) return;
     const entity = entityEl ? entityEl.dataset.entity : 'kin';
-    if (entity === 'amd') amdTotal += n;
-    else                  kinTotal += n;
+    if (entity === 'amd')        amdTotal   += n;
+    else if (entity === 'plano') planoTotal += n;
+    else                         kinTotal   += n;
   });
 
-  const total    = kinTotal + amdTotal;
+  // Add financing activities
+  document.querySelectorAll(".financing-amount").forEach(el => {
+    const row    = el.closest('.financing-item');
+    const entity = row?.querySelector('.capex-entity-toggle')?.dataset?.entity || 'amd';
+    const n      = parseFloat(el.textContent.replace(/[$,—()]/g,'').trim()) || 0;
+    if (entity === 'amd')        amdTotal   += n;
+    else if (entity === 'plano') planoTotal += n;
+    else                         kinTotal   += n;
+  });
+
+  const total    = kinTotal + planoTotal + amdTotal;
   const hasAny   = total > 0;
-  capex2026      = total; // combined — used by hero / combined OCF
+  capex2026      = total;
 
   // Store per-entity for updateTotals()
-  window.capexKin = kinTotal;
-  window.capexAmd = amdTotal;
+  window.capexKin   = kinTotal;
+  window.capexPlano = planoTotal;
+  window.capexAmd   = amdTotal;
 
   const dispTotal = document.getElementById('capex-total-display');
   const dispKin   = document.getElementById('capex-kin-display');
+  const dispPlano = document.getElementById('capex-plano-display');
   const dispAmd   = document.getElementById('capex-amd-display');
-  if (dispTotal) dispTotal.textContent = hasAny          ? fmt(total)    : '—';
-  if (dispKin)   dispKin.textContent   = kinTotal > 0    ? fmt(kinTotal) : '—';
-  if (dispAmd)   dispAmd.textContent   = amdTotal > 0    ? fmt(amdTotal) : '—';
+  if (dispTotal) dispTotal.textContent = hasAny         ? fmt(total)      : '—';
+  if (dispKin)   dispKin.textContent   = kinTotal > 0   ? fmt(kinTotal)   : '—';
+  if (dispPlano) dispPlano.textContent = planoTotal > 0 ? fmt(planoTotal) : '—';
+  if (dispAmd)   dispAmd.textContent   = amdTotal > 0   ? fmt(amdTotal)   : '—';
 
   updateTotals();
 }
@@ -2331,9 +2444,20 @@ function buildWeek12Snapshot() {
     const name   = item.querySelector('.analytic-name')?.textContent?.trim() || '';
     const amtRaw = item.querySelector('.capex-amount')?.textContent?.replace(/[$,()]/g,'').trim();
     const amt    = parseFloat(amtRaw) || 0;
-    week.capexItems.push({ name, amount: amt });
+    const entity = item.querySelector('.capex-entity-toggle')?.dataset?.entity || 'kin';
+    week.capexItems.push({ name, amount: amt, entity });
   });
   week.capexYTD = capex2026;
+
+  // Financing items
+  week.financingItems = [];
+  document.querySelectorAll('#financing-rows .financing-item').forEach(item => {
+    const name   = item.querySelector('.analytic-name')?.textContent?.trim() || '';
+    const amtRaw = item.querySelector('.financing-amount')?.textContent?.replace(/[$,—()]/g,'').trim();
+    const amt    = parseFloat(amtRaw) || 0;
+    const entity = item.querySelector('.capex-entity-toggle')?.dataset?.entity || 'amd';
+    week.financingItems.push({ name, amount: amt, entity });
+  });
 
   // Accumulated flow
   week.accumFlow      = parseFmt(document.getElementById('accum-2026')?.textContent || '0');
@@ -2568,23 +2692,40 @@ function loadWeekIntoUI(weekNum, readOnly) {
     const items = capexRows.querySelectorAll('.capex-item');
     week.capexItems.forEach((ci, i) => {
       if (!items[i]) return;
-      const nameEl = items[i].querySelector('.analytic-name');
-      const amtEl  = items[i].querySelector('.capex-amount');
+      const nameEl   = items[i].querySelector('.analytic-name');
+      const amtEl    = items[i].querySelector('.capex-amount');
+      const entityEl = items[i].querySelector('.capex-entity-toggle');
+      const labels   = { 'kin':'KIN EP', 'plano':'KIN PL', 'amd':'AMD' };
       if (nameEl) nameEl.textContent = ci.name;
-      if (amtEl) {
-        amtEl.textContent = ci.amount > 0 ? fmt(ci.amount) : '—';
-        amtEl.classList.toggle('muted', ci.amount === 0);
-      }
+      if (amtEl)  { amtEl.textContent = ci.amount > 0 ? fmt(ci.amount) : '—'; amtEl.classList.toggle('muted', ci.amount === 0); }
+      if (entityEl && ci.entity) { entityEl.dataset.entity = ci.entity; entityEl.textContent = labels[ci.entity] || ci.entity.toUpperCase(); }
     });
-    recalcCapex(); // recomputes this-week total from capex-amount cells
   }
+
+  // Financing items
+  const finRows = document.getElementById('financing-rows');
+  if (finRows && week.financingItems?.length) {
+    const items = finRows.querySelectorAll('.financing-item');
+    week.financingItems.forEach((fi, i) => {
+      if (!items[i]) return;
+      const nameEl   = items[i].querySelector('.analytic-name');
+      const amtEl    = items[i].querySelector('.financing-amount');
+      const entityEl = items[i].querySelector('.capex-entity-toggle');
+      const labels   = { 'kin':'KIN EP', 'plano':'KIN PL', 'amd':'AMD' };
+      if (nameEl) nameEl.textContent = fi.name;
+      if (amtEl)  amtEl.textContent = fi.amount > 0 ? fmt(fi.amount) : '—';
+      if (entityEl && fi.entity) { entityEl.dataset.entity = fi.entity; entityEl.textContent = labels[fi.entity] || fi.entity.toUpperCase(); }
+    });
+  }
+  recalcCapex();
 
   // Accumulated flow
   setEl('accum-2026', fmt(week.accumFlow || 0));
   setEl('accum-2025', fmt(week.accumFlow2025 || 285205.35));
   recalcVariance();
 
-  window.transferAdjustments = {};
+  // Restore saved transfer adjustments (e.g. 8152→2213 funding transfer)
+  window.transferAdjustments = JSON.parse(JSON.stringify(week.transferAdjustments || {}));
   window._xlsUploadedThisSession = false;
   const cb = week.closingBalances || {};
   setEl('cb-kin',      fmt(cb.kin      || 0));
