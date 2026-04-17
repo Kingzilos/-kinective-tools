@@ -1870,16 +1870,6 @@ function updateTotals() {
   const cbKinEl = document.getElementById('cb-kin');
   if (cbKinEl) cbKinEl.textContent = fmt(cbKin);
 
-  // ── Always recompute Combined Total from the 3 sub-rows ──
-  (function() {
-    const kinSub   = parseFmt(document.getElementById('cb-comb-kin-sub')?.textContent   || '0');
-    const planoSub = parseFmt(document.getElementById('cb-comb-plano-sub')?.textContent || '0');
-    const amdSub   = parseFmt(document.getElementById('cb-comb-amd-sub')?.textContent   || '0');
-    const tot = kinSub + planoSub + amdSub;
-    const el = document.getElementById('cb-combined');
-    if (el) { el.textContent = fmt(tot); el.style.color = tot < 0 ? '#f87171' : '#F0D080'; }
-  })();
-
   // ── Auto-update Accumulated Cash Flow ──
   // = prev week accumFlow + current week (El Paso OCF + Plano OCF)
   const prevAccum = (allWeeks[currentWeekNum - 1]?.accumFlow) || 0;
@@ -2628,6 +2618,18 @@ function loadWeekIntoUI(weekNum, readOnly) {
   if (rnNum)    rnNum.textContent = weekNum;
 
   updateTotals();
+  // Recompute combined total AFTER all cells are set
+  recomputeCombinedTotal();
+}
+
+function recomputeCombinedTotal() {
+  function pN(s){ return parseFloat((s||'0').replace(/[$,()]/g,'').trim())||0; }
+  const k = pN(document.getElementById('cb-comb-kin-sub')?.textContent);
+  const p = pN(document.getElementById('cb-comb-plano-sub')?.textContent);
+  const a = pN(document.getElementById('cb-comb-amd-sub')?.textContent);
+  const tot = k + p + a;
+  const el = document.getElementById('cb-combined');
+  if (el) { el.textContent = fmt(tot); el.style.color = tot < 0 ? '#f87171' : '#F0D080'; }
 }
 
 // ── RIPPLE FORWARD ────────────────────────────────
@@ -2947,6 +2949,7 @@ function applyToReport(acctNum, expenses, incomeItems, transfers, filename) {
   renderIncome();
   renderExpenses();
   updateTotals();
+  recomputeCombinedTotal();
   addUploadPill(acctNum, filename, expenses.length + incomeItems.length);
 }
 
