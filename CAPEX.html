@@ -145,32 +145,46 @@ nav {
 
 /* UPLOAD SECTION */
 .upload-section { margin-bottom: 24px; }
-.entity-selector {
-  display: flex; gap: 12px; margin-bottom: 12px;
+.entity-auto-badge {
+  display: flex; align-items: center; gap: 10px;
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 10px; padding: 10px 16px; margin-bottom: 12px;
+  font-size: 11.5px; color: var(--ink3);
 }
-.entity-option { flex: 1; cursor: pointer; }
-.entity-option input { display: none; }
-.entity-card {
-  display: block;
-  background: var(--card);
-  border: 2px solid transparent;
-  border-radius: 12px;
-  padding: 16px 20px;
-  transition: all 0.2s;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+.entity-auto-badge strong { color: var(--navy); }
+.entity-auto-badge .detected-pill {
+  font-size: 10px; font-weight: 600; padding: 2px 8px;
+  border-radius: 4px; margin-left: 4px;
 }
-.entity-option input:checked + .entity-card {
-  border-color: var(--navy);
-  background: var(--navy-light);
+.detected-pill.kfc { background: var(--navy-light); color: var(--navy); }
+.detected-pill.amd { background: var(--green-tint); color: var(--green); }
+.detected-pill.unknown { background: rgba(160,64,64,0.1); color: var(--red); }
+
+/* SEGMENTED CONTROL */
+.seg-control {
+  display: flex; border: 1px solid var(--border);
+  border-radius: 8px; overflow: hidden; background: var(--card-alt);
 }
-.entity-card:hover { border-color: var(--navy-mid); }
-.entity-name {
-  display: block; font-size: 13px; font-weight: 600;
-  color: var(--navy); margin-bottom: 4px;
+.seg-btn {
+  font-family: inherit; font-size: 11px; font-weight: 500;
+  padding: 7px 13px; border: none; background: transparent;
+  color: var(--ink4); cursor: pointer; transition: all 0.15s;
+  border-right: 1px solid var(--border);
 }
-.entity-desc {
-  display: block; font-size: 11px; color: var(--ink4);
+.seg-btn:last-child { border-right: none; }
+.seg-btn:hover { color: var(--navy); background: var(--navy-light); }
+.seg-btn.active { background: var(--navy); color: #fff; font-weight: 600; }
+.cat-group-row {
+  cursor: pointer;
+  background: var(--card-alt) !important;
+  user-select: none;
 }
+.cat-group-row:hover td { background: var(--navy-light) !important; }
+.cat-group-row td { font-weight: 600; color: var(--navy); border-bottom: 1px solid var(--border) !important; }
+.cat-toggle { display: inline-block; width: 16px; font-size: 10px; color: var(--ink4); transition: transform 0.15s; }
+.cat-group-row.expanded .cat-toggle { transform: rotate(90deg); }
+.cat-child-row td { padding-left: 32px; }
+.cat-child-row.hidden { display: none; }
 
 /* UPLOAD ZONE */
 .upload-zone {
@@ -449,27 +463,16 @@ tr:hover td { background: var(--card-alt); }
 
   <!-- UPLOAD ZONE -->
   <div class="upload-section">
-    <div class="entity-selector">
-      <label class="entity-option">
-        <input type="radio" name="uploadEntity" value="KFC" checked>
-        <span class="entity-card">
-          <span class="entity-name">Kinective Fitness Club</span>
-          <span class="entity-desc">El Paso operations • S-Corp</span>
-        </span>
-      </label>
-      <label class="entity-option">
-        <input type="radio" name="uploadEntity" value="AMD">
-        <span class="entity-card">
-          <span class="entity-name">AMD Capital LLC</span>
-          <span class="entity-desc">Plano development • Property/CapEx</span>
-        </span>
-      </label>
+    <div class="entity-auto-badge" id="entityAutoBadge">
+      <span>🔍</span>
+      <span><strong>Auto-detect entity</strong> — entity (KFC or AMD) is detected automatically from the file name. No manual selection needed.</span>
+      <span id="detectedEntityPill" style="display:none"></span>
     </div>
     <div class="upload-zone" id="uploadZone">
       <input type="file" id="fileInput" accept=".csv,.xlsx,.xls">
       <div class="upload-icon">📄</div>
       <div class="upload-text">Drop QBO export here or click to browse</div>
-      <div class="upload-hint">Supports CSV and Excel (.xlsx) • Transaction Report filtered to Fixed Asset accounts</div>
+      <div class="upload-hint">File name should contain "AMD" or "KFC" / "Kinective" • Supports CSV and Excel (.xlsx)</div>
     </div>
   </div>
 
@@ -506,6 +509,18 @@ tr:hover td { background: var(--card-alt); }
     <div class="control-spacer"></div>
     <div class="control-group" style="justify-content: flex-end;">
       <button class="btn btn-secondary" id="clearFilters">Clear Filters</button>
+    </div>
+    <div class="control-group" style="justify-content: flex-end;">
+      <label style="font-size:10px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--ink5);margin-bottom:2px;">Group By</label>
+      <div class="seg-control" id="groupByControl">
+        <button class="seg-btn active" data-view="flat">Flat</button>
+        <button class="seg-btn" data-view="category">Category</button>
+        <button class="seg-btn" data-view="month">Month</button>
+        <button class="seg-btn" data-view="entity">Entity</button>
+        <button class="seg-btn" data-view="vendor">Vendor</button>
+      </div>
+    </div>    <div class="control-group" style="justify-content: flex-end;">
+      <button class="btn btn-danger" id="eraseDataBtn">🗑 Erase All Data</button>
     </div>
     <div class="control-group" style="justify-content: flex-end;">
       <button class="btn btn-gold" id="saveBtn" disabled>💾 Save to Cloud</button>
@@ -770,10 +785,26 @@ function updateConnectionStatus() {
   saveBtn.disabled = !(hasCredentials && hasData);
 }
 
-// ============ FILE PARSING ============
-function getSelectedEntity() {
-  const selected = document.querySelector('input[name="uploadEntity"]:checked');
-  return selected ? selected.value : 'KFC';
+// ============ ENTITY AUTO-DETECT ============
+let lastDetectedEntity = 'KFC';
+
+function detectEntityFromFilename(filename) {
+  const f = filename.toLowerCase();
+  if (f.includes('amd') || f.includes('capital')) return 'AMD';
+  if (f.includes('kfc') || f.includes('kinective') || f.includes('fitness')) return 'KFC';
+  return null; // unknown — will prompt
+}
+
+function showDetectedEntity(entity, filename) {
+  const pill = document.getElementById('detectedEntityPill');
+  const badge = document.getElementById('entityAutoBadge');
+  const cls = entity ? entity.toLowerCase() : 'unknown';
+  const label = entity || '?';
+  pill.className = `detected-pill ${cls}`;
+  pill.textContent = label;
+  pill.style.display = 'inline-block';
+  badge.querySelector('span:nth-child(2)').innerHTML = 
+    `<strong>Detected entity:</strong> "${filename}" → <span class="detected-pill ${cls}">${label}</span>`;
 }
 
 function parseExcelFile(arrayBuffer) {
@@ -834,7 +865,7 @@ function parseCSVFile(text) {
 }
 
 function parseQBOExport(data, isExcel = false) {
-  const entity = getSelectedEntity();
+  const entity = lastDetectedEntity || 'KFC';
   let currentAccount = '';
   
   const transactions = [];
@@ -1077,13 +1108,68 @@ function renderMonthlyCards(filtered) {
   grid.innerHTML = cards.join('');
 }
 
+// ============ GROUP VIEW STATE ============
+let currentView = 'flat'; // flat | category | month | entity
+let expandedGroups = new Set();
+
+function setView(view) {
+  currentView = view;
+  expandedGroups = new Set();
+  document.querySelectorAll('.seg-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.view === view);
+  });
+  renderTable();
+}
+
+// ============ ERASE DATA ============
+async function eraseAllData() {
+  if (!confirm('⚠️ This will permanently delete ALL local and cloud CapEx data.\n\nAre you absolutely sure?')) return;
+  if (!confirm('Last chance — this cannot be undone. Confirm erase?')) return;
+
+  transactions = [];
+  hasUnsavedChanges = false;
+  updateConnectionStatus();
+  updateFilters();
+  renderTable();
+  showToast('Local data cleared', 'success');
+
+  // Also delete from Supabase if connected
+  if (supabaseUrl && supabaseKey) {
+    try {
+      const res = await fetch(`${supabaseUrl}/rest/v1/capex_transactions?id=gte.0`, {
+        method: 'DELETE',
+        headers: {
+          'apikey': supabaseKey,
+          'Authorization': `Bearer ${supabaseKey}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      if (res.ok) {
+        showToast('Cloud data erased', 'success');
+      } else {
+        // Try alternate delete syntax
+        const res2 = await fetch(`${supabaseUrl}/rest/v1/capex_transactions?transaction_hash=neq.IMPOSSIBLE_VALUE_XYZ`, {
+          method: 'DELETE',
+          headers: {
+            'apikey': supabaseKey,
+            'Authorization': `Bearer ${supabaseKey}`,
+            'Prefer': 'return=minimal'
+          }
+        });
+        if (res2.ok) showToast('Cloud data erased', 'success');
+        else showToast('Cloud erase may have failed — check Supabase', 'error');
+      }
+    } catch (err) {
+      showToast('Cloud erase failed: ' + err.message, 'error');
+    }
+  }
+}
+
 function renderTable() {
   const filtered = getFilteredTransactions();
   
-  // Render monthly summary cards
   renderMonthlyCards(filtered);
   
-  // Update total spend
   const total = filtered.reduce((sum, t) => sum + t.amount, 0);
   document.getElementById('kpiTotal').textContent = formatCurrency(total);
   document.getElementById('kpiTotalNote').textContent = `${filtered.length} transactions`;
@@ -1095,12 +1181,26 @@ function renderTable() {
       <div class="empty-state">
         <div class="empty-icon">📊</div>
         <div class="empty-text">No transactions found</div>
-        <div class="empty-hint">${transactions.length > 0 ? 'Try adjusting your filters' : 'Upload a QBO export to get started'}</div>
+        <div class="empty-hint">${transactions.length > 0 ? 'Try adjusting your filters' : 'Upload a QBO export or connect to Supabase to load existing data'}</div>
       </div>
     `;
     return;
   }
   
+  if (currentView === 'category') {
+    renderGroupedTable(filtered, 'category');
+  } else if (currentView === 'month') {
+    renderGroupedTable(filtered, 'month');
+  } else if (currentView === 'entity') {
+    renderGroupedTable(filtered, 'entity');
+  } else if (currentView === 'vendor') {
+    renderGroupedTable(filtered, 'vendor');
+  } else {
+    renderFlatTable(filtered);
+  }
+}
+
+function renderFlatTable(filtered) {
   tableContainer.innerHTML = `
     <table>
       <thead>
@@ -1129,6 +1229,163 @@ function renderTable() {
   `;
 }
 
+function renderGroupedTable(filtered, mode) {
+  // Build groups based on mode
+  const groups = {};
+
+  filtered.forEach(t => {
+    let key;
+    if (mode === 'category') key = t.category;
+    else if (mode === 'month') key = t.period; // YYYY-MM
+    else if (mode === 'entity') key = t.entity;
+    else if (mode === 'vendor') key = t.vendor || '(no vendor)';
+
+    if (!groups[key]) groups[key] = { total: 0, count: 0, txns: [] };
+    groups[key].total += t.amount;
+    groups[key].count += 1;
+    groups[key].txns.push(t);
+  });
+
+  // Sort keys
+  let sortedKeys;
+  if (mode === 'month') {
+    // Chronological descending
+    sortedKeys = Object.keys(groups).sort((a, b) => b.localeCompare(a));
+  } else if (mode === 'entity') {
+    sortedKeys = Object.keys(groups).sort();
+  } else {
+    // category + vendor: largest total first
+    sortedKeys = Object.keys(groups).sort((a, b) => groups[b].total - groups[a].total);
+  }
+
+  // Header label for group key
+  function groupLabel(key) {
+    if (mode === 'month') return getMonthName(key);
+    if (mode === 'entity') return key === 'KFC' ? 'Kinective Fitness Club' : 'AMD Capital LLC';
+    return key; // category
+  }
+
+  // Entity badge for sub-rows
+  function entityBadge(entity) {
+    return `<span class="txn-entity ${entity.toLowerCase()}">${entity}</span>`;
+  }
+
+  // Color accent for entity mode header
+  function groupHeaderStyle(key) {
+    if (mode === 'entity') {
+      return key === 'AMD'
+        ? 'background:var(--green-tint) !important;'
+        : 'background:var(--navy-light) !important;';
+    }
+    return '';
+  }
+
+  let rows = '';
+  sortedKeys.forEach(key => {
+    const g = groups[key];
+    const isExpanded = expandedGroups.has(key);
+    const safeId = key.replace(/[^a-z0-9]/gi, '_');
+
+    // Sub-row columns differ slightly by mode
+    // In entity mode we show category; in category mode we show entity; in month mode show both
+    let subheadCols = '';
+    if (mode === 'category') {
+      subheadCols = '<th>Entity</th><th>Date</th><th>Vendor</th><th colspan="2">Description</th><th class="right">Amount</th>';
+    } else if (mode === 'month') {
+      subheadCols = '<th>Entity</th><th>Date</th><th>Vendor</th><th>Description</th><th>Category</th><th class="right">Amount</th>';
+    } else {
+      subheadCols = '<th>Date</th><th>Vendor</th><th>Description</th><th colspan="2">Category</th><th class="right">Amount</th>';
+    }
+
+    rows += `
+      <tr class="cat-group-row ${isExpanded ? 'expanded' : ''}" onclick="toggleGroup('${safeId}', '${key.replace(/'/g,"\\'")}')">
+        <td colspan="5" style="${groupHeaderStyle(key)}">
+          <span class="cat-toggle">▶</span>
+          ${mode === 'category' ? `<span class="txn-cat" style="margin-right:8px">${groupLabel(key)}</span>` : `<strong>${groupLabel(key)}</strong>`}
+          <span style="font-size:11px;color:var(--ink4);font-weight:400;margin-left:6px">${g.count} transaction${g.count !== 1 ? 's' : ''}</span>
+        </td>
+        <td class="txn-amt right" style="${groupHeaderStyle(key)}">${formatCurrency(g.total)}</td>
+      </tr>
+    `;
+
+    // Child rows
+    const sortedTxns = [...g.txns].sort((a, b) => b.date.localeCompare(a.date));
+    sortedTxns.forEach(t => {
+      let cells = '';
+      if (mode === 'category') {
+        cells = `
+          <td>${entityBadge(t.entity)}</td>
+          <td class="txn-date">${formatDate(t.date)}</td>
+          <td class="txn-vendor">${t.vendor || '—'}</td>
+          <td class="txn-desc" colspan="2" title="${t.description}">${t.description || '—'}</td>
+          <td class="txn-amt right">${formatCurrency(t.amount)}</td>
+        `;
+      } else if (mode === 'month') {
+        cells = `
+          <td>${entityBadge(t.entity)}</td>
+          <td class="txn-date">${formatDate(t.date)}</td>
+          <td class="txn-vendor">${t.vendor || '—'}</td>
+          <td class="txn-desc" title="${t.description}">${t.description || '—'}</td>
+          <td><span class="txn-cat">${t.category}</span></td>
+          <td class="txn-amt right">${formatCurrency(t.amount)}</td>
+        `;
+      } else if (mode === 'vendor') {
+        cells = `
+          <td>${entityBadge(t.entity)}</td>
+          <td class="txn-date">${formatDate(t.date)}</td>
+          <td class="txn-desc" colspan="2" title="${t.description}">${t.description || '—'}</td>
+          <td><span class="txn-cat">${t.category}</span></td>
+          <td class="txn-amt right">${formatCurrency(t.amount)}</td>
+        `;
+      } else { // entity
+        cells = `
+          <td class="txn-date">${formatDate(t.date)}</td>
+          <td class="txn-vendor">${t.vendor || '—'}</td>
+          <td class="txn-desc" title="${t.description}">${t.description || '—'}</td>
+          <td colspan="2"><span class="txn-cat">${t.category}</span></td>
+          <td class="txn-amt right">${formatCurrency(t.amount)}</td>
+        `;
+      }
+
+      rows += `
+        <tr class="cat-child-row ${isExpanded ? '' : 'hidden'}" data-catgroup="${safeId}">
+          ${cells}
+        </tr>
+      `;
+    });
+  });
+
+  const colHeader = mode === 'month'
+    ? '<th>Entity</th><th>Date</th><th>Vendor</th><th>Description</th><th>Category</th><th class="right">Amount</th>'
+    : mode === 'entity'
+    ? '<th>Date</th><th>Vendor</th><th>Description</th><th colspan="2">Category</th><th class="right">Amount</th>'
+    : '<th>Entity</th><th>Date</th><th>Vendor</th><th colspan="2">Description</th><th class="right">Amount</th>';
+
+  tableContainer.innerHTML = `
+    <table>
+      <thead>
+        <tr>
+          <th colspan="5">${mode === 'month' ? 'Month' : mode === 'entity' ? 'Entity' : mode === 'vendor' ? 'Vendor' : 'Category'} / Transaction</th>
+          <th class="right">Total</th>
+        </tr>
+      </thead>
+      <tbody>${rows}</tbody>
+    </table>
+  `;
+}
+
+function toggleGroup(safeId, key) {
+  if (expandedGroups.has(key)) {
+    expandedGroups.delete(key);
+  } else {
+    expandedGroups.add(key);
+  }
+  const groupRow = document.querySelector(`.cat-group-row[onclick*="'${safeId}'"]`);
+  const childRows = document.querySelectorAll(`tr[data-catgroup="${safeId}"]`);
+  if (groupRow) groupRow.classList.toggle('expanded');
+  childRows.forEach(r => r.classList.toggle('hidden'));
+}
+
 // ============ EVENT LISTENERS ============
 uploadZone.addEventListener('click', () => fileInput.click());
 uploadZone.addEventListener('dragover', (e) => {
@@ -1150,14 +1407,26 @@ fileInput.addEventListener('change', (e) => {
 });
 
 function handleFile(file) {
-  const fileName = file.name.toLowerCase();
-  const isExcel = fileName.endsWith('.xlsx') || fileName.endsWith('.xls');
-  const isCSV = fileName.endsWith('.csv');
+  const fileName = file.name;
+  const fileNameLower = fileName.toLowerCase();
+  const isExcel = fileNameLower.endsWith('.xlsx') || fileNameLower.endsWith('.xls');
+  const isCSV = fileNameLower.endsWith('.csv');
   
   if (!isExcel && !isCSV) {
     showToast('Please upload a CSV or Excel file', 'error');
     return;
   }
+
+  // Auto-detect entity
+  const detected = detectEntityFromFilename(fileName);
+  if (!detected) {
+    // Ambiguous — ask user via confirm
+    const useAMD = confirm(`Could not detect entity from filename "${fileName}".\n\nClick OK for AMD Capital, Cancel for KFC.`);
+    lastDetectedEntity = useAMD ? 'AMD' : 'KFC';
+  } else {
+    lastDetectedEntity = detected;
+  }
+  showDetectedEntity(lastDetectedEntity, fileName);
   
   if (isExcel) {
     const reader = new FileReader();
@@ -1210,6 +1479,12 @@ clearFiltersBtn.addEventListener('click', () => {
   filterEntity.value = '';
   renderTable();
 });
+
+document.getElementById('groupByControl').addEventListener('click', (e) => {
+  const btn = e.target.closest('.seg-btn');
+  if (btn) setView(btn.dataset.view);
+});
+document.getElementById('eraseDataBtn').addEventListener('click', eraseAllData);
 
 saveBtn.addEventListener('click', saveToSupabase);
 
