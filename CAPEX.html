@@ -469,10 +469,10 @@ tr:hover td { background: var(--card-alt); }
       <span id="detectedEntityPill" style="display:none"></span>
     </div>
     <div class="upload-zone" id="uploadZone">
-      <input type="file" id="fileInput" accept=".csv,.xlsx,.xls">
+      <input type="file" id="fileInput" accept=".csv,.xlsx,.xls" multiple>
       <div class="upload-icon">📄</div>
       <div class="upload-text">Drop QBO export here or click to browse</div>
-      <div class="upload-hint">File name should contain "AMD" or "KFC" / "Kinective" • Supports CSV and Excel (.xlsx)</div>
+      <div class="upload-hint">Select one or multiple files • File name should contain "AMD" or "KFC" / "Kinective" • Supports CSV and Excel (.xlsx)</div>
     </div>
   </div>
 
@@ -864,8 +864,8 @@ function parseCSVFile(text) {
   return result.data;
 }
 
-function parseQBOExport(data, isExcel = false) {
-  const entity = lastDetectedEntity || 'KFC';
+function parseQBOExport(data, isExcel = false, entityOverride = null) {
+  const entity = entityOverride || lastDetectedEntity || 'KFC';
   let currentAccount = '';
   
   const transactions = [];
@@ -1396,15 +1396,83 @@ uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('drag
 uploadZone.addEventListener('drop', (e) => {
   e.preventDefault();
   uploadZone.classList.remove('dragover');
-  const file = e.dataTransfer.files[0];
-  if (file) handleFile(file);
+  const files = Array.from(e.dataTransfer.files);
+  if (files.length) handleFiles(files);
 });
 
 fileInput.addEventListener('change', (e) => {
-  const file = e.target.files[0];
-  if (file) handleFile(file);
+  const files = Array.from(e.target.files);
+  if (files.length) handleFiles(files);
   fileInput.value = '';
 });
+
+function handleFiles(files) {
+  if (files.length === 1) { handleFile(files[0]); return; }
+
+  const allParsed = [];
+  let completed = 0;
+
+  const onDone = (parsed) => {
+    allParsed.push(...parsed);
+    completed++;
+    if (completed === files.length) {
+      if (allParsed.length === 0) {
+        showToast('No valid transactions found in any file', 'error');
+        return;
+      }
+      processUpload(allParsed);
+    }
+  };
+
+  files.forEach(file => {
+    const fileName = file.name;
+    const fileNameLower = fileName.toLowerCase();
+    const isExcel = fileNameLower.endsWith('.xlsx') || fileNameLower.endsWith('.xls');
+    const isCSV = fileNameLower.endsWith('.csv');
+
+    if (!isExcel && !isCSV) {
+      showToast(`Skipped "${fileName}" — not a CSV or Excel file`, 'error');
+      completed++;
+      if (completed === files.length && allParsed.length > 0) processUpload(allParsed);
+      return;
+    }
+
+    // Capture entity for THIS file at parse time — not a shared global
+    const detected = detectEntityFromFilename(fileName);
+    const fileEntity = detected || 'KFC';
+    showDetectedEntity(fileEntity, fileName);
+
+    if (isExcel) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const data = parseExcelFile(e.target.result);
+          const parsed = parseQBOExport(data, true, fileEntity);
+          onDone(parsed);
+        } catch (err) {
+          showToast(`Failed to parse "${fileName}": ` + err.message, 'error');
+          completed++;
+          if (completed === files.length && allParsed.length > 0) processUpload(allParsed);
+        }
+      };
+      reader.readAsArrayBuffer(file);
+    } else {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const data = parseCSVFile(e.target.result);
+          const parsed = parseQBOExport(data, false, fileEntity);
+          onDone(parsed);
+        } catch (err) {
+          showToast(`Failed to parse "${fileName}": ` + err.message, 'error');
+          completed++;
+          if (completed === files.length && allParsed.length > 0) processUpload(allParsed);
+        }
+      };
+      reader.readAsText(file);
+    }
+  });
+}
 
 function handleFile(file) {
   const fileName = file.name;
