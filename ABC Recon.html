@@ -108,6 +108,28 @@
             align-items: center;
         }
 
+        .import-export-btns {
+            display: flex;
+            gap: 8px;
+        }
+
+        .import-btn, .export-btn {
+            padding: 8px 16px;
+            background: #f3f4f6;
+            color: #6b7280;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            transition: all 0.2s ease;
+        }
+
+        .import-btn:hover, .export-btn:hover {
+            background: #e5e7eb;
+            color: #1a1a1a;
+        }
+
         .create-group-btn {
             padding: 10px 20px;
             background: #0066cc;
@@ -446,13 +468,236 @@
             margin-bottom: 24px;
         }
 
-        .ungrouped-header {
-            padding: 12px 20px;
-            background: #f9fafb;
-            border-bottom: 1px solid #e5e7eb;
-            font-size: 14px;
-            font-weight: 600;
+        .group-summary-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 20px;
+            margin-bottom: 32px;
+        }
+
+        .group-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            border: 1px solid #e5e7eb;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+            transition: all 0.3s ease;
+        }
+
+        .group-card:hover {
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            transform: translateY(-2px);
+        }
+
+        .group-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 16px;
+        }
+
+        .group-card-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: #1a1a1a;
+            margin-bottom: 4px;
+        }
+
+        .group-card-date {
+            font-size: 12px;
             color: #6b7280;
+            font-weight: 500;
+        }
+
+        .group-card-growth {
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .growth-positive {
+            background: #d1fae5;
+            color: #059669;
+        }
+
+        .growth-negative {
+            background: #fee2e2;
+            color: #dc2626;
+        }
+
+        .growth-neutral {
+            background: #f3f4f6;
+            color: #6b7280;
+        }
+
+        .group-card-revenue {
+            font-size: 32px;
+            font-weight: 700;
+            color: #0066cc;
+            margin-bottom: 4px;
+            font-family: 'SF Mono', Monaco, monospace;
+        }
+
+        .group-card-metrics {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin: 16px 0;
+            padding: 16px 0;
+            border-top: 1px solid #f3f4f6;
+            border-bottom: 1px solid #f3f4f6;
+        }
+
+        .metric-item {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .metric-label {
+            font-size: 11px;
+            color: #6b7280;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 4px;
+            font-weight: 600;
+        }
+
+        .metric-value {
+            font-size: 16px;
+            font-weight: 700;
+            color: #1a1a1a;
+            font-family: 'SF Mono', Monaco, monospace;
+        }
+
+        .metric-value.highlight {
+            color: #0066cc;
+        }
+
+        .category-breakdown {
+            margin-top: 16px;
+        }
+
+        .category-breakdown-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: #1a1a1a;
+            margin-bottom: 12px;
+        }
+
+        .category-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+            padding: 8px;
+            background: #f9fafb;
+            border-radius: 6px;
+        }
+
+        .category-name {
+            font-size: 13px;
+            color: #4b5563;
+            font-weight: 500;
+        }
+
+        .category-amount {
+            font-size: 13px;
+            font-weight: 700;
+            color: #1a1a1a;
+            font-family: 'SF Mono', Monaco, monospace;
+        }
+
+        .category-bar {
+            height: 4px;
+            background: #e5e7eb;
+            border-radius: 2px;
+            margin-top: 4px;
+            overflow: hidden;
+        }
+
+        .category-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #0066cc, #0052a3);
+            border-radius: 2px;
+            transition: width 0.5s ease;
+        }
+
+        .sparkline {
+            height: 40px;
+            margin: 12px 0;
+        }
+
+        .insights-section {
+            margin-top: 16px;
+            padding-top: 16px;
+            border-top: 1px solid #f3f4f6;
+        }
+
+        .insight-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+            font-size: 12px;
+            color: #6b7280;
+        }
+
+        .insight-icon {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+        }
+
+        .insight-icon.info {
+            background: #dbeafe;
+            color: #0066cc;
+        }
+
+        .insight-icon.warning {
+            background: #fef3c7;
+            color: #f59e0b;
+        }
+
+        .comparison-mode {
+            margin-bottom: 32px;
+        }
+
+        .comparison-toggle {
+            display: flex;
+            justify-content: flex-end;
+            margin-bottom: 16px;
+        }
+
+        .comparison-btn {
+            padding: 8px 16px;
+            background: #f3f4f6;
+            color: #6b7280;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            transition: all 0.2s ease;
+        }
+
+        .comparison-btn.active {
+            background: #0066cc;
+            color: white;
+        }
+
+        .comparison-grid {
+            display: none;
+        }
+
+        .comparison-grid.active {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
         }
 
         .report-actions {
@@ -790,6 +1035,10 @@
             <div class="saved-reports-header">
                 <h2>Saved Reports</h2>
                 <div class="group-controls">
+                    <div class="import-export-btns">
+                        <button class="export-btn" onclick="exportData()">Export Data</button>
+                        <button class="import-btn" onclick="importData()">Import Data</button>
+                    </div>
                     <button class="select-mode-btn" id="selectModeBtn" onclick="toggleSelectMode()">
                         Select Multiple
                     </button>
@@ -807,6 +1056,19 @@
                     </button>
                 </div>
             </div>
+
+            <!-- Comparison Mode Toggle -->
+            <div class="comparison-mode">
+                <div class="comparison-toggle">
+                    <button class="comparison-btn" id="comparisonBtn" onclick="toggleComparisonMode()">
+                        Compare Groups
+                    </button>
+                </div>
+            </div>
+
+            <!-- Group Summary Cards -->
+            <div class="group-summary-cards" id="groupSummaryCards"></div>
+
             <div id="savedReportsList"></div>
         </div>
 
@@ -950,6 +1212,7 @@
         let selectedReportForMove = null;
         let isSelectMode = false;
         let selectedReports = new Set();
+        let isComparisonMode = false;
 
         // Multi-select functions
         function toggleSelectMode() {
@@ -984,7 +1247,18 @@
             loadSavedReports();
         }
 
-        function toggleReportSelection(reportId) {
+        function toggleReportSelection(reportId, event) {
+            // Support Ctrl+Click for multi-select even when not in select mode
+            if (event && (event.ctrlKey || event.metaKey)) {
+                if (!isSelectMode) {
+                    isSelectMode = true;
+                    document.getElementById('selectModeBtn').classList.add('active');
+                    document.getElementById('selectModeBtn').textContent = 'Cancel Selection';
+                    document.getElementById('bulkActions').classList.add('active');
+                    document.getElementById('createGroupBtn').style.display = 'none';
+                }
+            }
+            
             if (!isSelectMode) return;
             
             if (selectedReports.has(reportId)) {
@@ -1032,6 +1306,234 @@
             loadSavedReports();
         }
 
+        function toggleComparisonMode() {
+            isComparisonMode = !isComparisonMode;
+            const comparisonBtn = document.getElementById('comparisonBtn');
+            
+            if (isComparisonMode) {
+                comparisonBtn.classList.add('active');
+                comparisonBtn.textContent = 'Exit Comparison';
+            } else {
+                comparisonBtn.classList.remove('active');
+                comparisonBtn.textContent = 'Compare Groups';
+            }
+            
+            renderGroupSummaryCards();
+        }
+
+        function calculateGroupAnalytics(group, allReports) {
+            const groupReports = allReports.filter(r => group.reportIds.includes(r.id));
+            
+            if (groupReports.length === 0) {
+                return null;
+            }
+
+            // Sort reports by date
+            groupReports.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+
+            // Initialize totals
+            let totalRevenue = 0;
+            let totalSalesTax = 0;
+            let totalPreTax = 0;
+            let totalDeductions = 0;
+            let totalUnapplied = 0;
+            const categoryTotals = {};
+            const categorySalesTax = {};
+            const dailyRevenues = [];
+
+            // Process each report
+            groupReports.forEach(report => {
+                // Parse revenue
+                const revenue = parseFloat(report.totalRevenue.replace(/,/g, '')) || 0;
+                totalRevenue += revenue;
+                dailyRevenues.push(revenue);
+
+                // Process deductions (ABC Billing only)
+                if (report.deductions) {
+                    totalDeductions += parseFloat(report.deductions) || 0;
+                }
+
+                // Process unapplied payments
+                if (report.unappliedPayments && report.unappliedPayments.length > 0) {
+                    report.unappliedPayments.forEach(p => {
+                        totalUnapplied += parseFloat(p.amount) || 0;
+                    });
+                }
+
+                // Process categories
+                if (report.data) {
+                    Object.keys(report.data).forEach(category => {
+                        const item = report.data[category];
+                        if (!categoryTotals[category]) {
+                            categoryTotals[category] = 0;
+                            categorySalesTax[category] = 0;
+                        }
+                        categoryTotals[category] += item.totalAmount || 0;
+                        categorySalesTax[category] += item.salesTax || 0;
+                        totalSalesTax += item.salesTax || 0;
+                        totalPreTax += item.excludingTax || 0;
+                    });
+                }
+            });
+
+            // Calculate date range
+            const dates = groupReports.map(r => {
+                const match = r.dateRange.match(/(\d{1,2}\/\d{1,2}\/\d{4})/);
+                return match ? new Date(match[0]) : null;
+            }).filter(d => d);
+
+            const startDate = dates.length > 0 ? new Date(Math.min(...dates)) : null;
+            const endDate = dates.length > 0 ? new Date(Math.max(...dates)) : null;
+            const daysDiff = startDate && endDate ? Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1 : 1;
+
+            // Calculate averages
+            const avgDailyRevenue = totalRevenue / Math.max(daysDiff, 1);
+            const effectiveTaxRate = totalPreTax > 0 ? (totalSalesTax / totalPreTax) * 100 : 0;
+
+            // Find highest and lowest days
+            const maxRevenue = Math.max(...dailyRevenues);
+            const minRevenue = Math.min(...dailyRevenues);
+
+            // Sort categories by total amount
+            const sortedCategories = Object.keys(categoryTotals)
+                .map(cat => ({
+                    name: cat,
+                    total: categoryTotals[cat],
+                    salesTax: categorySalesTax[cat],
+                    percentage: (categoryTotals[cat] / totalRevenue) * 100
+                }))
+                .sort((a, b) => b.total - a.total);
+
+            return {
+                name: group.name,
+                reportCount: groupReports.length,
+                totalRevenue,
+                totalSalesTax,
+                totalPreTax,
+                totalDeductions,
+                totalUnapplied,
+                avgDailyRevenue,
+                effectiveTaxRate,
+                maxRevenue,
+                minRevenue,
+                daysDiff,
+                startDate: startDate ? startDate.toLocaleDateString() : 'N/A',
+                endDate: endDate ? endDate.toLocaleDateString() : 'N/A',
+                categories: sortedCategories,
+                dailyRevenues
+            };
+        }
+
+        function calculateGrowth(current, previous) {
+            if (!previous || previous === 0) return null;
+            return ((current - previous) / previous) * 100;
+        }
+
+        function renderGroupSummaryCards() {
+            const storageKey = currentReconciliationType === 'dailyDep' ? 'dailyDepReports' : 'abcBillingReports';
+            const savedReports = JSON.parse(localStorage.getItem(storageKey) || '[]');
+            const groups = getGroups();
+            const cardsContainer = document.getElementById('groupSummaryCards');
+
+            if (groups.length === 0) {
+                cardsContainer.innerHTML = '';
+                return;
+            }
+
+            cardsContainer.innerHTML = '';
+
+            // Calculate analytics for all groups
+            const groupAnalytics = groups.map(group => calculateGroupAnalytics(group, savedReports)).filter(a => a !== null);
+
+            groupAnalytics.forEach((analytics, index) => {
+                // Calculate growth vs previous group
+                const previousAnalytics = index > 0 ? groupAnalytics[index - 1] : null;
+                const revenueGrowth = previousAnalytics ? calculateGrowth(analytics.totalRevenue, previousAnalytics.totalRevenue) : null;
+
+                const card = document.createElement('div');
+                card.className = 'group-card';
+                
+                // Growth badge
+                let growthBadge = '';
+                if (revenueGrowth !== null) {
+                    const growthClass = revenueGrowth > 0 ? 'growth-positive' : revenueGrowth < 0 ? 'growth-negative' : 'growth-neutral';
+                    const growthSymbol = revenueGrowth > 0 ? '▲' : revenueGrowth < 0 ? '▼' : '−';
+                    growthBadge = `<span class="group-card-growth ${growthClass}">${growthSymbol} ${Math.abs(revenueGrowth).toFixed(1)}%</span>`;
+                }
+
+                // Build category breakdown HTML
+                const categoryHTML = analytics.categories.slice(0, 5).map(cat => `
+                    <div class="category-item">
+                        <div>
+                            <div class="category-name">${cat.name}</div>
+                            <div class="category-bar">
+                                <div class="category-bar-fill" style="width: ${cat.percentage}%"></div>
+                            </div>
+                        </div>
+                        <div class="category-amount">$${cat.total.toFixed(2)}</div>
+                    </div>
+                `).join('');
+
+                // Build insights
+                const insights = [];
+                if (analytics.totalUnapplied > 0) {
+                    insights.push(`<div class="insight-item"><span class="insight-icon warning">!</span> $${analytics.totalUnapplied.toFixed(2)} in unapplied payments</div>`);
+                }
+                if (analytics.totalDeductions < 0) {
+                    insights.push(`<div class="insight-item"><span class="insight-icon info">i</span> $${Math.abs(analytics.totalDeductions).toFixed(2)} in deductions</div>`);
+                }
+                if (analytics.daysDiff > 1) {
+                    insights.push(`<div class="insight-item"><span class="insight-icon info">i</span> Avg: $${analytics.avgDailyRevenue.toFixed(2)}/day</div>`);
+                }
+
+                const insightsHTML = insights.length > 0 ? `
+                    <div class="insights-section">
+                        ${insights.join('')}
+                    </div>
+                ` : '';
+
+                card.innerHTML = `
+                    <div class="group-card-header">
+                        <div>
+                            <div class="group-card-title">${analytics.name}</div>
+                            <div class="group-card-date">${analytics.startDate} - ${analytics.endDate}</div>
+                        </div>
+                        ${growthBadge}
+                    </div>
+                    
+                    <div class="group-card-revenue">$${analytics.totalRevenue.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
+                    
+                    <div class="group-card-metrics">
+                        <div class="metric-item">
+                            <div class="metric-label">Reports</div>
+                            <div class="metric-value">${analytics.reportCount}</div>
+                        </div>
+                        <div class="metric-item">
+                            <div class="metric-label">Sales Tax</div>
+                            <div class="metric-value highlight">$${analytics.totalSalesTax.toFixed(2)}</div>
+                        </div>
+                        <div class="metric-item">
+                            <div class="metric-label">Pre-Tax</div>
+                            <div class="metric-value">$${analytics.totalPreTax.toFixed(2)}</div>
+                        </div>
+                        <div class="metric-item">
+                            <div class="metric-label">Tax Rate</div>
+                            <div class="metric-value">${analytics.effectiveTaxRate.toFixed(2)}%</div>
+                        </div>
+                    </div>
+
+                    <div class="category-breakdown">
+                        <div class="category-breakdown-title">Category Breakdown</div>
+                        ${categoryHTML}
+                    </div>
+
+                    ${insightsHTML}
+                `;
+
+                cardsContainer.appendChild(card);
+            });
+        }
+
         // Migrate old data from 'abcReports' to 'dailyDepReports' (one-time migration)
         function migrateOldData() {
             const oldData = localStorage.getItem('abcReports');
@@ -1057,60 +1559,7 @@
         function saveGroups(groups) {
             const storageKey = getGroupsStorageKey();
             localStorage.setItem(storageKey, JSON.stringify(groups));
-            cloudSync(storageKey, groups);
         }
-
-        // ── CLOUD SYNC (Supabase) ──────────────────────────────────────────
-        function getCloudCreds() {
-            return {
-                url: localStorage.getItem('sb_url'),
-                key: localStorage.getItem('sb_key')
-            };
-        }
-
-        async function cloudSync(key, data) {
-            const { url, key: apiKey } = getCloudCreds();
-            if (!url || !apiKey) return;
-            try {
-                await fetch(`${url}/rest/v1/kinective_data`, {
-                    method: 'POST',
-                    headers: {
-                        'apikey': apiKey,
-                        'Authorization': `Bearer ${apiKey}`,
-                        'Content-Type': 'application/json',
-                        'Prefer': 'resolution=merge-duplicates'
-                    },
-                    body: JSON.stringify({ key, value: JSON.stringify(data), updated_at: new Date().toISOString() })
-                });
-            } catch(e) { console.warn('Cloud sync failed:', e); }
-        }
-
-        async function loadFromCloud() {
-            const { url, key: apiKey } = getCloudCreds();
-            if (!url || !apiKey) return;
-            try {
-                const keys = ['dailyDepGroups','abcBillingGroups','dailyDepReports','abcBillingReports'];
-                for (const k of keys) {
-                    const res = await fetch(`${url}/rest/v1/kinective_data?key=eq.${k}&select=value`, {
-                        headers: { 'apikey': apiKey, 'Authorization': `Bearer ${apiKey}` }
-                    });
-                    const rows = await res.json();
-                    if (rows && rows[0]) localStorage.setItem(k, rows[0].value);
-                }
-            } catch(e) { console.warn('Cloud load failed:', e); }
-        }
-
-        async function ensureCloudTable() {
-            const { url, key: apiKey } = getCloudCreds();
-            if (!url || !apiKey) return;
-            // Table must be created manually in Supabase — see setup guide
-        }
-
-        // Load cloud data on startup
-        loadFromCloud().then(() => {
-            if (typeof renderGroups === 'function') renderGroups();
-        });
-        // ─────────────────────────────────────────────────────────────────────
 
         function showCreateGroupModal() {
             document.getElementById('createGroupModal').classList.add('active');
@@ -1239,6 +1688,72 @@
             const filteredGroups = groups.filter(g => g.id !== groupId);
             saveGroups(filteredGroups);
             loadSavedReports();
+        }
+
+        // Export/Import Functions
+        function exportData() {
+            const data = {
+                dailyDepReports: JSON.parse(localStorage.getItem('dailyDepReports') || '[]'),
+                dailyDepGroups: JSON.parse(localStorage.getItem('dailyDepGroups') || '[]'),
+                abcBillingReports: JSON.parse(localStorage.getItem('abcBillingReports') || '[]'),
+                abcBillingGroups: JSON.parse(localStorage.getItem('abcBillingGroups') || '[]'),
+                exportDate: new Date().toISOString()
+            };
+
+            const dataStr = JSON.stringify(data, null, 2);
+            const dataBlob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(dataBlob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `reconciliation-data-${new Date().toISOString().split('T')[0]}.json`;
+            link.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function importData() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.json';
+            
+            input.onchange = (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    try {
+                        const data = JSON.parse(event.target.result);
+                        
+                        // Confirm before overwriting
+                        if (!confirm('This will replace all existing data. Continue?')) {
+                            return;
+                        }
+
+                        // Import all data
+                        if (data.dailyDepReports) {
+                            localStorage.setItem('dailyDepReports', JSON.stringify(data.dailyDepReports));
+                        }
+                        if (data.dailyDepGroups) {
+                            localStorage.setItem('dailyDepGroups', JSON.stringify(data.dailyDepGroups));
+                        }
+                        if (data.abcBillingReports) {
+                            localStorage.setItem('abcBillingReports', JSON.stringify(data.abcBillingReports));
+                        }
+                        if (data.abcBillingGroups) {
+                            localStorage.setItem('abcBillingGroups', JSON.stringify(data.abcBillingGroups));
+                        }
+
+                        alert('Data imported successfully!');
+                        loadSavedReports();
+                    } catch (error) {
+                        alert('Error importing data. Please make sure the file is valid.');
+                        console.error('Import error:', error);
+                    }
+                };
+                reader.readAsText(file);
+            };
+            
+            input.click();
         }
 
         // Load saved reports on page load
@@ -1689,9 +2204,8 @@
                 savedReports.push(reportData);
             }
             
-            // Save back to localStorage + cloud
+            // Save back to localStorage
             localStorage.setItem(storageKey, JSON.stringify(savedReports));
-            cloudSync(storageKey, savedReports);
         }
 
         function loadSavedReports() {
@@ -1707,6 +2221,9 @@
             
             savedReportsSection.style.display = 'block';
             savedReportsList.innerHTML = '';
+            
+            // Render group summary cards
+            renderGroupSummaryCards();
             
             // Sort by date (oldest first - ascending order)
             savedReports.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
@@ -1748,7 +2265,7 @@
                     reportItem.className = `saved-report-item ${selectedReports.has(report.id) ? 'selected' : ''}`;
                     
                     const checkboxHtml = isSelectMode ? 
-                        `<div class="report-checkbox active ${selectedReports.has(report.id) ? 'checked' : ''}" data-report-id="${report.id}" onclick="toggleReportSelection(${report.id})"></div>` : 
+                        `<div class="report-checkbox active ${selectedReports.has(report.id) ? 'checked' : ''}" data-report-id="${report.id}" onclick="toggleReportSelection(${report.id}, event)"></div>` : 
                         '';
                     
                     const actionsHtml = isSelectMode ? '' : `
@@ -1761,7 +2278,7 @@
                     
                     reportItem.innerHTML = `
                         ${checkboxHtml}
-                        <div class="saved-report-info" ${isSelectMode ? `onclick="toggleReportSelection(${report.id})" style="cursor: pointer; flex: 1;"` : ''}>
+                        <div class="saved-report-info" ${isSelectMode ? `onclick="toggleReportSelection(${report.id}, event)" style="cursor: pointer; flex: 1;"` : `onclick="if(event.ctrlKey || event.metaKey) toggleReportSelection(${report.id}, event)" style="flex: 1;"`}>
                             <div class="saved-report-date">${report.dateRange}</div>
                             <div class="saved-report-location">${report.location}</div>
                             <div class="saved-report-revenue">$${report.totalRevenue}</div>
@@ -1785,7 +2302,7 @@
                     reportItem.className = `saved-report-item ${selectedReports.has(report.id) ? 'selected' : ''}`;
                     
                     const checkboxHtml = isSelectMode ? 
-                        `<div class="report-checkbox active ${selectedReports.has(report.id) ? 'checked' : ''}" data-report-id="${report.id}" onclick="toggleReportSelection(${report.id})"></div>` : 
+                        `<div class="report-checkbox active ${selectedReports.has(report.id) ? 'checked' : ''}" data-report-id="${report.id}" onclick="toggleReportSelection(${report.id}, event)"></div>` : 
                         '';
                     
                     const actionsHtml = isSelectMode ? '' : `
@@ -1798,7 +2315,7 @@
                     
                     reportItem.innerHTML = `
                         ${checkboxHtml}
-                        <div class="saved-report-info" ${isSelectMode ? `onclick="toggleReportSelection(${report.id})" style="cursor: pointer; flex: 1;"` : ''}>
+                        <div class="saved-report-info" ${isSelectMode ? `onclick="toggleReportSelection(${report.id}, event)" style="cursor: pointer; flex: 1;"` : `onclick="if(event.ctrlKey || event.metaKey) toggleReportSelection(${report.id}, event)" style="flex: 1;"`}>
                             <div class="saved-report-date">${report.dateRange}</div>
                             <div class="saved-report-location">${report.location}</div>
                             <div class="saved-report-revenue">$${report.totalRevenue}</div>
