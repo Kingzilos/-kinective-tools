@@ -1196,7 +1196,7 @@
             <span class="analytic-name editable" contenteditable="true">Loan Payment — Plano</span>
             <div class="analytic-vals" style="gap:8px; align-items:center;">
               <span class="capex-entity-toggle" data-entity="amd" onclick="toggleCapexEntity(this)" title="Click to switch entity">AMD</span>
-              <span class="analytic-val financing-amount editable" contenteditable="true" oninput="recalcFinancing()" onblur="recalcFinancing()">—</span>
+              <span class="analytic-val financing-amount editable" contenteditable="true" oninput="recalcFinancing()" onblur="recalcFinancing(); if(!isReadOnly) saveWeek();">—</span>
               <span class="comment-btn" title="Add comment" onclick="openComment(this)">💬</span>
             </div>
           </div>
@@ -1204,7 +1204,7 @@
             <span class="analytic-name editable" contenteditable="true">Loan Payment — El Paso</span>
             <div class="analytic-vals" style="gap:8px; align-items:center;">
               <span class="capex-entity-toggle" data-entity="kin" onclick="toggleCapexEntity(this)" title="Click to switch entity">KIN EP</span>
-              <span class="analytic-val financing-amount editable" contenteditable="true" oninput="recalcFinancing()" onblur="recalcFinancing()">—</span>
+              <span class="analytic-val financing-amount editable" contenteditable="true" oninput="recalcFinancing()" onblur="recalcFinancing(); if(!isReadOnly) saveWeek();">—</span>
               <span class="comment-btn" title="Add comment" onclick="openComment(this)">💬</span>
             </div>
           </div>
@@ -1212,7 +1212,7 @@
             <span class="analytic-name editable" contenteditable="true">Loan Payment — Plano (KIN)</span>
             <div class="analytic-vals" style="gap:8px; align-items:center;">
               <span class="capex-entity-toggle" data-entity="plano" onclick="toggleCapexEntity(this)" title="Click to switch entity">KIN PL</span>
-              <span class="analytic-val financing-amount editable" contenteditable="true" oninput="recalcFinancing()" onblur="recalcFinancing()">—</span>
+              <span class="analytic-val financing-amount editable" contenteditable="true" oninput="recalcFinancing()" onblur="recalcFinancing(); if(!isReadOnly) saveWeek();">—</span>
               <span class="comment-btn" title="Add comment" onclick="openComment(this)">💬</span>
             </div>
           </div>
@@ -1981,6 +1981,7 @@ function capexBlur(el) {
   const comment = el.dataset.comment;
   if (comment) { el.title = comment; el.classList.add('has-comment'); }
   recalcCapex();
+  if (!isReadOnly) saveWeek();
 }
 
 function switchCFTab(tab) {
@@ -2313,6 +2314,42 @@ function buildWeek8Snapshot() {
 // This file works identically on ANY machine — no IndexedDB dependency
 // for historical data. New entries (Week 12+) save locally as normal.
 async function initWeekSystem() {
+  // One-time purge of bad financing data (flag prevents re-running)
+  if (!localStorage.getItem('financing_purged_v1')) {
+    try {
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (k?.startsWith(LS_PREFIX)) {
+          const w = JSON.parse(localStorage.getItem(k));
+          if (w?.financingItems) {
+            w.financingItems = w.financingItems.map(fi => ({ ...fi, amount: 0 }));
+            localStorage.setItem(k, JSON.stringify(w));
+          }
+        }
+      }
+      // Also push zeroed financing to Supabase for all saved weeks
+      const { url, key } = getSBCreds();
+      if (url && key) {
+        for (let i = 0; i < localStorage.length; i++) {
+          const k = localStorage.key(i);
+          if (k?.startsWith(LS_PREFIX)) {
+            try {
+              const w = JSON.parse(localStorage.getItem(k));
+              if (w?.weekNum) {
+                fetch(`${url}/rest/v1/${SB_TABLE}`, {
+                  method: 'POST',
+                  headers: {'Content-Type':'application/json','apikey':key,'Authorization':'Bearer '+key,'Prefer':'resolution=merge-duplicates'},
+                  body: JSON.stringify({ week_num: w.weekNum, data: w })
+                }).catch(()=>{});
+              }
+            } catch(e) {}
+          }
+        }
+      }
+    } catch(e) {}
+    localStorage.setItem('financing_purged_v1', '1');
+  }
+
   // Seed all verified weeks as baseline — these are always correct
   allWeeks[8]  = buildWeek8Snapshot();
   allWeeks[9]  = buildWeek9Snapshot();
@@ -2702,20 +2739,23 @@ function loadWeekIntoUI(weekNum, readOnly) {
     });
   }
 
-  // Financing items
+  // Financing items — always reset first so stale values never bleed between weeks
   const finRows = document.getElementById('financing-rows');
-  if (finRows && week.financingItems?.length) {
-    const items = finRows.querySelectorAll('.financing-item');
-    week.financingItems.forEach((fi, i) => {
-      if (!items[i]) return;
-      const nameEl   = items[i].querySelector('.analytic-name');
-      const amtEl    = items[i].querySelector('.financing-amount');
-      const entityEl = items[i].querySelector('.capex-entity-toggle');
-      const labels   = { 'kin':'KIN EP', 'plano':'KIN PL', 'amd':'AMD' };
-      if (nameEl) nameEl.textContent = fi.name;
-      if (amtEl)  amtEl.textContent = fi.amount > 0 ? fmt(fi.amount) : '—';
-      if (entityEl && fi.entity) { entityEl.dataset.entity = fi.entity; entityEl.textContent = labels[fi.entity] || fi.entity.toUpperCase(); }
-    });
+  if (finRows) {
+    const labels = { 'kin':'KIN EP', 'plano':'KIN PL', 'amd':'AMD' };
+    finRows.querySelectorAll('.financing-amount').forEach(el => { el.textContent = '—'; el.classList.add('muted'); });
+    if (week.financingItems?.length) {
+      const items = finRows.querySelectorAll('.financing-item');
+      week.financingItems.forEach((fi, i) => {
+        if (!items[i]) return;
+        const nameEl   = items[i].querySelector('.analytic-name');
+        const amtEl    = items[i].querySelector('.financing-amount');
+        const entityEl = items[i].querySelector('.capex-entity-toggle');
+        if (nameEl) nameEl.textContent = fi.name;
+        if (amtEl)  { amtEl.textContent = fi.amount > 0 ? fmt(fi.amount) : '—'; amtEl.classList.toggle('muted', !(fi.amount > 0)); }
+        if (entityEl && fi.entity) { entityEl.dataset.entity = fi.entity; entityEl.textContent = labels[fi.entity] || fi.entity.toUpperCase(); }
+      });
+    }
   }
   recalcCapex();
 
