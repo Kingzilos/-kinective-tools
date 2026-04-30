@@ -704,14 +704,14 @@ async function loadFromSupabase() {
   }
 }
 
-async function saveToSupabase() {
+async function saveToSupabase(silent = false) {
   if (!supabaseUrl || !supabaseKey) {
-    showToast('Connect to Supabase first', 'error');
+    if (!silent) showToast('Connect to Supabase first', 'error');
     return;
   }
   
   if (transactions.length === 0) {
-    showToast('No transactions to save', 'error');
+    if (!silent) showToast('No transactions to save', 'error');
     return;
   }
   
@@ -719,7 +719,6 @@ async function saveToSupabase() {
   syncStatus.textContent = 'Saving...';
   
   try {
-    // Upsert all transactions
     const payload = transactions.map(txn => ({
       transaction_hash: txn.hash,
       date: txn.date,
@@ -730,8 +729,6 @@ async function saveToSupabase() {
       category: txn.category,
       entity: txn.entity || 'KFC'
     }));
-    
-    console.log('Saving payload:', payload);
     
     const response = await fetch(`${supabaseUrl}/rest/v1/capex_transactions?on_conflict=transaction_hash`, {
       method: 'POST',
@@ -746,18 +743,18 @@ async function saveToSupabase() {
     
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('Supabase error:', errorText);
       throw new Error(errorText || 'Save failed');
     }
     
     hasUnsavedChanges = false;
     isConnected = true;
     updateConnectionStatus();
-    showToast('Saved ' + transactions.length + ' transactions', 'success');
+    if (!silent) showToast('Saved ' + transactions.length + ' transactions', 'success');
     
   } catch (err) {
     console.error(err);
-    showToast('Failed to save: ' + err.message, 'error');
+    statusDot.classList.remove('saving');
+    throw err; // re-throw so callers can catch
   }
   
   statusDot.classList.remove('saving');
@@ -1001,13 +998,28 @@ function confirmImport() {
   if (pendingImport.length === 0) return;
   
   transactions = [...transactions, ...pendingImport];
-  hasUnsavedChanges = true;
+  hasUnsavedChanges = false;
   
   updateConnectionStatus();
   updateFilters();
   renderTable();
   hidePreviewModal();
-  showToast(`Added ${pendingImport.length} new transactions`, 'success');
+  showToast(`Added ${pendingImport.length} new transactions — saving to cloud...`, 'success');
+
+  // Auto-save immediately — don't make user click Save to Cloud
+  if (supabaseUrl && supabaseKey) {
+    saveToSupabase(true).then(() => {
+      showToast('Saved to cloud ✓', 'success');
+    }).catch(err => {
+      hasUnsavedChanges = true;
+      updateConnectionStatus();
+      showToast('Cloud save failed — use Save to Cloud button to retry', 'error');
+    });
+  } else {
+    showToast(`Added ${pendingImport.length} transactions — connect Supabase to persist`, 'error');
+  }
+
+  pendingImport = [];
 }
 
 // ============ RENDERING ============
@@ -1554,7 +1566,7 @@ document.getElementById('groupByControl').addEventListener('click', (e) => {
 });
 document.getElementById('eraseDataBtn').addEventListener('click', eraseAllData);
 
-saveBtn.addEventListener('click', saveToSupabase);
+saveBtn.addEventListener('click', () => saveToSupabase(false));
 
 document.getElementById('closeModal').addEventListener('click', hidePreviewModal);
 document.getElementById('cancelUpload').addEventListener('click', hidePreviewModal);
