@@ -186,9 +186,9 @@
     </div>
 
     <div class="upz" id="upz" ondragover="dov(event)" ondragleave="dlv()" ondrop="drp(event)">
-      <input type="file" id="fi" accept=".xlsx" onchange="fsel(event)">
-      <div class="upt">Drop Itemized_payout_reconciliation_ .xlsx here</div>
-      <div class="ups">Reads 3 columns only: Date, net, product_names</div>
+      <input type="file" id="fi" accept=".xlsx,.csv" onchange="fsel(event)">
+      <div class="upt">Drop Stripe export here — CSV or XLSX</div>
+      <div class="ups">Reads automatic_payout_effective_at_utc · net · product_names / description</div>
     </div>
 
     <div id="prevArea" style="display:none">
@@ -339,16 +339,25 @@ function fsel(e){var f=e.target.files[0];if(f)procFile(f)}
 
 function procFile(file){
   var rd=new FileReader();
+  var isCSV=file.name.toLowerCase().endsWith('.csv');
   rd.onload=function(e){
     try{
-      var wb=XLSX.read(e.target.result,{type:'array',raw:true});
-      var sn=wb.SheetNames.find(s=>s.toLowerCase().includes('itemized'))||wb.SheetNames[0];
-      var rows=XLSX.utils.sheet_to_json(wb.Sheets[sn],{defval:null});
-      if(!rows.length){toast('No data found','err');return}
+      var rows;
+      if(isCSV){
+        // Parse CSV using SheetJS
+        var wb=XLSX.read(e.target.result,{type:'string',raw:false});
+        rows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{defval:null});
+      } else {
+        // XLSX — find Itemized sheet or use first sheet
+        var wb=XLSX.read(e.target.result,{type:'array',raw:true});
+        var sn=wb.SheetNames.find(s=>s.toLowerCase().includes('itemized'))||wb.SheetNames[0];
+        rows=XLSX.utils.sheet_to_json(wb.Sheets[sn],{defval:null});
+      }
+      if(!rows||!rows.length){toast('No data found','err');return}
       parsePreview(rows,file.name);
     }catch(e){toast('Parse error: '+e.message,'err')}
   };
-  rd.readAsArrayBuffer(file);
+  isCSV?rd.readAsText(file):rd.readAsArrayBuffer(file);
 }
 
 // ── Category normalization ────────────────────────────────
@@ -367,17 +376,37 @@ function normCat(raw){
 
 function parsePreview(rows,fname){
   var keys=Object.keys(rows[0]);
-  // Use available_on as the deposit date (matches what hits the bank account)
-  // Fallback chain: available_on → available_on_utc → Date
-  var dk=keys.find(k=>k==='Date')
+
+  // Date column — prefer automatic_payout_effective_at_utc, fallback to Date
+  var dk=keys.find(k=>k==='automatic_payout_effective_at_utc')
+        ||keys.find(k=>k==='automatic_payout_effective_at')
+        ||keys.find(k=>k==='Date')
         ||keys.find(k=>k.toLowerCase()==='date');
+
   var nk=keys.find(k=>k==='net');
   var ck=keys.find(k=>k==='product_names')||keys.find(k=>k==='Category');
+  var descKey=keys.find(k=>k==='description');
 
-  if(!dk||!nk||!ck){
-    toast('Missing Date/net/product_names columns. Found: '+keys.slice(0,8).join(', '),'err');
+  if(!dk||!nk){
+    toast('Missing required columns. Found: '+keys.slice(0,8).join(', '),'err');
     return;
   }
+
+  // ── Fill blank product_names from description ─────────────
+  // If product_names is blank but description has a value, use description
+  rows=rows.map(function(r){
+    var pn=ck?r[ck]:null;
+    var desc=descKey?r[descKey]:null;
+    if((!pn||String(pn).trim()==='')&&desc&&String(desc).trim()!==''){
+      var nr=Object.assign({},r);
+      if(ck)nr[ck]=String(desc).trim();
+      else nr['product_names']=String(desc).trim();
+      return nr;
+    }
+    return r;
+  });
+  // Update ck in case it wasn't found before
+  if(!ck&&descKey)ck='product_names';
 
   // Detect month label — extract date digits directly, never do timezone conversion
   var month='';
@@ -403,8 +432,9 @@ function parsePreview(rows,fname){
   for(var r of rows){
     var raw=r[dk];
     var net=parseFloat(r[nk])||0;
-    // Normalize category name
-    var rawCat=r[ck]?String(r[ck]).trim():'Other';
+    // product_names already filled from description above — normalize to canonical category
+    var rawCat=(ck&&r[ck])?String(r[ck]).trim():'';
+    if(!rawCat&&descKey&&r[descKey])rawCat=String(r[descKey]).trim();
     var cat=normCat(rawCat);
     var dt=null,label='';
     if(raw){
