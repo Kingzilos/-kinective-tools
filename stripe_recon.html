@@ -170,7 +170,8 @@
 
 <div class="tabs">
   <div class="tabs-i">
-    <div class="tab on" onclick="sw('upload')" id="tab-upload">Upload</div>
+    <div class="tab on" onclick="sw('upload')" id="tab-upload">Recon Upload</div>
+    <div class="tab" onclick="sw('sales')" id="tab-sales">Sales Upload <span class="bdg" id="bdg-sales">0</span></div>
     <div class="tab" onclick="sw('trends')" id="tab-trends">Trends</div>
     <div class="tab" onclick="sw('summary')" id="tab-summary">Summary <span class="bdg" id="bdg-summary">0</span></div>
   </div>
@@ -209,6 +210,41 @@
     <hr class="div">
     <span class="slbl">Saved Months</span>
     <div class="mo-strip" id="savedMos"><span style="color:var(--text3);font-size:13px">Loading…</span></div>
+  </div>
+
+  <!-- SALES UPLOAD -->
+  <div class="panel" id="panel-sales">
+    <div class="pgh">
+      <div class="pgt">Sales Upload</div>
+      <div class="pgs">Drop the unified_payments CSV or XLSX — pivot by Checkout Line Item Summary · Converted Amount · no dates</div>
+    </div>
+
+    <div class="upz" id="upz2" ondragover="dov2(event)" ondragleave="dlv2()" ondrop="drp2(event)">
+      <input type="file" id="fi2" accept=".xlsx,.csv" onchange="fsel2(event)">
+      <div class="upt">Drop unified_payments CSV or XLSX here</div>
+      <div class="ups">Reads Checkout Line Item Summary · Description · Converted Amount</div>
+    </div>
+
+    <div id="prevArea2" style="display:none">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-top:20px;margin-bottom:12px">
+        <div>
+          <span style="font-size:15px;font-weight:600" id="prevLabel2"></span>
+          <span style="font-size:12px;color:var(--text3);margin-left:10px" id="prevCount2"></span>
+        </div>
+        <div class="brow" style="margin:0">
+          <button class="btn bp" id="saveBtn2" onclick="saveSB2()">Save to Supabase</button>
+          <button class="btn bg" onclick="clr2()">Clear</button>
+          <span class="ss" id="saveStatus2"></span>
+        </div>
+      </div>
+      <!-- date range note -->
+      <div id="prevDateRange2" style="font-size:12px;color:var(--text3);margin-bottom:14px"></div>
+      <div class="tbl-w" id="prevPivot2"></div>
+    </div>
+
+    <hr class="div">
+    <span class="slbl">Saved Uploads</span>
+    <div class="mo-strip" id="savedSales"><span style="color:var(--text3);font-size:13px">Loading…</span></div>
   </div>
 
   <!-- TRENDS -->
@@ -259,7 +295,7 @@ async function chkConn(){
   setSt('','Connecting…');
   try{
     var r=await sbF('GET','stripe_pivot_rows?select=month&limit=1');
-    if(r.ok){setSt('ok','Supabase connected');loadAll();}
+    if(r.ok){setSt('ok','Supabase connected');loadAll();loadSales();}
     else showSQL();
   }catch(e){setSt('err','Connection failed')}
 }
@@ -631,6 +667,7 @@ function sw(tab){
   if(tab==='trends')renderTrends();
   if(tab==='summary')renderSummary();
   if(tab==='upload')refresh();
+  if(tab==='sales')refreshSales();
 }
 
 // ── Helpers ───────────────────────────────────────────────
@@ -643,6 +680,227 @@ function toast(msg,type){
   t.className='toast'+(type?' '+type:'');t.innerHTML='<span>'+msg+'</span>';
   c.appendChild(t);
   setTimeout(()=>{t.style.opacity='0';t.style.transform='translateX(20px)';t.style.transition='.25s';setTimeout(()=>t.remove(),260)},3500);
+}
+
+// ════════════════════════════════════════════════════════════
+// SALES TAB
+// ════════════════════════════════════════════════════════════
+var salesData=[];   // loaded from Supabase
+var sRows=[];       // current parsed rows ready to save
+var sLabel='';      // e.g. "April 2026"
+var sDateRange='';  // e.g. "Apr 1 – Apr 30, 2026"
+
+// ── Supabase: Sales table ─────────────────────────────────
+async function loadSales(){
+  try{
+    var r=await sbF('GET','stripe_sales_rows?select=*&order=created_at.asc&limit=5000');
+    if(!r.ok){showSalesSQL();return}
+    salesData=await r.json()||[];
+    refreshSales();
+    document.getElementById('bdg-sales').textContent=[...new Set(salesData.map(r=>r.label))].length;
+  }catch(e){toast('Sales load failed: '+e.message,'err')}
+}
+
+function showSalesSQL(){
+  toast('Run CREATE TABLE for stripe_sales_rows — see console','warn');
+  console.log(`
+CREATE TABLE IF NOT EXISTS stripe_sales_rows (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  label TEXT NOT NULL,
+  date_range TEXT,
+  category TEXT,
+  raw_name TEXT,
+  amount NUMERIC,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_ssr_label ON stripe_sales_rows(label);
+  `);
+}
+
+async function saveSB2(){
+  if(!sRows.length)return;
+  var btn=document.getElementById('saveBtn2');
+  btn.disabled=true;btn.innerHTML='<span class="spin"></span> Saving…';
+  try{await sbF('DELETE','stripe_sales_rows?label=eq.'+encodeURIComponent(sLabel))}catch(e){}
+  try{
+    var r=await sbF('POST','stripe_sales_rows',sRows);
+    if(r.ok||r.status===201){
+      toast('Saved '+sRows.length+' rows for '+sLabel,'ok');
+      document.getElementById('saveStatus2').textContent=sRows.length+' rows saved';
+      btn.innerHTML='Saved';
+      await loadSales();
+    }else{var e=await r.json();throw new Error(e.message||r.statusText)}
+  }catch(e){toast('Save failed: '+e.message,'err');btn.disabled=false;btn.innerHTML='Save to Supabase'}
+}
+
+async function delSale(label){
+  if(!confirm('Delete all rows for '+label+'?'))return;
+  await sbF('DELETE','stripe_sales_rows?label=eq.'+encodeURIComponent(label));
+  toast('Deleted '+label,'warn');loadSales();
+}
+
+function refreshSales(){
+  document.getElementById('bdg-sales').textContent=[...new Set(salesData.map(r=>r.label))].length;
+  var strip=document.getElementById('savedSales');
+  var labels=[...new Set(salesData.map(r=>r.label))];
+  if(!labels.length){strip.innerHTML='<span style="color:var(--text3);font-size:13px">No uploads saved yet</span>';return}
+  strip.innerHTML=labels.map(l=>{
+    // Find date range for this label
+    var dr=(salesData.find(r=>r.label===l)||{}).date_range||'';
+    return`<div class="mo-b">
+      <div>
+        <span style="font-weight:600">${l}</span>
+        ${dr?`<span style="font-size:11px;color:var(--text3);margin-left:8px">${dr}</span>`:''}
+      </div>
+      <span class="mo-x" onclick="delSale('${l.replace(/'/g,"\\'")}')" title="Delete">×</span>
+    </div>`;
+  }).join('');
+}
+
+// ── File parsing ──────────────────────────────────────────
+function dov2(e){e.preventDefault();document.getElementById('upz2').classList.add('drag')}
+function dlv2(){document.getElementById('upz2').classList.remove('drag')}
+function drp2(e){e.preventDefault();dlv2();var f=e.dataTransfer.files[0];if(f)procFile2(f)}
+function fsel2(e){var f=e.target.files[0];if(f)procFile2(f)}
+
+function procFile2(file){
+  var rd=new FileReader();
+  var isCSV=file.name.toLowerCase().endsWith('.csv');
+  rd.onload=function(e){
+    try{
+      var rows;
+      if(isCSV){
+        var wb=XLSX.read(e.target.result,{type:'string',raw:false});
+        rows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{defval:null});
+      }else{
+        var wb=XLSX.read(e.target.result,{type:'array',raw:true});
+        rows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{defval:null});
+      }
+      if(!rows||!rows.length){toast('No data found','err');return}
+      parseSales(rows,file.name);
+    }catch(e){toast('Parse error: '+e.message,'err')}
+  };
+  isCSV?rd.readAsText(file):rd.readAsArrayBuffer(file);
+}
+
+function parseSales(rows,fname){
+  var keys=Object.keys(rows[0]);
+  var clisKey=keys.find(k=>k==='Checkout Line Item Summary');
+  var descKey =keys.find(k=>k==='Description');
+  var amtKey  =keys.find(k=>k==='Converted Amount');
+  var refKey  =keys.find(k=>k==='Converted Amount Refunded');
+  var dateKey =keys.find(k=>k==='Created date (UTC)')||keys.find(k=>k.toLowerCase().includes('created'));
+
+  if(!amtKey){toast('Missing Converted Amount column','err');return}
+
+  // Step 1: Drop rows where Converted Amount Refunded > 0
+  rows=rows.filter(function(r){
+    var ref=refKey?parseFloat(r[refKey])||0:0;
+    return ref<=0;
+  });
+
+  // Step 2: Fill blank CLIS from Description
+  rows=rows.map(function(r){
+    var clis=clisKey?r[clisKey]:null;
+    var desc=descKey?r[descKey]:null;
+    if((!clis||String(clis).trim()==='')&&desc&&String(desc).trim()!==''){
+      var nr=Object.assign({},r);
+      if(clisKey)nr[clisKey]=String(desc).trim();
+      return nr;
+    }
+    return r;
+  });
+
+  // Step 3: Build label from month of first date
+  var label='Unknown';
+  var fullMonths=['January','February','March','April','May','June','July','August','September','October','November','December'];
+  var shortMonths=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  var allDates=[];
+  for(var r of rows){
+    var raw=dateKey?r[dateKey]:null;
+    if(raw){
+      var iso=String(raw).trim();
+      var dm=iso.match(/(\d{4})-(\d{2})-(\d{2})/);
+      if(dm){
+        allDates.push(new Date(Date.UTC(parseInt(dm[1]),parseInt(dm[2])-1,parseInt(dm[3]))));
+      }
+    }
+  }
+  if(allDates.length){
+    allDates.sort((a,b)=>a-b);
+    var first=allDates[0],last=allDates[allDates.length-1];
+    var mo=first.getUTCMonth(),yr=first.getUTCFullYear();
+    label=fullMonths[mo]+' '+yr;
+    // Date range string e.g. "Apr 1 – Apr 30, 2026"
+    sDateRange=shortMonths[first.getUTCMonth()]+' '+first.getUTCDate()+' – '+shortMonths[last.getUTCMonth()]+' '+last.getUTCDate()+', '+last.getUTCFullYear();
+  } else {
+    sDateRange='';
+  }
+  sLabel=label;
+
+  // Step 4: Build pivot rows — group by cleaned CLIS name
+  var grouped={};
+  var rawMap={};
+  for(var r of rows){
+    var raw=(clisKey&&r[clisKey])?String(r[clisKey]).trim():'Other';
+    // Strip trailing quantity " (N)" added by Stripe checkout
+    var clean=raw.replace(/\s*\(\d+\)$/,'').trim();
+    var cat=normCat(clean);
+    var amt=parseFloat(r[amtKey])||0;
+    grouped[cat]=(grouped[cat]||0)+amt;
+    // Track original names per canonical category
+    if(!rawMap[cat])rawMap[cat]={};
+    rawMap[cat][clean]=(rawMap[cat][clean]||0)+amt;
+  }
+
+  // Build rows for Supabase (one row per raw_name to preserve detail)
+  sRows=[];
+  for(var cat of Object.keys(rawMap)){
+    for(var rn of Object.keys(rawMap[cat])){
+      sRows.push({label:sLabel,date_range:sDateRange,category:cat,raw_name:rn,amount:rawMap[cat][rn]});
+    }
+  }
+
+  document.getElementById('prevLabel2').textContent=label;
+  document.getElementById('prevCount2').textContent=rows.length+' transactions';
+  document.getElementById('prevDateRange2').textContent=sDateRange?'Dates covered: '+sDateRange:'';
+  document.getElementById('prevPivot2').innerHTML=buildSalesPivot(grouped,rawMap);
+  document.getElementById('prevArea2').style.display='block';
+  var btn=document.getElementById('saveBtn2');
+  btn.disabled=false;btn.innerHTML='Save to Supabase';
+  document.getElementById('saveStatus2').textContent='';
+}
+
+function buildSalesPivot(grouped,rawMap){
+  var cats=Object.keys(grouped).sort((a,b)=>grouped[b]-grouped[a]);
+  var grand=Object.values(grouped).reduce((s,v)=>s+v,0);
+
+  var html='<table><thead><tr><th>Category</th><th class="r">Converted Amount</th></tr></thead><tbody>';
+  for(var cat of cats){
+    var amt=grouped[cat];
+    // T&E sub-note
+    var teNote='';
+    if(cat==='Talks and Events'&&rawMap[cat]){
+      var items=Object.entries(rawMap[cat])
+        .filter(([n])=>n!==cat)
+        .sort((a,b)=>b[1]-a[1])
+        .map(([n,v])=>`<span style="white-space:nowrap">${n} <span style="color:var(--text3);font-size:10px">(${fmt(v)})</span></span>`)
+        .join('<span style="color:var(--text4);margin:0 4px">·</span>');
+      if(items)teNote=`<div style="font-size:11px;color:var(--text3);margin-top:4px;line-height:1.6">↳ ${items}</div>`;
+    }
+    html+=`<tr>
+      <td><span class="pill" style="${ps(cat)}">${cat}</span>${teNote}</td>
+      <td class="r ${amt<0?'neg':'pos'}" style="vertical-align:top">${fmt(amt)}</td>
+    </tr>`;
+  }
+  html+=`</tbody><tfoot><tr class="grand"><td>Grand Total</td><td class="r">${fmt(grand)}</td></tr></tfoot></table>`;
+  return html;
+}
+
+function clr2(){
+  sRows=[];sLabel='';sDateRange='';
+  document.getElementById('prevArea2').style.display='none';
+  document.getElementById('fi2').value='';
 }
 
 init();
