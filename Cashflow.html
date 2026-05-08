@@ -1850,7 +1850,8 @@ function updateTotals() {
     function planoExpForAcct(k) { return planoExpenses.filter(e=>(e.account||'').startsWith(k)).reduce((s,x)=>s+x.amount,0); }
     ['6299','6280'].forEach(k=>{ac[k]=(ob[k]||0)+incForAcct(k)-planoExpForAcct(k)+xferForAcct(k);});
     ac['3472']=(ob['3472']||0)+incForAcct('3472')+xferForAcct('3472');
-    ['3775','7698'].forEach(k=>{ac[k]=(ob[k]||0)+incForAcct(k)-expForAcct(k)+xferForAcct(k);});
+    function loanForAcct(k) { return (window._loanAdjustments||{})[k]||0; }
+    ['3775','7698'].forEach(k=>{ac[k]=(ob[k]||0)+incForAcct(k)-expForAcct(k)+xferForAcct(k)+loanForAcct(k);});
     ac['2085']=(ob['2085']||0)+incForAcct('2085')+xferForAcct('2085');
     cbKin=(ac['8152']||0)+(ac['2213']||0)+(ac['9753']||0)+(ac['0211']||0)+(ac['3472']||0);
     const cbPlano=(ac['6299']||0)+(ac['6280']||0);
@@ -2055,16 +2056,7 @@ function recalcCapex() {
     else                         kinTotal   += n;
   });
 
-  // Add financing activities
-  document.querySelectorAll(".financing-amount").forEach(el => {
-    const row    = el.closest('.financing-item');
-    const entity = row?.querySelector('.capex-entity-toggle')?.dataset?.entity || 'amd';
-    const n      = parseFloat(el.textContent.replace(/[$,—()]/g,'').trim()) || 0;
-    if (entity === 'amd')        amdTotal   += n;
-    else if (entity === 'plano') planoTotal += n;
-    else                         kinTotal   += n;
-  });
-
+  // NOTE: financing activities are intentionally excluded from CAPEX/OCF
   const total    = kinTotal + planoTotal + amdTotal;
   const hasAny   = total > 0;
   capex2026      = total;
@@ -2314,40 +2306,17 @@ function buildWeek8Snapshot() {
 // This file works identically on ANY machine — no IndexedDB dependency
 // for historical data. New entries (Week 12+) save locally as normal.
 async function initWeekSystem() {
-  // One-time purge of bad financing data (flag prevents re-running)
   if (!localStorage.getItem('financing_purged_v1')) {
     try {
       for (let i = 0; i < localStorage.length; i++) {
         const k = localStorage.key(i);
         if (k?.startsWith(LS_PREFIX)) {
           const w = JSON.parse(localStorage.getItem(k));
-          if (w?.financingItems) {
-            w.financingItems = w.financingItems.map(fi => ({ ...fi, amount: 0 }));
-            localStorage.setItem(k, JSON.stringify(w));
-          }
-        }
-      }
-      // Also push zeroed financing to Supabase for all saved weeks
-      const { url, key } = getSBCreds();
-      if (url && key) {
-        for (let i = 0; i < localStorage.length; i++) {
-          const k = localStorage.key(i);
-          if (k?.startsWith(LS_PREFIX)) {
-            try {
-              const w = JSON.parse(localStorage.getItem(k));
-              if (w?.weekNum) {
-                fetch(`${url}/rest/v1/${SB_TABLE}`, {
-                  method: 'POST',
-                  headers: {'Content-Type':'application/json','apikey':key,'Authorization':'Bearer '+key,'Prefer':'resolution=merge-duplicates'},
-                  body: JSON.stringify({ week_num: w.weekNum, data: w })
-                }).catch(()=>{});
-              }
-            } catch(e) {}
-          }
+          if (w?.financingItems) { w.financingItems = w.financingItems.map(fi=>({...fi,amount:0})); localStorage.setItem(k,JSON.stringify(w)); }
         }
       }
     } catch(e) {}
-    localStorage.setItem('financing_purged_v1', '1');
+    localStorage.setItem('financing_purged_v1','1');
   }
 
   // Seed all verified weeks as baseline — these are always correct
@@ -3043,6 +3012,18 @@ function parseXLS(buffer, filename) {
     const descUp  = desc.toUpperCase();
     const hasCheck = checkNo.length > 0 && /\d/.test(checkNo); // has a numeric check number
 
+    // Loan drawdown — never income, never OCF, only closing balance + financing tab
+    const isLoanAdvance = descUp.includes('ADV FROM 90050168') || descUp.includes('ADVANCE FROM 90050168');
+    if (isLoanAdvance) {
+      if (credit > 0) {
+        if (!window._pendingFinancingItems) window._pendingFinancingItems = [];
+        window._pendingFinancingItems.push({ name: 'Loan Proceeds — Construction Draw (AMD)', amount: credit, entity: 'amd' });
+        if (!window._loanAdjustments) window._loanAdjustments = {};
+        window._loanAdjustments[acctNum] = (window._loanAdjustments[acctNum] || 0) + credit;
+      }
+      continue;
+    }
+
     // "Transit Debit" WITH a check number = a real check payment → expense, not a transfer
     // "Transit Debit" WITHOUT a check number = internal account-to-account move → wash it
     const isTransitDebit  = descUp.includes('TRANSIT DEBIT');
@@ -3126,7 +3107,26 @@ function applyToReport(acctNum, expenses, incomeItems, transfers, filename) {
     incomeData.amd[acctNum].amount = incomeTotal;
   }
 
-  window._xlsUploadedThisSession = true; // tells updateTotals to recompute closing balances
+  if (window._pendingFinancingItems?.length) {
+    const finRows = document.getElementById('financing-rows');
+    const labels  = { 'kin':'KIN EP', 'plano':'KIN PL', 'amd':'AMD' };
+    if (finRows) {
+      const items = finRows.querySelectorAll('.financing-item');
+      window._pendingFinancingItems.forEach((fi, i) => {
+        if (!items[i]) return;
+        const nameEl   = items[i].querySelector('.analytic-name');
+        const amtEl    = items[i].querySelector('.financing-amount');
+        const entityEl = items[i].querySelector('.capex-entity-toggle');
+        if (nameEl)   nameEl.textContent = fi.name;
+        if (amtEl)    { amtEl.textContent = fmt(fi.amount); amtEl.classList.remove('muted'); }
+        if (entityEl) { entityEl.dataset.entity = fi.entity; entityEl.textContent = labels[fi.entity] || fi.entity.toUpperCase(); }
+      });
+      recalcFinancing();
+    }
+    window._pendingFinancingItems = [];
+  }
+
+  window._xlsUploadedThisSession = true;
   renderIncome();
   renderExpenses();
   updateTotals();
