@@ -42,17 +42,17 @@
   .srch:focus{border-color:var(--blue);background:#fff;}
 
   /* KPI */
-  .kbar { height:78px; background:var(--surface); border-bottom:1px solid var(--border); display:flex; align-items:center; padding:0 16px; gap:10px; overflow-x:auto; position:fixed; top:96px; left:0; right:0; z-index:298; }
-  .kc  { flex-shrink:0; background:var(--bg); border-radius:10px; padding:10px 14px; min-width:165px; border-left:3px solid var(--mb); }
+  .kbar { height:100px; background:var(--surface); border-bottom:1px solid var(--border); display:flex; align-items:center; padding:0 16px; gap:12px; overflow-x:auto; position:fixed; top:96px; left:0; right:0; z-index:298; }
+  .kc  { flex-shrink:0; background:var(--bg); border-radius:10px; padding:14px 18px; min-width:200px; border-left:3px solid var(--mb); }
   .kc.pos{border-left-color:var(--grn);} .kc.neg{border-left-color:var(--red);}
-  .kl  { font-size:0.61rem; font-weight:600; text-transform:uppercase; letter-spacing:0.07em; color:var(--secondary); margin-bottom:3px; }
-  .kv  { font-size:1.02rem; font-weight:700; line-height:1; }
-  .kb  { font-size:0.65rem; color:var(--secondary); margin-top:2px; }
-  .kvar{ display:inline-block; font-size:0.65rem; font-weight:600; padding:1px 6px; border-radius:10px; margin-top:2px; }
+  .kl  { font-size:0.65rem; font-weight:600; text-transform:uppercase; letter-spacing:0.07em; color:var(--secondary); margin-bottom:4px; }
+  .kv  { font-size:1.15rem; font-weight:700; line-height:1; }
+  .kb  { font-size:0.7rem; color:var(--secondary); margin-top:3px; }
+  .kvar{ display:inline-block; font-size:0.7rem; font-weight:600; padding:2px 8px; border-radius:10px; margin-top:4px; }
   .kvar.pos{background:#d4edda;color:var(--grn);} .kvar.neg{background:#fadbd8;color:var(--red);} .kvar.neu{background:var(--border);color:var(--secondary);}
 
   /* Table wrapper — top = topbar(52) + ctrl(44) + kpi(78) = 174 */
-  .tw { position:fixed; top:174px; left:0; right:0; bottom:0; overflow:auto; -webkit-overflow-scrolling:touch; }
+  .tw { position:fixed; top:196px; left:0; right:0; bottom:0; overflow:auto; -webkit-overflow-scrolling:touch; }
 
   /* ── TABLE ── */
   table { border-collapse:separate; border-spacing:0; font-size:0.79rem; min-width:max-content; }
@@ -318,8 +318,11 @@ function renderKPI(){
   const defs=[{t:"Total Revenue",r:find("total revenues")},{t:"Total Expenses",r:find("total expenses")},{t:"Net Profit",r:find("net profit")}];
   document.getElementById("kbar").innerHTML=defs.map(({t,r})=>{
     if(!r?.ytd)return"";
-    const d=r.ytd[vk()],v=vp(d.real,d.budget),cls=t==="Net Profit"?(d.real>=0?"pos":"neg"):"";
-    return`<div class="kc ${cls}"><div class="kl">${t} · YTD ${ytdM>0?MONTHS[ytdM-1]:"—"}</div><div class="kv">${fmt(d.real,true)}</div><div class="kb">Budget: ${fmt(d.budget,true)}</div><span class="kvar ${v.c}">${v.t} vs budget</span></div>`;
+    const d=r.ytd[vk()],v=vp(d.real,d.budget);
+    // For expenses: under budget = good (green), over budget = bad (red) — flip the color
+    const varCls = t==="Total Expenses" ? (v.c==="pos"?"neg":v.c==="neg"?"pos":v.c) : v.c;
+    const cls=t==="Net Profit"?(d.real>=0?"pos":"neg"):"";
+    return`<div class="kc ${cls}"><div class="kl">${t} · YTD ${ytdM>0?MONTHS[ytdM-1]:"—"}</div><div class="kv">${fmt(d.real,true)}</div><div class="kb">Budget: ${fmt(d.budget,true)}</div><span class="kvar ${varCls}">${v.t} vs budget</span></div>`;
   }).join("");
 }
 
@@ -378,7 +381,7 @@ function renderBody(){
 
     // Track whether we're in the expenses section
     if(type==="sec"&&ln==="expenses") inExpenses=true;
-    if(ln==="total expenses") inExpenses=false;
+    if(ln==="net profit") inExpenses=false; // NET PROFIT and below use normal logic
 
     // Variance function — flipped for expenses (over budget = red, under = green)
     const vpE=(r,b)=>{
