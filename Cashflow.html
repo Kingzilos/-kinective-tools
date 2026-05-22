@@ -1125,9 +1125,9 @@
         <div class="analytic-row">
           <span class="analytic-name editable" contenteditable="true">AMD Rent paid by Kinective (Jan–Dec)</span>
           <div class="analytic-vals">
-            <span class="analytic-val editable" contenteditable="true">$1,359,600.00</span>
-            <span class="analytic-val editable" contenteditable="true">$1,145,000.00</span>
-            <span class="analytic-val muted">—</span>
+            <span class="analytic-val editable" contenteditable="true" id="rent-2026" oninput="recalcVariance()" onblur="recalcVariance()">$1,359,600.00</span>
+            <span class="analytic-val editable" contenteditable="true" id="rent-2025" oninput="recalcVariance()" onblur="recalcVariance()">$1,145,000.00</span>
+            <span class="var-pill" id="rent-variance">—</span>
           </div>
         </div>
         </div>
@@ -1788,14 +1788,29 @@ function addExpenseRow(group) {
 }
 
 function recalcVariance() {
+  // Accumulated cash flow variance
   const v2026 = parseFmt(document.getElementById('accum-2026')?.textContent || '0');
   const v2025 = parseFmt(document.getElementById('accum-2025')?.textContent || '0');
   const diff  = v2026 - v2025;
   const pill  = document.getElementById('accum-variance');
-  if (!pill) return;
-  const abs = Math.abs(diff).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
-  pill.textContent  = (diff >= 0 ? '▲ $' : '▼ $') + abs;
-  pill.className    = 'var-pill ' + (diff >= 0 ? 'pos' : 'neg');
+  if (pill) {
+    const abs = Math.abs(diff).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+    pill.textContent = (diff >= 0 ? '▲ $' : '▼ $') + abs;
+    pill.className   = 'var-pill ' + (diff >= 0 ? 'pos' : 'neg');
+  }
+  // Rent variance ($)
+  const r2026    = parseFmt(document.getElementById('rent-2026')?.textContent || '0');
+  const r2025    = parseFmt(document.getElementById('rent-2025')?.textContent || '0');
+  const rentPill = document.getElementById('rent-variance');
+  if (rentPill) {
+    if (!r2025 || !r2026) { rentPill.textContent = '—'; rentPill.className = 'var-pill'; }
+    else {
+      const diff2 = r2026 - r2025;
+      const abs2  = Math.abs(diff2).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+      rentPill.textContent = (diff2 >= 0 ? '▲ $' : '▼ $') + abs2;
+      rentPill.className   = 'var-pill ' + (diff2 >= 0 ? 'neg' : 'pos'); // rent up = red
+    }
+  }
 }
 
 function updateTotals() {
@@ -2056,7 +2071,6 @@ function recalcCapex() {
     else                         kinTotal   += n;
   });
 
-  // NOTE: financing activities are intentionally excluded from CAPEX/OCF
   const total    = kinTotal + planoTotal + amdTotal;
   const hasAny   = total > 0;
   capex2026      = total;
@@ -2307,18 +2321,9 @@ function buildWeek8Snapshot() {
 // for historical data. New entries (Week 12+) save locally as normal.
 async function initWeekSystem() {
   if (!localStorage.getItem('financing_purged_v1')) {
-    try {
-      for (let i = 0; i < localStorage.length; i++) {
-        const k = localStorage.key(i);
-        if (k?.startsWith(LS_PREFIX)) {
-          const w = JSON.parse(localStorage.getItem(k));
-          if (w?.financingItems) { w.financingItems = w.financingItems.map(fi=>({...fi,amount:0})); localStorage.setItem(k,JSON.stringify(w)); }
-        }
-      }
-    } catch(e) {}
+    try { for (let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k?.startsWith(LS_PREFIX)){const w=JSON.parse(localStorage.getItem(k));if(w?.financingItems){w.financingItems=w.financingItems.map(fi=>({...fi,amount:0}));localStorage.setItem(k,JSON.stringify(w));}}}} catch(e){}
     localStorage.setItem('financing_purged_v1','1');
   }
-
   // Seed all verified weeks as baseline — these are always correct
   allWeeks[8]  = buildWeek8Snapshot();
   allWeeks[9]  = buildWeek9Snapshot();
@@ -2708,7 +2713,6 @@ function loadWeekIntoUI(weekNum, readOnly) {
     });
   }
 
-  // Financing items — always reset first so stale values never bleed between weeks
   const finRows = document.getElementById('financing-rows');
   if (finRows) {
     const labels = { 'kin':'KIN EP', 'plano':'KIN PL', 'amd':'AMD' };
@@ -3012,7 +3016,6 @@ function parseXLS(buffer, filename) {
     const descUp  = desc.toUpperCase();
     const hasCheck = checkNo.length > 0 && /\d/.test(checkNo); // has a numeric check number
 
-    // Loan drawdown — never income, never OCF, only closing balance + financing tab
     const isLoanAdvance = descUp.includes('ADV FROM 90050168') || descUp.includes('ADVANCE FROM 90050168');
     if (isLoanAdvance) {
       if (credit > 0) {
@@ -3023,7 +3026,6 @@ function parseXLS(buffer, filename) {
       }
       continue;
     }
-
     // "Transit Debit" WITH a check number = a real check payment → expense, not a transfer
     // "Transit Debit" WITHOUT a check number = internal account-to-account move → wash it
     const isTransitDebit  = descUp.includes('TRANSIT DEBIT');
@@ -3125,7 +3127,6 @@ function applyToReport(acctNum, expenses, incomeItems, transfers, filename) {
     }
     window._pendingFinancingItems = [];
   }
-
   window._xlsUploadedThisSession = true;
   renderIncome();
   renderExpenses();
