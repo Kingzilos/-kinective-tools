@@ -1248,6 +1248,13 @@
               <span style="width:28px;"></span>
             </div>
           </div>
+          <div class="analytic-row" style="margin-top:10px; padding-top:10px; border-top:1px solid var(--gold); display:flex; justify-content:space-between; align-items:center;" id="capex-ytd-row">
+            <span class="analytic-name" style="font-family:'DM Mono',monospace; font-size:10px; letter-spacing:0.1em; text-transform:uppercase; color:var(--gold); font-weight:700;">2026 YTD Accumulated CAPEX</span>
+            <div class="analytic-vals" style="gap:8px;">
+              <span class="analytic-val" style="font-weight:700; min-width:120px; text-align:right; color:var(--gold); font-size:14px;" id="capex-ytd-display">—</span>
+              <span style="width:28px;"></span>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -1788,7 +1795,6 @@ function addExpenseRow(group) {
 }
 
 function recalcVariance() {
-  // Accumulated cash flow variance
   const v2026 = parseFmt(document.getElementById('accum-2026')?.textContent || '0');
   const v2025 = parseFmt(document.getElementById('accum-2025')?.textContent || '0');
   const diff  = v2026 - v2025;
@@ -1798,9 +1804,8 @@ function recalcVariance() {
     pill.textContent = (diff >= 0 ? '▲ $' : '▼ $') + abs;
     pill.className   = 'var-pill ' + (diff >= 0 ? 'pos' : 'neg');
   }
-  // Rent variance ($)
-  const r2026    = parseFmt(document.getElementById('rent-2026')?.textContent || '0');
-  const r2025    = parseFmt(document.getElementById('rent-2025')?.textContent || '0');
+  const r2026 = parseFmt(document.getElementById('rent-2026')?.textContent || '0');
+  const r2025 = parseFmt(document.getElementById('rent-2025')?.textContent || '0');
   const rentPill = document.getElementById('rent-variance');
   if (rentPill) {
     if (!r2025 || !r2026) { rentPill.textContent = '—'; rentPill.className = 'var-pill'; }
@@ -1808,7 +1813,7 @@ function recalcVariance() {
       const diff2 = r2026 - r2025;
       const abs2  = Math.abs(diff2).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
       rentPill.textContent = (diff2 >= 0 ? '▲ $' : '▼ $') + abs2;
-      rentPill.className   = 'var-pill ' + (diff2 >= 0 ? 'neg' : 'pos'); // rent up = red
+      rentPill.className   = 'var-pill ' + (diff2 >= 0 ? 'neg' : 'pos');
     }
   }
 }
@@ -2089,6 +2094,17 @@ function recalcCapex() {
   if (dispPlano) dispPlano.textContent = planoTotal > 0 ? fmt(planoTotal) : '—';
   if (dispAmd)   dispAmd.textContent   = amdTotal > 0   ? fmt(amdTotal)   : '—';
 
+  // 2026 YTD Accumulated CAPEX = baseline + sum of past weeks' CAPEX + current week live total
+  const dispYTD = document.getElementById('capex-ytd-display');
+  if (dispYTD) {
+    let ytd = CAPEX_YTD_BASELINE;
+    for (let w = 8; w <= currentWeekNum; w++) {
+      if (w === currentWeekNum) ytd += total;
+      else if (allWeeks[w]?.capexItems) ytd += allWeeks[w].capexItems.reduce((s,i) => s + (i.amount||0), 0);
+    }
+    dispYTD.textContent = fmt(ytd);
+  }
+
   updateTotals();
 }
 
@@ -2166,6 +2182,7 @@ attachCapexListeners();
 //  STORAGE: Supabase (cloud) + localStorage fallback
 // ═══════════════════════════════════════════════════════════════
 const LS_PREFIX      = 'cashflow_week_';
+const CAPEX_YTD_BASELINE = 1513235.56; // Pre-week-8 cumulative CAPEX
 const SB_TABLE       = 'cashflow_weeks';
 const SB_URL_DEFAULT = 'https://jbqvtnukspnlpxgosmhp.supabase.co';
 const SB_KEY_DEFAULT = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpicXZ0bnVrc3BubHB4Z29zbWhwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyNzU0NjcsImV4cCI6MjA4ODg1MTQ2N30.0EvUKNrSbH2UkQPEkTWXKS8PGNVr4G0dvWoJp9HBROs';
@@ -2696,21 +2713,24 @@ function loadWeekIntoUI(weekNum, readOnly) {
   (week.expenses?.amd   || []).forEach(e => amdExpenses.push(e));
   renderExpenses();
 
-  // CAPEX
+  // CAPEX — always reset all rows first so stale values don't bleed when switching weeks
   capex2026 = week.capexYTD || 0;
   const capexRows = document.getElementById('capex-rows');
-  if (capexRows && week.capexItems?.length) {
-    const items = capexRows.querySelectorAll('.capex-item');
-    week.capexItems.forEach((ci, i) => {
-      if (!items[i]) return;
-      const nameEl   = items[i].querySelector('.analytic-name');
-      const amtEl    = items[i].querySelector('.capex-amount');
-      const entityEl = items[i].querySelector('.capex-entity-toggle');
-      const labels   = { 'kin':'KIN EP', 'plano':'KIN PL', 'amd':'AMD' };
-      if (nameEl) nameEl.textContent = ci.name;
-      if (amtEl)  { amtEl.textContent = ci.amount > 0 ? fmt(ci.amount) : '—'; amtEl.classList.toggle('muted', ci.amount === 0); }
-      if (entityEl && ci.entity) { entityEl.dataset.entity = ci.entity; entityEl.textContent = labels[ci.entity] || ci.entity.toUpperCase(); }
-    });
+  if (capexRows) {
+    const labels = { 'kin':'KIN EP', 'plano':'KIN PL', 'amd':'AMD' };
+    capexRows.querySelectorAll('.capex-amount').forEach(el => { el.textContent = '—'; el.classList.add('muted'); });
+    if (week.capexItems?.length) {
+      const items = capexRows.querySelectorAll('.capex-item');
+      week.capexItems.forEach((ci, i) => {
+        if (!items[i]) return;
+        const nameEl   = items[i].querySelector('.analytic-name');
+        const amtEl    = items[i].querySelector('.capex-amount');
+        const entityEl = items[i].querySelector('.capex-entity-toggle');
+        if (nameEl) nameEl.textContent = ci.name;
+        if (amtEl)  { amtEl.textContent = ci.amount > 0 ? fmt(ci.amount) : '—'; amtEl.classList.toggle('muted', !(ci.amount > 0)); }
+        if (entityEl && ci.entity) { entityEl.dataset.entity = ci.entity; entityEl.textContent = labels[ci.entity] || ci.entity.toUpperCase(); }
+      });
+    }
   }
 
   const finRows = document.getElementById('financing-rows');
