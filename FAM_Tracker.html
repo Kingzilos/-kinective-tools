@@ -32,10 +32,17 @@ body { background: var(--bg); font-family: var(--font); color: var(--text-primar
 .header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 24px; gap: 16px; flex-wrap: wrap; }
 .header-left h1 { font-size: 1.5rem; font-weight: 600; margin: 0 0 4px; }
 .header-left .subtitle { color: var(--text-secondary); font-size: 0.875rem; }
-.sync-status { font-size: 0.75rem; color: var(--text-muted); }
+.sync-status { font-size: 0.75rem; color: var(--text-muted); display: inline-flex; align-items: center; cursor: pointer; }
 .sync-status .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--text-muted); margin-right: 6px; vertical-align: middle; }
 .sync-status.synced .dot { background: var(--green); }
 .sync-status.local .dot  { background: var(--amber); }
+.sync-status.saving .dot { background: var(--blue-accent); animation: pulse 0.9s ease-in-out infinite; }
+@keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.35; } }
+.sync-time { color: var(--text-muted); margin-left: 4px; }
+.btn-refresh { background: transparent; border: none; color: var(--text-muted); cursor: pointer; padding: 2px 6px; font-size: 0.9rem; border-radius: 6px; margin-left: 6px; line-height: 1; }
+.btn-refresh:hover { background: var(--bg); color: var(--blue-accent); }
+.btn-refresh.spinning { animation: spin 0.8s linear infinite; pointer-events: none; }
+@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 
 .card { background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); padding: 20px; margin-bottom: 20px; }
 
@@ -148,7 +155,12 @@ td input:focus, td select:focus, td textarea:focus { outline: none; box-shadow: 
       <h1>Financial &amp; Administrative Manager Tracker</h1>
       <div class="subtitle">Kinective Fitness Club LLC · AMD Capital LLC</div>
     </div>
-    <div class="sync-status" id="sync-status"><span class="dot"></span><span id="sync-text">Loading…</span></div>
+    <div class="sync-status" id="sync-status" onclick="showSyncError()">
+      <span class="dot"></span>
+      <span id="sync-text">Loading…</span>
+      <span class="sync-time" id="sync-time"></span>
+      <button class="btn-refresh" id="refresh-btn" onclick="event.stopPropagation(); refreshFromCloud(true)" title="Reload from cloud">↻</button>
+    </div>
   </div>
 
   <div class="card">
@@ -209,6 +221,8 @@ td input:focus, td select:focus, td textarea:focus { outline: none; box-shadow: 
       <label class="check-toggle"><input type="checkbox" id="t-hide-completed" onchange="toggleHideCompleted(this.checked)"> Hide completed</label>
       <label class="check-toggle"><input type="checkbox" id="t-show-archived"  onchange="toggleShowArchived(this.checked)"> Show archived</label>
       <button class="btn-secondary" onclick="exportCSV()">Export CSV</button>
+      <button class="btn-secondary" onclick="exportBackup()" title="Download a JSON backup of all tasks">Backup</button>
+      <button class="btn-secondary" onclick="importBackup()" title="Restore tasks from a JSON backup">Restore</button>
     </div>
 
     <div id="bulk-bar" class="bulk-bar" style="display:none;">
@@ -263,32 +277,66 @@ async function sbFetch(table, options = {}) {
   if (prefer) headers['Prefer'] = prefer;
   else if (method === 'POST') headers['Prefer'] = 'return=representation';
   const res = await fetch(url, { method, headers, body: body ? JSON.stringify(body) : undefined });
-  if (!res.ok) throw new Error('Supabase ' + res.status);
-  return res.status === 204 ? null : res.json();
+  if (!res.ok) {
+    const errText = await res.text().catch(() => '');
+    throw new Error('Supabase ' + res.status + (errText ? ': ' + errText.slice(0, 200) : ''));
+  }
+  // 204 No Content, or 'return=minimal' POST → empty body. Don't try to JSON-parse empty.
+  if (res.status === 204) return null;
+  const text = await res.text();
+  return text ? JSON.parse(text) : null;
 }
 
 async function loadTasks() {
+  // Read local cache + its timestamp, if present
+  const localRaw = localStorage.getItem(STORAGE_KEY);
+  const localTime = localStorage.getItem(STORAGE_KEY + '_updated') || '';
+  const localTasks = localRaw ? JSON.parse(localRaw) : null;
+
   try {
     const rows = await sbFetch('kv_store', { filter: `key=eq.${STORAGE_KEY}` });
-    if (rows && rows[0] && rows[0].value && Array.isArray(rows[0].value.tasks)) {
-      tasks = rows[0].value.tasks.map(normalizeTask);
-      setSync('synced','Synced');
-      return;
+    if (rows && rows.length > 0) {
+      // Pick the newest cloud row by value.updated
+      rows.sort((a, b) => {
+        const at = (a.value && a.value.updated) || '';
+        const bt = (b.value && b.value.updated) || '';
+        return bt.localeCompare(at);
+      });
+      const latest = rows[0];
+      const cloudTime = (latest.value && latest.value.updated) || '';
+      const cloudTasks = (latest.value && Array.isArray(latest.value.tasks)) ? latest.value.tasks : null;
+
+      // If local cache is newer than cloud (e.g. save was still in flight last
+      // session), trust local and push it up to cloud.
+      if (localTasks && localTime && localTime > cloudTime) {
+        tasks = localTasks.map(normalizeTask);
+        setSync('synced','Synced');
+        saveTasks(true);
+        return;
+      }
+      if (cloudTasks) {
+        tasks = cloudTasks.map(normalizeTask);
+        setSync('synced','Synced');
+        return;
+      }
     }
-    tasks = seedTasks();
+    tasks = (localTasks || seedTasks()).map(normalizeTask);
     await saveTasks(true);
   } catch (e) {
     console.warn('Supabase load failed; using localStorage', e);
-    const local = localStorage.getItem(STORAGE_KEY);
-    tasks = (local ? JSON.parse(local) : seedTasks()).map(normalizeTask);
-    setSync('local','Local only');
+    tasks = (localTasks || seedTasks()).map(normalizeTask);
+    setSync('local','Local only', e);
   }
 }
 
 let saveTimer = null;
+let savePending = false;
 function saveTasks(immediate=false) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks));
+  localStorage.setItem(STORAGE_KEY + '_updated', new Date().toISOString());
   clearTimeout(saveTimer);
+  savePending = true;
+  setSync('saving', 'Saving…');
   const doSave = async () => {
     try {
       await sbFetch('kv_store', {
@@ -296,21 +344,82 @@ function saveTasks(immediate=false) {
         body: { key: STORAGE_KEY, value: { tasks, updated: new Date().toISOString() } },
         prefer: 'resolution=merge-duplicates,return=minimal'
       });
+      savePending = false;
       setSync('synced','Synced');
     } catch (e) {
       console.warn('Supabase save failed', e);
-      setSync('local','Local only');
+      savePending = false;
+      setSync('local','Local only', e);
     }
   };
   if (immediate) return doSave();
-  saveTimer = setTimeout(doSave, 400);
+  saveTimer = setTimeout(doSave, 150);
 }
 
-function setSync(mode, label) {
+// Flush any pending save before the page unloads, using keepalive so the
+// request completes even after navigation/refresh.
+function flushPendingSave() {
+  if (!savePending) return;
+  clearTimeout(saveTimer);
+  try {
+    fetch(`${SB_URL}/rest/v1/kv_store`, {
+      method: 'POST',
+      headers: {
+        'apikey': SB_KEY,
+        'Authorization': `Bearer ${SB_KEY}`,
+        'Content-Type': 'application/json',
+        'Prefer': 'resolution=merge-duplicates,return=minimal'
+      },
+      body: JSON.stringify({ key: STORAGE_KEY, value: { tasks, updated: new Date().toISOString() } }),
+      keepalive: true
+    });
+  } catch (e) { /* ignore — page is unloading */ }
+}
+window.addEventListener('beforeunload', flushPendingSave);
+window.addEventListener('pagehide',      flushPendingSave);
+
+let lastSyncAt = null;
+let lastSyncError = null;
+function setSync(mode, label, err) {
   const el = document.getElementById('sync-status');
   el.className = 'sync-status ' + mode;
   document.getElementById('sync-text').textContent = label;
+  const timeEl = document.getElementById('sync-time');
+  if (mode === 'synced') {
+    lastSyncAt = new Date();
+    lastSyncError = null;
+    timeEl.textContent = '· ' + lastSyncAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    el.title = 'Last synced at ' + lastSyncAt.toLocaleTimeString();
+  } else if (mode === 'local') {
+    lastSyncError = err || null;
+    timeEl.textContent = '';
+    el.title = err ? ('Supabase error: ' + (err.message || err)) : 'Cloud sync unavailable';
+  } else {
+    timeEl.textContent = '';
+  }
 }
+
+async function refreshFromCloud(force) {
+  // Don't yank data out from under an in-progress edit
+  if (!force && document.querySelector('td input, td select, td textarea')) return;
+  const btn = document.getElementById('refresh-btn');
+  if (btn) btn.classList.add('spinning');
+  try {
+    const before = JSON.stringify(tasks);
+    await loadTasks();
+    render();
+    if (force) {
+      const changed = JSON.stringify(tasks) !== before;
+      toast(changed ? 'Refreshed from cloud' : 'Already up to date');
+    }
+  } finally {
+    if (btn) btn.classList.remove('spinning');
+  }
+}
+
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') refreshFromCloud(false);
+});
 
 function normalizeTask(t) {
   return {
@@ -742,6 +851,42 @@ function clearFilters() {
   render();
 }
 
+function exportBackup() {
+  const payload = { tasks, exportedAt: new Date().toISOString(), version: 1 };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type:'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = `FAM_Tracker_backup_${todayISO()}.json`;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  toast('Backup downloaded');
+}
+
+function importBackup() {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = 'application/json,.json';
+  input.onchange = async () => {
+    const file = input.files[0];
+    if (!file) return;
+    try {
+      const text = await file.text();
+      const data = JSON.parse(text);
+      const imported = Array.isArray(data) ? data : (data.tasks || []);
+      if (!Array.isArray(imported)) throw new Error('Backup file has no tasks array');
+      if (!confirm(`Replace current ${tasks.length} task${tasks.length===1?'':'s'} with ${imported.length} from backup? This cannot be undone.`)) return;
+      tasks = imported.map(normalizeTask);
+      selectedIds.clear();
+      await saveTasks(true);
+      render();
+      toast(`Restored ${imported.length} task${imported.length===1?'':'s'}`);
+    } catch (e) {
+      alert('Could not read backup file: ' + e.message);
+    }
+  };
+  input.click();
+}
+
 function exportCSV() {
   const filtered = applyFilters(tasks);
   const headers = ['Category','Task','Owner','Priority','Status','Due Date','Notes','Link','Completed At'];
@@ -761,6 +906,15 @@ function toast(msg) {
   el.textContent = msg;
   el.classList.add('show');
   setTimeout(() => el.classList.remove('show'), 1800);
+}
+
+function showSyncError() {
+  if (lastSyncError) {
+    const msg = lastSyncError.message || String(lastSyncError);
+    alert(`Cloud sync failed:\n\n${msg}\n\nYour data is being saved locally to this browser. Open browser DevTools → Console to see full error details. Most common causes:\n• Supabase 'kv_store' table missing or has different schema\n• Row-level security blocking the anon key\n• Network/firewall blocking jbqvtnukspnlpxgosmhp.supabase.co`);
+  } else if (lastSyncAt) {
+    alert(`Last synced to cloud at ${lastSyncAt.toLocaleString()}`);
+  }
 }
 
 /* ============ Init ============ */
