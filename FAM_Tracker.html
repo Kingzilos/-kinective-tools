@@ -1,0 +1,770 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FAM Tracker</title>
+<style>
+:root {
+  --bg: #F4F6F9;
+  --card: #FFFFFF;
+  --shadow: 0 2px 12px rgba(0,0,0,0.07);
+  --radius: 16px;
+  --font: 'Inter', 'SF Pro Display', system-ui, -apple-system, sans-serif;
+  --text-primary: #111827;
+  --text-secondary: #6B7280;
+  --text-muted: #9CA3AF;
+  --green: #16A34A;
+  --green-bg: #F0FDF4;
+  --red: #DC2626;
+  --red-bg: #FEF2F2;
+  --amber: #D97706;
+  --amber-bg: #FFFBEB;
+  --blue-accent: #2563EB;
+  --blue-light: #EFF6FF;
+  --border-light: #E5E7EB;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body { background: var(--bg); font-family: var(--font); color: var(--text-primary); padding: 24px; }
+.container { max-width: 1280px; margin: 0 auto; }
+
+.header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 24px; gap: 16px; flex-wrap: wrap; }
+.header-left h1 { font-size: 1.5rem; font-weight: 600; margin: 0 0 4px; }
+.header-left .subtitle { color: var(--text-secondary); font-size: 0.875rem; }
+.sync-status { font-size: 0.75rem; color: var(--text-muted); }
+.sync-status .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--text-muted); margin-right: 6px; vertical-align: middle; }
+.sync-status.synced .dot { background: var(--green); }
+.sync-status.local .dot  { background: var(--amber); }
+
+.card { background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); padding: 20px; margin-bottom: 20px; }
+
+.filter-bar { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr 1fr 1.6fr auto; gap: 12px; align-items: end; }
+.filter-bar .field label { font-size: 0.7rem; font-weight: 500; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em; display: block; margin-bottom: 6px; }
+.filter-bar input, .filter-bar select { width: 100%; padding: 8px 10px; font-size: 0.875rem; border: 1px solid var(--border-light); border-radius: 8px; background: white; font-family: var(--font); color: var(--text-primary); }
+.filter-bar input:focus, .filter-bar select:focus { outline: none; border-color: var(--blue-accent); box-shadow: 0 0 0 3px rgba(37,99,235,0.1); }
+.date-range { display: flex; gap: 6px; }
+.date-range input { flex: 1; min-width: 0; }
+
+.actions { display: flex; gap: 12px; align-items: center; margin-bottom: 12px; flex-wrap: wrap; }
+.actions .count { color: var(--text-secondary); font-size: 0.875rem; }
+.actions .spacer { flex: 1; }
+
+.btn-primary { background: var(--blue-accent); color: white; border: none; border-radius: 8px; padding: 8px 18px; font-size: 0.875rem; font-weight: 500; cursor: pointer; font-family: var(--font); }
+.btn-primary:hover { opacity: 0.92; }
+.btn-secondary { background: var(--bg); color: var(--text-primary); border: none; border-radius: 8px; padding: 8px 14px; font-size: 0.875rem; font-weight: 500; cursor: pointer; font-family: var(--font); }
+.btn-secondary:hover { background: var(--border-light); }
+.btn-danger { background: var(--red-bg); color: var(--red); border: none; border-radius: 8px; padding: 8px 14px; font-size: 0.875rem; font-weight: 500; cursor: pointer; font-family: var(--font); }
+.btn-danger:hover { background: #FECACA; }
+.btn-icon { background: transparent; border: none; padding: 4px 8px; cursor: pointer; color: var(--text-muted); border-radius: 6px; font-size: 1rem; line-height: 1; }
+.btn-icon:hover { background: var(--red-bg); color: var(--red); }
+
+.segmented { display: inline-flex; background: var(--bg); border-radius: 8px; padding: 2px; }
+.segmented button { background: transparent; border: none; padding: 6px 14px; font-size: 0.8125rem; font-weight: 500; color: var(--text-secondary); cursor: pointer; border-radius: 6px; font-family: var(--font); }
+.segmented button.active { background: white; color: var(--text-primary); box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+
+.check-toggle { display: inline-flex; align-items: center; gap: 6px; font-size: 0.875rem; color: var(--text-primary); cursor: pointer; user-select: none; }
+.check-toggle input { cursor: pointer; margin: 0; }
+
+.bulk-bar { background: var(--blue-light); border-radius: 10px; padding: 10px 14px; display: flex; gap: 12px; align-items: center; margin-bottom: 12px; }
+.bulk-bar .bulk-count { font-weight: 600; color: var(--blue-accent); font-size: 0.875rem; }
+.bulk-bar select { padding: 6px 10px; font-size: 0.8125rem; border: 1px solid var(--border-light); border-radius: 6px; background: white; font-family: var(--font); }
+
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+th { text-align: left; font-weight: 500; color: var(--text-secondary); font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.04em; padding: 10px 12px; border-bottom: 1px solid var(--border-light); white-space: nowrap; background: white; }
+td { padding: 10px 12px; border-bottom: 1px solid var(--border-light); color: var(--text-primary); vertical-align: top; }
+tr:last-child td { border-bottom: none; }
+tbody tr:hover td { background: var(--blue-light); }
+tbody tr.selected td { background: #DBEAFE; }
+tbody tr.archived td { opacity: 0.55; }
+
+td.editable { cursor: text; }
+td.editable.select-field { cursor: pointer; }
+td input, td select, td textarea { width: 100%; padding: 6px 8px; font-size: 0.875rem; border: 1.5px solid var(--blue-accent); border-radius: 6px; font-family: var(--font); color: var(--text-primary); background: white; }
+td textarea { resize: vertical; min-height: 60px; }
+td input:focus, td select:focus, td textarea:focus { outline: none; box-shadow: 0 0 0 3px rgba(37,99,235,0.1); }
+
+.badge { display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: 0.75rem; font-weight: 500; white-space: nowrap; }
+.badge-priority-High   { background: var(--red-bg);    color: var(--red); }
+.badge-priority-Medium { background: var(--amber-bg);  color: var(--amber); }
+.badge-priority-Low    { background: var(--blue-light); color: var(--blue-accent); }
+.badge-status-Completed   { background: var(--green-bg);  color: var(--green); }
+.badge-status-InProgress  { background: var(--blue-light); color: var(--blue-accent); }
+.badge-status-NotStarted  { background: #F1F5F9;         color: var(--text-secondary); }
+.badge-status-OnHold      { background: var(--amber-bg);  color: var(--amber); }
+.badge-status-Overdue     { background: var(--red-bg);    color: var(--red); }
+
+.archived-tag { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 0.65rem; font-weight: 600; background: #F1F5F9; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin-left: 6px; }
+
+.due-overdue { color: var(--red); font-weight: 600; }
+.due-soon    { color: var(--amber); font-weight: 500; }
+.due-empty   { color: var(--text-muted); }
+
+.link-chip { display: inline-flex; align-items: center; gap: 4px; color: var(--blue-accent); text-decoration: none; font-size: 0.8125rem; max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.link-chip:hover { text-decoration: underline; }
+
+.col-check   { width: 32px; padding-right: 4px !important; }
+.col-num     { width: 36px; color: var(--text-muted); }
+.col-task    { min-width: 220px; font-weight: 500; }
+.col-notes   { max-width: 240px; color: var(--text-secondary); font-size: 0.8125rem; }
+.col-link    { width: 160px; }
+.col-actions { width: 40px; text-align: center; }
+
+.empty { text-align: center; padding: 48px 24px; color: var(--text-muted); font-size: 0.9rem; }
+
+/* Grouped view */
+.group { margin-bottom: 16px; }
+.group-header { display: flex; align-items: center; gap: 10px; padding: 10px 0; cursor: pointer; user-select: none; border-bottom: 1px solid var(--border-light); }
+.group-header:hover { color: var(--blue-accent); }
+.group-caret { display: inline-block; width: 16px; transition: transform 0.15s; color: var(--text-secondary); font-size: 0.75rem; }
+.group-header.collapsed .group-caret { transform: rotate(-90deg); }
+.group-title { font-weight: 600; font-size: 0.85rem; letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-primary); }
+.group-count { color: var(--text-muted); font-size: 0.75rem; font-weight: 500; margin-left: auto; }
+.group-body.collapsed { display: none; }
+.group-empty { padding: 14px 4px; color: var(--text-muted); font-size: 0.8125rem; font-style: italic; }
+
+.toast { position: fixed; bottom: 24px; right: 24px; background: var(--text-primary); color: white; padding: 10px 18px; border-radius: 8px; font-size: 0.875rem; box-shadow: var(--shadow); opacity: 0; transform: translateY(8px); transition: all 0.25s; pointer-events: none; z-index: 1000; }
+.toast.show { opacity: 1; transform: translateY(0); }
+
+@media (max-width: 1100px) {
+  .filter-bar { grid-template-columns: 1fr 1fr 1fr 1fr; }
+}
+@media (max-width: 640px) {
+  body { padding: 16px; }
+  .filter-bar { grid-template-columns: 1fr 1fr; }
+  .col-task { min-width: 180px; }
+  .col-notes { max-width: 160px; }
+  .col-link { width: 120px; }
+}
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <div class="header-left">
+      <h1>Financial &amp; Administrative Manager Tracker</h1>
+      <div class="subtitle">Kinective Fitness Club LLC · AMD Capital LLC</div>
+    </div>
+    <div class="sync-status" id="sync-status"><span class="dot"></span><span id="sync-text">Loading…</span></div>
+  </div>
+
+  <div class="card">
+    <div class="filter-bar">
+      <div class="field">
+        <label>Search Task / Notes</label>
+        <input type="text" id="f-task" placeholder="Type to search...">
+      </div>
+      <div class="field">
+        <label>Category</label>
+        <select id="f-category"><option value="">All</option></select>
+      </div>
+      <div class="field">
+        <label>Owner</label>
+        <select id="f-owner"><option value="">All</option></select>
+      </div>
+      <div class="field">
+        <label>Priority</label>
+        <select id="f-priority">
+          <option value="">All</option>
+          <option>High</option><option>Medium</option><option>Low</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Status</label>
+        <select id="f-status">
+          <option value="">All</option>
+          <option>Not Started</option>
+          <option>In Progress</option>
+          <option>Completed</option>
+          <option>On Hold</option>
+          <option>Overdue</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Due Date Range</label>
+        <div class="date-range">
+          <input type="date" id="f-due-from" title="From">
+          <input type="date" id="f-due-to"   title="To">
+        </div>
+      </div>
+      <div class="field">
+        <label>&nbsp;</label>
+        <button class="btn-secondary" onclick="clearFilters()">Clear</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="actions">
+      <button class="btn-primary" onclick="addTask()">+ Add Task</button>
+      <span class="count" id="row-count"></span>
+      <div class="spacer"></div>
+      <div class="segmented" id="view-toggle">
+        <button data-view="flat" class="active" onclick="setView('flat')">Flat</button>
+        <button data-view="grouped" onclick="setView('grouped')">Grouped</button>
+      </div>
+      <label class="check-toggle"><input type="checkbox" id="t-hide-completed" onchange="toggleHideCompleted(this.checked)"> Hide completed</label>
+      <label class="check-toggle"><input type="checkbox" id="t-show-archived"  onchange="toggleShowArchived(this.checked)"> Show archived</label>
+      <button class="btn-secondary" onclick="exportCSV()">Export CSV</button>
+    </div>
+
+    <div id="bulk-bar" class="bulk-bar" style="display:none;">
+      <span class="bulk-count" id="bulk-count">0 selected</span>
+      <span style="color:var(--text-secondary); font-size:0.875rem;">Set status:</span>
+      <select id="bulk-status" onchange="bulkSetStatus(this.value)">
+        <option value="">—</option>
+        <option>Not Started</option>
+        <option>In Progress</option>
+        <option>Completed</option>
+        <option>On Hold</option>
+        <option>Overdue</option>
+      </select>
+      <button class="btn-danger" onclick="bulkDelete()">Delete</button>
+      <button class="btn-secondary" onclick="clearSelection()">Cancel</button>
+    </div>
+
+    <div id="table-wrap"></div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const SB_URL = 'https://jbqvtnukspnlpxgosmhp.supabase.co';
+const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpicXZ0bnVrc3BubHB4Z29zbWhwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyNzU0NjcsImV4cCI6MjA4ODg1MTQ2N30.0EvUKNrSbH2UkQPEkTWXKS8PGNVr4G0dvWoJp9HBROs';
+const STORAGE_KEY = 'fam_tracker';
+const UI_PREFS_KEY = 'fam_tracker_ui';
+
+const CATEGORIES = ['Finance','Admin','IT','Plano','Facility','TW'];
+const PRIORITIES = ['High','Medium','Low'];
+const STATUSES   = ['Not Started','In Progress','Completed','On Hold','Overdue'];
+const SELECT_FIELDS = new Set(['category','priority','status','dueDate']);
+const ARCHIVE_DAYS = 30;
+
+let tasks = [];
+let viewMode = 'flat';            // 'flat' | 'grouped'
+let hideCompleted = false;
+let showArchived = false;
+let selectedIds = new Set();
+let collapsedGroups = new Set();
+
+/* ============ Supabase ============ */
+async function sbFetch(table, options = {}) {
+  const { filter, select = '*', method = 'GET', body, prefer } = options;
+  let url = `${SB_URL}/rest/v1/${table}?select=${select}`;
+  if (filter) url += `&${filter}`;
+  const headers = {
+    'apikey': SB_KEY,
+    'Authorization': `Bearer ${SB_KEY}`,
+    'Content-Type': 'application/json'
+  };
+  if (prefer) headers['Prefer'] = prefer;
+  else if (method === 'POST') headers['Prefer'] = 'return=representation';
+  const res = await fetch(url, { method, headers, body: body ? JSON.stringify(body) : undefined });
+  if (!res.ok) throw new Error('Supabase ' + res.status);
+  return res.status === 204 ? null : res.json();
+}
+
+async function loadTasks() {
+  try {
+    const rows = await sbFetch('kv_store', { filter: `key=eq.${STORAGE_KEY}` });
+    if (rows && rows[0] && rows[0].value && Array.isArray(rows[0].value.tasks)) {
+      tasks = rows[0].value.tasks.map(normalizeTask);
+      setSync('synced','Synced');
+      return;
+    }
+    tasks = seedTasks();
+    await saveTasks(true);
+  } catch (e) {
+    console.warn('Supabase load failed; using localStorage', e);
+    const local = localStorage.getItem(STORAGE_KEY);
+    tasks = (local ? JSON.parse(local) : seedTasks()).map(normalizeTask);
+    setSync('local','Local only');
+  }
+}
+
+let saveTimer = null;
+function saveTasks(immediate=false) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks));
+  clearTimeout(saveTimer);
+  const doSave = async () => {
+    try {
+      await sbFetch('kv_store', {
+        method: 'POST',
+        body: { key: STORAGE_KEY, value: { tasks, updated: new Date().toISOString() } },
+        prefer: 'resolution=merge-duplicates,return=minimal'
+      });
+      setSync('synced','Synced');
+    } catch (e) {
+      console.warn('Supabase save failed', e);
+      setSync('local','Local only');
+    }
+  };
+  if (immediate) return doSave();
+  saveTimer = setTimeout(doSave, 400);
+}
+
+function setSync(mode, label) {
+  const el = document.getElementById('sync-status');
+  el.className = 'sync-status ' + mode;
+  document.getElementById('sync-text').textContent = label;
+}
+
+function normalizeTask(t) {
+  return {
+    id: t.id,
+    category: t.category || 'Finance',
+    task: t.task || '',
+    owner: t.owner || '',
+    priority: t.priority || 'Medium',
+    status: t.status || 'Not Started',
+    dueDate: t.dueDate || '',
+    notes: t.notes || '',
+    link: t.link || '',
+    completedAt: t.completedAt || null
+  };
+}
+
+/* ============ UI Prefs ============ */
+function loadUIPrefs() {
+  try {
+    const p = JSON.parse(localStorage.getItem(UI_PREFS_KEY) || '{}');
+    viewMode      = p.viewMode === 'grouped' ? 'grouped' : 'flat';
+    hideCompleted = !!p.hideCompleted;
+    showArchived  = !!p.showArchived;
+    collapsedGroups = new Set(Array.isArray(p.collapsedGroups) ? p.collapsedGroups : []);
+  } catch (e) {}
+  document.getElementById('t-hide-completed').checked = hideCompleted;
+  document.getElementById('t-show-archived').checked  = showArchived;
+  document.querySelectorAll('#view-toggle button').forEach(b => b.classList.toggle('active', b.dataset.view === viewMode));
+}
+function saveUIPrefs() {
+  localStorage.setItem(UI_PREFS_KEY, JSON.stringify({
+    viewMode, hideCompleted, showArchived,
+    collapsedGroups: Array.from(collapsedGroups)
+  }));
+}
+
+/* ============ Seed (from xlsb) ============ */
+function seedTasks() {
+  const xd = serial => serial ? new Date((serial - 25569) * 86400 * 1000).toISOString().slice(0,10) : '';
+  const raw = [
+    { id:1,  category:'Finance', task:'Issue out 1099s to vendors', owner:'Finance', priority:'Low',    status:'On Hold',     dueDate: xd(46357), notes:'Need to do this before tax returns' },
+    { id:2,  category:'Finance', task:'Should we open a new LLC for Plano regarding risk', owner:'Finance', priority:'Low', status:'On Hold', dueDate: xd(46198), notes:'On hold — create a document regarding this' },
+    { id:3,  category:'Finance', task:'Vendor Invoice Processing', owner:'Finance', priority:'Medium', status:'In Progress', dueDate: xd(46185), notes:'Approve & code all pending invoices' },
+    { id:4,  category:'Finance', task:'Retail inventory discrepancies report — need a plan of action', owner:'Finance', priority:'Medium', status:'Not Started', dueDate: xd(46184), notes:'Need to get with MRA' },
+    { id:10, category:'Admin',   task:'Look at payroll for Plano 4am-11pm / weekends 5am-11pm', owner:'Finance', priority:'High',   status:'Not Started', dueDate: xd(46188), notes:'IRS quarterly payment due' },
+    { id:11, category:'Admin',   task:'ES inventory — needs to have "16oz each"', owner:'ES', priority:'Medium', status:'In Progress', dueDate: xd(46235), notes:'Need ES Manager to update this' },
+    { id:12, category:'Admin',   task:'How to become a Notary', owner:'Finance', priority:'Low', status:'On Hold', dueDate:'', notes:'Add word document' },
+    { id:13, category:'Admin',   task:'Review one digital pricing — Analysis', owner:'Finance', priority:'Medium', status:'Not Started', dueDate: xd(46204), notes:'Need Hector to send information regarding new insurance' },
+    { id:19, category:'IT',      task:'Intranet for Plano and Corporate', owner:'Finance', priority:'Low', status:'In Progress', dueDate: xd(46185), notes:'Send Jose Finance tools folder' },
+    { id:20, category:'IT',      task:'Make one studio checklist dropdown — WD and GF have complicated checklist', owner:'IT', priority:'Medium', status:'In Progress', dueDate:'', notes:'Need Anshuman to finalize document downloads' },
+    { id:21, category:'IT',      task:'Brief summary for MA — Plano pre-sale training manual — Jose — Forum', owner:'Finance', priority:'High', status:'In Progress', dueDate: xd(46185), notes:'Send Ares ABC Config form' },
+    { id:22, category:'IT',      task:'Cable boxes — to Jose — TVs HRM ads', owner:'IT', priority:'High', status:'Completed', dueDate:'', notes:"The tech said our cable is a bulk system, so removing TVs won't lower the cost and they don't handle individual disconnects.", completedAt: new Date().toISOString() },
+  ];
+  return raw.map(normalizeTask);
+}
+
+/* ============ Helpers ============ */
+function todayISO() { return new Date().toISOString().slice(0,10); }
+function isOverdue(t) {
+  if (!t.dueDate || t.status === 'Completed') return false;
+  return t.dueDate < todayISO();
+}
+function isArchived(t) {
+  if (t.status !== 'Completed' || !t.completedAt) return false;
+  const days = (Date.now() - new Date(t.completedAt).getTime()) / 86400000;
+  return days >= ARCHIVE_DAYS;
+}
+function escapeHtml(s) {
+  return String(s ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+}
+function formatDate(iso) {
+  if (!iso) return '';
+  const [y,m,d] = iso.split('-');
+  return `${m}/${d}/${y.slice(2)}`;
+}
+function linkHostname(url) {
+  try { return new URL(url).hostname.replace(/^www\./,''); }
+  catch(e) { return url; }
+}
+
+/* ============ Filters ============ */
+function getFilters() {
+  return {
+    task: document.getElementById('f-task').value.toLowerCase().trim(),
+    category: document.getElementById('f-category').value,
+    owner: document.getElementById('f-owner').value,
+    priority: document.getElementById('f-priority').value,
+    status: document.getElementById('f-status').value,
+    dueFrom: document.getElementById('f-due-from').value,
+    dueTo:   document.getElementById('f-due-to').value,
+  };
+}
+
+function applyFilters(rows) {
+  const f = getFilters();
+  return rows.filter(t => {
+    // Archive + Hide Completed toggles
+    if (isArchived(t) && !showArchived) return false;
+    if (t.status === 'Completed' && !isArchived(t) && hideCompleted) return false;
+
+    if (f.task) {
+      const hay = ((t.task||'') + ' ' + (t.notes||'') + ' ' + (t.link||'')).toLowerCase();
+      if (!hay.includes(f.task)) return false;
+    }
+    if (f.category && t.category !== f.category) return false;
+    if (f.owner    && t.owner    !== f.owner)    return false;
+    if (f.priority && t.priority !== f.priority) return false;
+    if (f.status   && t.status   !== f.status)   return false;
+    if (f.dueFrom) { if (!t.dueDate || t.dueDate < f.dueFrom) return false; }
+    if (f.dueTo)   { if (!t.dueDate || t.dueDate > f.dueTo)   return false; }
+    return true;
+  });
+}
+
+function refreshDropdowns() {
+  const cs = document.getElementById('f-category');
+  const ccur = cs.value;
+  cs.innerHTML = '<option value="">All</option>' + CATEGORIES.map(c => `<option ${c===ccur?'selected':''}>${c}</option>`).join('');
+  const owners = Array.from(new Set(tasks.map(t => t.owner).filter(Boolean))).sort();
+  const os = document.getElementById('f-owner');
+  const ocur = os.value;
+  os.innerHTML = '<option value="">All</option>' + owners.map(o => `<option ${o===ocur?'selected':''}>${escapeHtml(o)}</option>`).join('');
+}
+
+function sortTasks(arr) {
+  const pr = { High:0, Medium:1, Low:2 };
+  return arr.slice().sort((a,b) => {
+    const oa = isOverdue(a), ob = isOverdue(b);
+    if (oa !== ob) return oa ? -1 : 1;
+    const da = a.dueDate || '9999-12-31';
+    const db = b.dueDate || '9999-12-31';
+    if (da !== db) return da < db ? -1 : 1;
+    return (pr[a.priority] ?? 9) - (pr[b.priority] ?? 9);
+  });
+}
+
+/* ============ Render ============ */
+function render() {
+  refreshDropdowns();
+  const filtered = applyFilters(tasks);
+  document.getElementById('row-count').textContent = `${filtered.length} of ${tasks.length} tasks`;
+  // Prune selection to currently visible
+  const visibleIds = new Set(filtered.map(t => t.id));
+  selectedIds.forEach(id => { if (!visibleIds.has(id)) selectedIds.delete(id); });
+  renderBulkBar();
+
+  const wrap = document.getElementById('table-wrap');
+  if (viewMode === 'grouped') {
+    wrap.innerHTML = renderGrouped(filtered);
+    attachGroupHandlers();
+  } else {
+    if (filtered.length === 0) {
+      wrap.innerHTML = '<div class="empty">No tasks match the current filters.</div>';
+    } else {
+      wrap.innerHTML = renderTable(sortTasks(filtered), { showNum: true });
+    }
+  }
+
+  // Editable cell handlers
+  document.querySelectorAll('td.editable').forEach(td => {
+    td.addEventListener('click', (e) => {
+      if (e.target.closest('a, input[type="checkbox"]')) return;
+      beginEdit(td);
+    });
+  });
+  // Row checkbox handlers
+  document.querySelectorAll('input.row-check').forEach(cb => {
+    cb.addEventListener('change', (e) => {
+      const id = +cb.dataset.id;
+      if (cb.checked) selectedIds.add(id);
+      else selectedIds.delete(id);
+      const tr = cb.closest('tr');
+      if (tr) tr.classList.toggle('selected', cb.checked);
+      renderBulkBar();
+    });
+  });
+  // Select-all handlers
+  document.querySelectorAll('input.select-all').forEach(cb => {
+    cb.addEventListener('change', () => {
+      const ids = (cb.dataset.ids || '').split(',').filter(Boolean).map(Number);
+      if (cb.checked) ids.forEach(id => selectedIds.add(id));
+      else            ids.forEach(id => selectedIds.delete(id));
+      render();
+    });
+  });
+}
+
+function renderTable(rows, opts = {}) {
+  const soon = new Date(); soon.setDate(soon.getDate()+7);
+  const soonStr = soon.toISOString().slice(0,10);
+  const allIds = rows.map(r => r.id);
+  const allSelected = allIds.length > 0 && allIds.every(id => selectedIds.has(id));
+
+  const body = rows.map((t, i) => {
+    const overdue = isOverdue(t);
+    const archived = isArchived(t);
+    let dueHtml;
+    if (!t.dueDate) {
+      dueHtml = '<span class="due-empty">— click to set</span>';
+    } else {
+      const cls = overdue ? 'due-overdue' : (t.dueDate <= soonStr && t.status !== 'Completed' ? 'due-soon' : '');
+      dueHtml = `<span class="${cls}">${formatDate(t.dueDate)}</span>`;
+    }
+    const linkHtml = t.link
+      ? `<a href="${escapeHtml(t.link)}" target="_blank" rel="noopener" class="link-chip" title="${escapeHtml(t.link)}">↗ ${escapeHtml(linkHostname(t.link))}</a>`
+      : '<span class="due-empty">—</span>';
+    const archTag = archived ? '<span class="archived-tag">archived</span>' : '';
+    return `
+      <tr data-id="${t.id}" class="${selectedIds.has(t.id)?'selected':''} ${archived?'archived':''}">
+        <td class="col-check"><input type="checkbox" class="row-check" data-id="${t.id}" ${selectedIds.has(t.id)?'checked':''}></td>
+        ${opts.showNum ? `<td class="col-num">${i+1}</td>` : ''}
+        <td class="editable select-field" data-field="category">${escapeHtml(t.category||'')}</td>
+        <td class="editable col-task"     data-field="task">${escapeHtml(t.task||'')}${archTag}</td>
+        <td class="editable"              data-field="owner">${escapeHtml(t.owner||'')}</td>
+        <td class="editable select-field" data-field="priority"><span class="badge badge-priority-${t.priority||'Low'}">${escapeHtml(t.priority||'')}</span></td>
+        <td class="editable select-field" data-field="status"><span class="badge badge-status-${(t.status||'').replace(/\s+/g,'')}">${escapeHtml(t.status||'')}</span></td>
+        <td class="editable select-field" data-field="dueDate">${dueHtml}</td>
+        <td class="editable col-notes"    data-field="notes">${escapeHtml(t.notes||'')}</td>
+        <td class="editable col-link"     data-field="link">${linkHtml}</td>
+        <td class="col-actions"><button class="btn-icon" onclick="deleteTask(${t.id})" title="Delete">✕</button></td>
+      </tr>`;
+  }).join('');
+
+  return `
+    <div class="table-wrap">
+    <table>
+      <thead><tr>
+        <th class="col-check"><input type="checkbox" class="select-all" data-ids="${allIds.join(',')}" ${allSelected?'checked':''}></th>
+        ${opts.showNum ? '<th class="col-num">#</th>' : ''}
+        <th>Category</th><th>Task</th><th>Owner</th>
+        <th>Priority</th><th>Status</th><th>Due Date</th><th>Notes</th><th>Link</th><th></th>
+      </tr></thead>
+      <tbody>${body}</tbody>
+    </table>
+    </div>`;
+}
+
+function renderGrouped(filtered) {
+  return CATEGORIES.map(cat => {
+    const rows = sortTasks(filtered.filter(t => t.category === cat));
+    const collapsed = collapsedGroups.has(cat);
+    const body = rows.length === 0
+      ? `<div class="group-empty">No tasks${getFilters().task || getFilters().status || getFilters().priority || getFilters().owner || getFilters().dueFrom || getFilters().dueTo ? ' matching filters' : ''}.</div>`
+      : renderTable(rows, { showNum: false });
+    return `
+      <div class="group">
+        <div class="group-header ${collapsed?'collapsed':''}" data-cat="${cat}">
+          <span class="group-caret">▾</span>
+          <span class="group-title">${cat}</span>
+          <span class="group-count">${rows.length} task${rows.length===1?'':'s'}</span>
+        </div>
+        <div class="group-body ${collapsed?'collapsed':''}">${body}</div>
+      </div>`;
+  }).join('');
+}
+
+function attachGroupHandlers() {
+  document.querySelectorAll('.group-header').forEach(h => {
+    h.addEventListener('click', () => {
+      const cat = h.dataset.cat;
+      if (collapsedGroups.has(cat)) collapsedGroups.delete(cat);
+      else                          collapsedGroups.add(cat);
+      saveUIPrefs();
+      render();
+    });
+  });
+}
+
+/* ============ Inline Edit ============ */
+function beginEdit(td) {
+  if (td.querySelector('input, select, textarea')) return;
+  const tr = td.closest('tr');
+  const id = +tr.dataset.id;
+  const field = td.dataset.field;
+  const task = tasks.find(t => t.id === id);
+  if (!task) return;
+
+  const val = task[field] || '';
+  let html;
+  if (field === 'category') {
+    html = `<select>${CATEGORIES.map(c => `<option ${c===val?'selected':''}>${c}</option>`).join('')}</select>`;
+  } else if (field === 'priority') {
+    html = `<select>${PRIORITIES.map(p => `<option ${p===val?'selected':''}>${p}</option>`).join('')}</select>`;
+  } else if (field === 'status') {
+    html = `<select>${STATUSES.map(s => `<option ${s===val?'selected':''}>${s}</option>`).join('')}</select>`;
+  } else if (field === 'dueDate') {
+    html = `<input type="date" value="${val}">`;
+  } else if (field === 'notes') {
+    html = `<textarea>${escapeHtml(val)}</textarea>`;
+  } else if (field === 'link') {
+    html = `<input type="url" value="${escapeHtml(val)}" placeholder="https://...">`;
+  } else {
+    html = `<input type="text" value="${escapeHtml(val)}">`;
+  }
+  td.innerHTML = html;
+  const input = td.querySelector('input, select, textarea');
+  input.focus();
+  if (input.tagName === 'INPUT' && (input.type === 'text' || input.type === 'url')) input.select();
+  if (input.tagName === 'TEXTAREA') input.setSelectionRange(input.value.length, input.value.length);
+
+  let committed = false;
+  const commit = () => {
+    if (committed) return; committed = true;
+    let newVal = input.value;
+    if (field === 'link') newVal = newVal.trim();
+    if (newVal !== val) {
+      applyFieldChange(task, field, newVal);
+      saveTasks();
+    }
+    render();
+  };
+  const cancel = () => { committed = true; render(); };
+
+  input.addEventListener('blur', commit);
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') { e.preventDefault(); cancel(); }
+    else if (e.key === 'Enter') {
+      if (field === 'notes' && !(e.metaKey || e.ctrlKey)) return;
+      e.preventDefault(); input.blur();
+    }
+  });
+  if (SELECT_FIELDS.has(field)) input.addEventListener('change', () => input.blur());
+}
+
+function applyFieldChange(task, field, newVal) {
+  if (field === 'status') {
+    if (newVal === 'Completed' && task.status !== 'Completed') {
+      task.completedAt = new Date().toISOString();
+    } else if (newVal !== 'Completed' && task.status === 'Completed') {
+      task.completedAt = null;
+    }
+  }
+  task[field] = newVal;
+}
+
+/* ============ Add / Delete ============ */
+function addTask() {
+  const newTask = normalizeTask({
+    id: Date.now(),
+    category: 'Finance', task: '', owner: 'Finance',
+    priority: 'Medium', status: 'Not Started', dueDate: '', notes: '', link: ''
+  });
+  tasks.push(newTask);
+  saveTasks();
+  render();
+  setTimeout(() => {
+    const tr = document.querySelector(`tr[data-id="${newTask.id}"]`);
+    if (tr) {
+      tr.scrollIntoView({ behavior:'smooth', block:'center' });
+      const td = tr.querySelector('td[data-field="task"]');
+      if (td) beginEdit(td);
+    }
+  }, 50);
+}
+
+function deleteTask(id) {
+  const t = tasks.find(x => x.id === id);
+  if (!t) return;
+  if (!confirm(`Delete "${(t.task||'').slice(0,60) || 'this task'}"?`)) return;
+  tasks = tasks.filter(x => x.id !== id);
+  selectedIds.delete(id);
+  saveTasks();
+  render();
+  toast('Task deleted');
+}
+
+/* ============ Bulk ============ */
+function renderBulkBar() {
+  const bar = document.getElementById('bulk-bar');
+  const n = selectedIds.size;
+  if (n === 0) { bar.style.display = 'none'; return; }
+  bar.style.display = 'flex';
+  document.getElementById('bulk-count').textContent = `${n} selected`;
+  document.getElementById('bulk-status').value = '';
+}
+
+function bulkSetStatus(status) {
+  if (!status || selectedIds.size === 0) return;
+  let changed = 0;
+  tasks.forEach(t => {
+    if (selectedIds.has(t.id)) {
+      applyFieldChange(t, 'status', status);
+      changed++;
+    }
+  });
+  saveTasks();
+  toast(`${changed} task${changed===1?'':'s'} → ${status}`);
+  render();
+}
+
+function bulkDelete() {
+  const n = selectedIds.size;
+  if (n === 0) return;
+  if (!confirm(`Delete ${n} selected task${n===1?'':'s'}?`)) return;
+  tasks = tasks.filter(t => !selectedIds.has(t.id));
+  selectedIds.clear();
+  saveTasks();
+  toast(`${n} task${n===1?'':'s'} deleted`);
+  render();
+}
+
+function clearSelection() {
+  selectedIds.clear();
+  render();
+}
+
+/* ============ Toggles / View ============ */
+function setView(mode) {
+  viewMode = mode;
+  document.querySelectorAll('#view-toggle button').forEach(b => b.classList.toggle('active', b.dataset.view === mode));
+  saveUIPrefs();
+  render();
+}
+function toggleHideCompleted(checked) { hideCompleted = checked; saveUIPrefs(); render(); }
+function toggleShowArchived(checked)  { showArchived  = checked; saveUIPrefs(); render(); }
+
+function clearFilters() {
+  ['f-task','f-category','f-owner','f-priority','f-status','f-due-from','f-due-to'].forEach(id => {
+    document.getElementById(id).value = '';
+  });
+  render();
+}
+
+function exportCSV() {
+  const filtered = applyFilters(tasks);
+  const headers = ['Category','Task','Owner','Priority','Status','Due Date','Notes','Link','Completed At'];
+  const esc = v => `"${String(v ?? '').replace(/"/g,'""')}"`;
+  const lines = [headers.map(esc).join(',')];
+  filtered.forEach(t => lines.push([t.category, t.task, t.owner, t.priority, t.status, t.dueDate, t.notes, t.link, t.completedAt || ''].map(esc).join(',')));
+  const blob = new Blob([lines.join('\n')], { type:'text/csv;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = `FAM_Tracker_${todayISO()}.csv`;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 1800);
+}
+
+/* ============ Init ============ */
+['f-task','f-category','f-owner','f-priority','f-status','f-due-from','f-due-to'].forEach(id => {
+  const el = document.getElementById(id);
+  el.addEventListener('input', render);
+  el.addEventListener('change', render);
+});
+
+(async () => {
+  loadUIPrefs();
+  await loadTasks();
+  render();
+})();
+</script>
+</body>
+</html>
