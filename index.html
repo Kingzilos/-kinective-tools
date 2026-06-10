@@ -132,7 +132,7 @@
 <div id="add-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.3);backdrop-filter:blur(4px);z-index:200;align-items:center;justify-content:center;">
   <div style="background:#fff;border-radius:18px;padding:36px 32px;width:100%;max-width:480px;margin:24px;box-shadow:0 24px 64px rgba(0,0,0,0.12);">
     <h3 style="font-size:1.05rem;font-weight:600;letter-spacing:-0.02em;margin-bottom:4px;">Add a Tool</h3>
-    <p style="font-size:0.83rem;color:var(--secondary);margin-bottom:24px;line-height:1.5;">It'll appear on the dashboard and save in your browser.</p>
+    <p style="font-size:0.83rem;color:var(--secondary);margin-bottom:24px;line-height:1.5;">It'll appear on the dashboard and sync to all your devices.</p>
     <div style="display:flex;flex-direction:column;gap:12px;">
       <div style="display:flex;flex-direction:column;gap:5px;">
         <label style="font-size:0.75rem;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;color:var(--tertiary);">Label (category)</label>
@@ -170,24 +170,172 @@
 </footer>
 
 <script>
-  window.addEventListener('DOMContentLoaded', () => {
-    document.getElementById('footer-date').textContent = new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
-    renderConfig();
-    renderCustomCards();
-  });
+  // ============ Supabase Config ============
+  const SB_URL = 'https://jbqvtnukspnlpxgosmhp.supabase.co';
+  const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpicXZ0bnVrc3BubHB4Z29zbWhwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyNzU0NjcsImV4cCI6MjA4ODg1MTQ2N30.0EvUKNrSbH2UkQPEkTWXKS8PGNVr4G0dvWoJp9HBROs';
+  const STORAGE_KEY = 'tool_index_custom';   // kv_store row key
+  const LOCAL_KEY   = 'kinective_custom_tools';
+  const LOCAL_UPDATED_KEY = 'kinective_custom_tools_updated';
 
-  // ── custom cards ──
-  const STORAGE_KEY = 'kinective_custom_tools';
+  let customTools = [];
+  let saveTimer = null;
+  let savePending = false;
+  let lastSyncError = null;
 
-  function getCustomTools() {
-    try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; }
-    catch { return []; }
+  // ============ Supabase Fetch ============
+  async function sbFetch(opts = {}) {
+    const { filter, method = 'GET', body, prefer } = opts;
+    let url = `${SB_URL}/rest/v1/kv_store?select=*`;
+    if (filter) url += `&${filter}`;
+    const headers = {
+      'apikey': SB_KEY,
+      'Authorization': `Bearer ${SB_KEY}`,
+      'Content-Type': 'application/json'
+    };
+    if (prefer) headers['Prefer'] = prefer;
+    else if (method === 'POST') headers['Prefer'] = 'return=representation';
+    const res = await fetch(url, { method, headers, body: body ? JSON.stringify(body) : undefined });
+    if (!res.ok) {
+      const errText = await res.text().catch(() => '');
+      throw new Error('Supabase ' + res.status + (errText ? ': ' + errText.slice(0,200) : ''));
+    }
+    if (res.status === 204) return null;
+    const text = await res.text();
+    return text ? JSON.parse(text) : null;
   }
 
+  // ============ Sync Status UI ============
+  function setSync(mode, label, err) {
+    const dot = document.querySelector('.sync-dot');
+    const lbl = document.getElementById('sync-label');
+    if (!dot || !lbl) return;
+    lbl.textContent = label;
+    if (mode === 'synced')  { dot.style.background = '#34c759'; dot.style.animation = ''; lastSyncError = null; }
+    if (mode === 'saving')  { dot.style.background = '#0071e3'; dot.style.animation = 'pulse 0.9s ease-in-out infinite'; }
+    if (mode === 'local')   { dot.style.background = '#ff9f0a'; dot.style.animation = ''; lastSyncError = err || null; }
+    if (mode === 'loading') { dot.style.background = '#aeaeb2'; dot.style.animation = ''; }
+  }
+
+  // Add pulse keyframes once
+  (function injectPulse(){
+    const s = document.createElement('style');
+    s.textContent = '@keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.35; } } #sync-status-wrap { cursor: pointer; }';
+    document.head.appendChild(s);
+    // make the nav-right sync indicator clickable to show error detail
+    document.querySelector('.nav-right')?.setAttribute('id', 'sync-status-wrap');
+    document.querySelector('.nav-right')?.addEventListener('click', showSyncError);
+  })();
+
+  function showSyncError() {
+    if (lastSyncError) {
+      alert(`Cloud sync failed:\n\n${lastSyncError.message || String(lastSyncError)}\n\nYour tools are saved locally to this browser. Other devices won't see them until cloud sync is restored.`);
+    }
+  }
+
+  // ============ Load / Save ============
+  async function loadCustomTools() {
+    setSync('loading', 'Loading…');
+    const localRaw = localStorage.getItem(LOCAL_KEY);
+    const localTime = localStorage.getItem(LOCAL_UPDATED_KEY) || '';
+    let localTools = null;
+    try { localTools = localRaw ? JSON.parse(localRaw) : null; } catch(e) { localTools = null; }
+
+    try {
+      const rows = await sbFetch({ filter: `key=eq.${STORAGE_KEY}` });
+      if (rows && rows.length > 0) {
+        // Pick newest cloud row by value.updated (defensive against duplicates)
+        rows.sort((a, b) => {
+          const at = (a.value && a.value.updated) || '';
+          const bt = (b.value && b.value.updated) || '';
+          return bt.localeCompare(at);
+        });
+        const latest = rows[0];
+        const cloudTime = (latest.value && latest.value.updated) || '';
+        const cloudTools = (latest.value && Array.isArray(latest.value.tools)) ? latest.value.tools : null;
+
+        // If local is fresher than cloud (e.g. save was interrupted), keep local and push it up
+        if (localTools && localTime && localTime > cloudTime) {
+          customTools = localTools;
+          setSync('synced', 'Synced');
+          saveCustomTools(true);
+          return;
+        }
+        if (cloudTools) {
+          customTools = cloudTools;
+          setSync('synced', 'Synced');
+          return;
+        }
+      }
+      // No cloud row yet — seed from local if we have it, otherwise empty
+      customTools = localTools || [];
+      if (customTools.length > 0) await saveCustomTools(true);
+      else setSync('synced', 'Synced');
+    } catch (e) {
+      console.warn('Cloud load failed; using local cache', e);
+      customTools = localTools || [];
+      setSync('local', 'Local only', e);
+    }
+  }
+
+  function saveCustomTools(immediate=false) {
+    localStorage.setItem(LOCAL_KEY, JSON.stringify(customTools));
+    localStorage.setItem(LOCAL_UPDATED_KEY, new Date().toISOString());
+    clearTimeout(saveTimer);
+    savePending = true;
+    setSync('saving', 'Saving…');
+    const doSave = async () => {
+      try {
+        await sbFetch({
+          method: 'POST',
+          body: { key: STORAGE_KEY, value: { tools: customTools, updated: new Date().toISOString() } },
+          prefer: 'resolution=merge-duplicates,return=minimal'
+        });
+        savePending = false;
+        setSync('synced', 'Synced');
+      } catch (e) {
+        console.warn('Cloud save failed', e);
+        savePending = false;
+        setSync('local', 'Local only', e);
+      }
+    };
+    if (immediate) return doSave();
+    saveTimer = setTimeout(doSave, 150);
+  }
+
+  // Flush pending save on page unload so refresh doesn't drop the latest change
+  function flushPendingSave() {
+    if (!savePending) return;
+    clearTimeout(saveTimer);
+    try {
+      fetch(`${SB_URL}/rest/v1/kv_store`, {
+        method: 'POST',
+        headers: {
+          'apikey': SB_KEY,
+          'Authorization': `Bearer ${SB_KEY}`,
+          'Content-Type': 'application/json',
+          'Prefer': 'resolution=merge-duplicates,return=minimal'
+        },
+        body: JSON.stringify({ key: STORAGE_KEY, value: { tools: customTools, updated: new Date().toISOString() } }),
+        keepalive: true
+      });
+    } catch (e) { /* ignore — page is unloading */ }
+  }
+  window.addEventListener('beforeunload', flushPendingSave);
+  window.addEventListener('pagehide',      flushPendingSave);
+
+  // Refresh when tab regains focus (in case another device updated the list)
+  document.addEventListener('visibilitychange', async () => {
+    if (document.visibilityState === 'visible' && !savePending) {
+      await loadCustomTools();
+      renderCustomCards();
+    }
+  });
+
+  // ============ Render & Mutate Custom Cards ============
   function renderCustomCards() {
     const container = document.getElementById('custom-cards-container');
     container.innerHTML = '';
-    getCustomTools().forEach((tool, idx) => {
+    customTools.forEach((tool, idx) => {
       const a = document.createElement('a');
       a.className = 'card';
       a.href = tool.url;
@@ -198,20 +346,24 @@
           </div>
           <button onclick="removeCustomTool(event,${idx})" title="Remove" style="background:none;border:none;cursor:pointer;padding:4px;border-radius:6px;color:var(--tertiary);font-size:16px;line-height:1;transition:color 0.15s;" onmouseover="this.style.color='#ff3b30'" onmouseout="this.style.color='var(--tertiary)'">×</button>
         </div>
-        <div class="card-label">${tool.label}</div>
-        <h2>${tool.name}</h2>
-        <p>${tool.desc}</p>
+        <div class="card-label">${escapeHtml(tool.label)}</div>
+        <h2>${escapeHtml(tool.name)}</h2>
+        <p>${escapeHtml(tool.desc)}</p>
         <div class="card-link">Open <svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></div>`;
       container.appendChild(a);
     });
   }
 
+  function escapeHtml(s) {
+    return String(s ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+  }
+
   function removeCustomTool(e, idx) {
     e.preventDefault();
     e.stopPropagation();
-    const tools = getCustomTools();
-    tools.splice(idx, 1);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(tools));
+    if (!confirm(`Remove "${customTools[idx]?.name || 'this tool'}" from the dashboard?`)) return;
+    customTools.splice(idx, 1);
+    saveCustomTools();
     renderCustomCards();
   }
 
@@ -236,35 +388,24 @@
     const desc  = document.getElementById('new-desc').value.trim();
     const url   = document.getElementById('new-url').value.trim();
     if (!name || !url) { alert('Tool name and URL are required.'); return; }
-    const tools = getCustomTools();
-    tools.push({ label: label || 'Tool', name, desc, url });
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(tools));
+    customTools.push({ label: label || 'Tool', name, desc, url });
+    saveCustomTools();
     renderCustomCards();
     closeAddModal();
   }
-  function renderConfig() {
-    const url = localStorage.getItem('sb_url');
-    const key = localStorage.getItem('sb_key');
-    const card = document.getElementById('config-card');
-    if (url && key) {
-      card.innerHTML = `<div style="display:flex;align-items:center;gap:10px;"><div style="width:8px;height:8px;border-radius:50%;background:#34c759;flex-shrink:0;"></div><span style="font-size:0.83rem;color:var(--secondary);">Cloud sync connected — data saves automatically across all devices.</span><button onclick="resetConfig()" style="margin-left:auto;font-size:0.75rem;color:var(--tertiary);cursor:pointer;text-decoration:underline;background:none;border:none;font-family:inherit;">Change credentials</button></div>`;
-      document.getElementById('sync-label').textContent = 'Synced';
-      document.querySelector('.sync-dot').style.background = '#34c759';
-    } else {
-      card.innerHTML = `<h3 style="font-size:1rem;font-weight:600;margin-bottom:4px;">Cloud Sync Setup</h3><p style="font-size:0.83rem;color:var(--secondary);margin-bottom:20px;line-height:1.5;">Enter your Supabase credentials once. Data will sync automatically after that.</p><div style="display:flex;gap:10px;flex-wrap:wrap;"><input type="text" id="sb-url" placeholder="https://xxxx.supabase.co" style="flex:1;min-width:200px;padding:9px 14px;background:var(--bg);border:1px solid var(--border);border-radius:10px;font-family:inherit;font-size:0.83rem;color:var(--ink);outline:none;" /><input type="text" id="sb-key" placeholder="Supabase anon key" style="flex:1;min-width:200px;padding:9px 14px;background:var(--bg);border:1px solid var(--border);border-radius:10px;font-family:inherit;font-size:0.83rem;color:var(--ink);outline:none;" /><button onclick="saveConfig()" style="padding:9px 20px;background:var(--blue);color:#fff;border:none;border-radius:10px;font-family:inherit;font-size:0.83rem;font-weight:500;cursor:pointer;">Save</button></div>`;
-      document.getElementById('sync-label').textContent = 'Setup required';
-      document.querySelector('.sync-dot').style.background = '#ff9f0a';
-    }
-  }
-  function saveConfig() {
-    const url = document.getElementById('sb-url').value.trim();
-    const key = document.getElementById('sb-key').value.trim();
-    if (!url || !key) { alert('Please enter both fields.'); return; }
-    localStorage.setItem('sb_url', url); localStorage.setItem('sb_key', key); renderConfig();
-  }
-  function resetConfig() {
-    localStorage.removeItem('sb_url'); localStorage.removeItem('sb_key'); renderConfig();
-  }
+
+  // ============ Init ============
+  // The old config card is no longer needed since credentials are baked in.
+  // Hide it (the <div class="config"> wrapper) to clean up the page.
+  window.addEventListener('DOMContentLoaded', async () => {
+    document.getElementById('footer-date').textContent = new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+    const configWrap = document.querySelector('.config');
+    if (configWrap) configWrap.style.display = 'none';
+    const divider = document.querySelector('.divider');
+    if (divider) divider.style.display = 'none';
+    await loadCustomTools();
+    renderCustomCards();
+  });
 </script>
 </body>
 </html>
