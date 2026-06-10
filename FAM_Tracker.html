@@ -242,6 +242,9 @@ td input:focus, td select:focus, td textarea:focus { outline: none; box-shadow: 
 
     <div id="table-wrap"></div>
   </div>
+  <div style="text-align:center; color: var(--text-muted); font-size: 0.7rem; padding: 8px 0 24px;">
+    FAM Tracker · <span id="version-stamp"></span> · <a href="#" onclick="testSync(event)" style="color:var(--blue-accent); text-decoration:none;">Test Sync</a>
+  </div>
 </div>
 <div class="toast" id="toast"></div>
 
@@ -256,6 +259,7 @@ const PRIORITIES = ['High','Medium','Low'];
 const STATUSES   = ['Not Started','In Progress','Completed','On Hold','Overdue'];
 const SELECT_FIELDS = new Set(['category','priority','status','dueDate']);
 const ARCHIVE_DAYS = 30;
+const APP_VERSION  = 'v1.1 · 2026-06-10';
 
 let tasks = [];
 let viewMode = 'flat';            // 'flat' | 'grouped'
@@ -298,13 +302,15 @@ async function loadTasks() {
     if (rows && rows.length > 0) {
       // Pick the newest cloud row by value.updated
       rows.sort((a, b) => {
-        const at = (a.value && a.value.updated) || '';
-        const bt = (b.value && b.value.updated) || '';
-        return bt.localeCompare(at);
+        const av = typeof a.value === 'string' ? (() => { try { return JSON.parse(a.value); } catch(e) { return {}; } })() : (a.value || {});
+        const bv = typeof b.value === 'string' ? (() => { try { return JSON.parse(b.value); } catch(e) { return {}; } })() : (b.value || {});
+        return (bv.updated || '').localeCompare(av.updated || '');
       });
       const latest = rows[0];
-      const cloudTime = (latest.value && latest.value.updated) || '';
-      const cloudTasks = (latest.value && Array.isArray(latest.value.tasks)) ? latest.value.tasks : null;
+      // Defensive: if value column was created as text instead of jsonb, it'll come back as a string
+      const v = typeof latest.value === 'string' ? (() => { try { return JSON.parse(latest.value); } catch (e) { return null; } })() : latest.value;
+      const cloudTime = (v && v.updated) || '';
+      const cloudTasks = (v && Array.isArray(v.tasks)) ? v.tasks : null;
 
       // If local cache is newer than cloud (e.g. save was still in flight last
       // session), trust local and push it up to cloud.
@@ -418,7 +424,7 @@ async function refreshFromCloud(force) {
 }
 
 document.addEventListener('visibilitychange', () => {
-  if (document.visibilityState === 'visible') refreshFromCloud(false);
+  if (document.visibilityState === 'visible' && !savePending) refreshFromCloud(false);
 });
 
 function normalizeTask(t) {
@@ -765,6 +771,16 @@ function addTask(category) {
     collapsedGroups.delete(cat);
     saveUIPrefs();
   }
+  // If active filters would hide the new (empty) task, clear them so the user sees it
+  const f = getFilters();
+  const wouldBeHidden = !!(f.task || f.owner || f.priority || f.status || f.dueFrom || f.dueTo || (f.category && f.category !== cat));
+  if (wouldBeHidden) {
+    ['f-task','f-owner','f-priority','f-status','f-due-from','f-due-to'].forEach(id => {
+      document.getElementById(id).value = '';
+    });
+    // Keep category filter aligned with new task's category in flat view
+    if (viewMode === 'flat') document.getElementById('f-category').value = cat;
+  }
   const newTask = normalizeTask({
     id: Date.now(),
     category: cat, task: '', owner: 'Finance',
@@ -924,7 +940,39 @@ function showSyncError() {
   el.addEventListener('change', render);
 });
 
+async function testSync(e) {
+  if (e) e.preventDefault();
+  const lines = [`FAM Tracker ${APP_VERSION}`, ''];
+  // Test 1: Read
+  try {
+    const rows = await sbFetch('kv_store', { filter: `key=eq.${STORAGE_KEY}` });
+    lines.push(`✓ Read OK — ${rows ? rows.length : 0} row(s) found for key '${STORAGE_KEY}'`);
+    if (rows && rows.length > 0) {
+      const v = typeof rows[0].value === 'string' ? JSON.parse(rows[0].value) : rows[0].value;
+      lines.push(`   Cloud has ${v?.tasks?.length ?? 0} task(s), last updated ${v?.updated || '(no timestamp)'}`);
+      if (typeof rows[0].value === 'string') lines.push('   ⚠ value column is stored as TEXT, not JSONB — this works but is non-standard');
+    }
+  } catch (err) {
+    lines.push('✗ Read FAILED — ' + (err.message || err));
+  }
+  // Test 2: Write
+  try {
+    const probe = { key: STORAGE_KEY + '_probe', value: { ping: new Date().toISOString() } };
+    await sbFetch('kv_store', { method: 'POST', body: probe, prefer: 'resolution=merge-duplicates,return=minimal' });
+    lines.push('✓ Write OK — anon role can upsert kv_store');
+  } catch (err) {
+    lines.push('✗ Write FAILED — ' + (err.message || err));
+    lines.push('   Likely cause: RLS missing UPDATE policy for anon role');
+  }
+  // Test 3: Local cache
+  const localTime = localStorage.getItem(STORAGE_KEY + '_updated') || '(none)';
+  lines.push('', `Local cache last saved: ${localTime}`);
+  lines.push(`Browser: ${navigator.userAgent.split(') ').slice(-1)[0]}`);
+  alert(lines.join('\n'));
+}
+
 (async () => {
+  document.getElementById('version-stamp').textContent = APP_VERSION;
   loadUIPrefs();
   await loadTasks();
   render();
