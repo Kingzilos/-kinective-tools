@@ -134,6 +134,53 @@ td input:focus, td select:focus, td textarea:focus { outline: none; box-shadow: 
 .group-empty { padding: 14px 4px; color: var(--text-muted); font-size: 0.8125rem; font-style: italic; }
 
 .toast { position: fixed; bottom: 24px; right: 24px; background: var(--text-primary); color: white; padding: 10px 18px; border-radius: 8px; font-size: 0.875rem; box-shadow: var(--shadow); opacity: 0; transform: translateY(8px); transition: all 0.25s; pointer-events: none; z-index: 1000; }
+
+/* Sort dropdown */
+.sort-control { display: inline-flex; align-items: center; gap: 6px; font-size: 0.8125rem; color: var(--text-secondary); }
+.sort-control select { padding: 6px 24px 6px 10px; font-size: 0.8125rem; border: 1px solid var(--border-light); border-radius: 8px; background: white; font-family: var(--font); color: var(--text-primary); cursor: pointer; }
+.sort-control select:focus { outline: none; border-color: var(--blue-accent); box-shadow: 0 0 0 3px rgba(37,99,235,0.1); }
+
+/* Modal overlay */
+.modal-overlay { position: fixed; inset: 0; background: rgba(17,24,39,0.5); display: flex; align-items: center; justify-content: center; z-index: 2000; padding: 24px; }
+.modal-dialog { background: white; border-radius: var(--radius); width: 100%; max-width: 560px; max-height: 90vh; display: flex; flex-direction: column; box-shadow: 0 20px 60px rgba(0,0,0,0.25); }
+.modal-dialog.notes-dialog { max-width: 720px; }
+.modal-header { display: flex; align-items: center; padding: 18px 22px 14px; border-bottom: 1px solid var(--border-light); }
+.modal-header h2 { font-size: 1rem; font-weight: 600; margin: 0; flex: 1; color: var(--text-primary); }
+.modal-close { font-size: 1.1rem; }
+.modal-body { padding: 18px 22px; overflow: auto; flex: 1; }
+.modal-footer { display: flex; gap: 10px; align-items: center; padding: 14px 22px 18px; border-top: 1px solid var(--border-light); }
+.modal-footer .spacer { flex: 1; }
+
+/* Notes editor */
+.notes-toolbar { display: flex; align-items: center; gap: 10px; padding: 12px 22px; border-bottom: 1px solid var(--border-light); flex-wrap: wrap; }
+.notes-tool-btn { font-size: 0.8125rem; padding: 6px 12px; }
+.notes-hint { color: var(--text-muted); font-size: 0.75rem; }
+.notes-body { padding: 14px 22px; overflow: auto; flex: 1; }
+.notes-body textarea { width: 100%; min-height: 260px; padding: 12px; font-size: 0.9rem; line-height: 1.5; border: 1px solid var(--border-light); border-radius: 8px; font-family: var(--font); color: var(--text-primary); resize: vertical; background: white; }
+.notes-body textarea:focus { outline: none; border-color: var(--blue-accent); box-shadow: 0 0 0 3px rgba(37,99,235,0.1); }
+
+/* Notes preview in table */
+.notes-preview { white-space: pre-wrap; max-height: 80px; overflow: hidden; line-height: 1.4; }
+.notes-more { display: inline-block; color: var(--blue-accent); font-size: 0.75rem; margin-top: 4px; cursor: pointer; text-decoration: none; }
+.notes-more:hover { text-decoration: underline; }
+.notes-empty-hint { color: var(--text-muted); font-size: 0.8125rem; }
+
+/* Category manager */
+.cat-row { display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; border-bottom: 1px solid var(--border-light); }
+.cat-row:last-child { border-bottom: none; }
+.cat-name { font-weight: 500; color: var(--text-primary); margin-right: 8px; }
+.cat-meta { color: var(--text-muted); font-size: 0.8125rem; }
+.cat-empty { padding: 20px; text-align: center; color: var(--text-muted); font-size: 0.875rem; }
+
+/* Drag & drop between categories */
+.col-drag { width: 28px; padding: 0 4px !important; }
+.drag-handle { display: inline-block; padding: 6px 4px; color: var(--text-muted); cursor: grab; font-size: 1rem; line-height: 1; user-select: none; -webkit-user-select: none; border-radius: 4px; }
+.drag-handle:hover { background: var(--bg); color: var(--text-primary); }
+.drag-handle:active { cursor: grabbing; }
+tr.dragging td { opacity: 0.45; }
+.group-body.drop-target, .group-header.drop-target { background: var(--blue-light); }
+.group-header.drop-target { box-shadow: inset 0 -2px 0 var(--blue-accent); }
+.group-body.drop-target { box-shadow: inset 0 0 0 2px var(--blue-accent); border-radius: 8px; }
 .toast.show { opacity: 1; transform: translateY(0); }
 
 @media (max-width: 1100px) {
@@ -213,6 +260,16 @@ td input:focus, td select:focus, td textarea:focus { outline: none; box-shadow: 
     <div class="actions">
       <button class="btn-primary" onclick="addTask()">+ Add Task</button>
       <span class="count" id="row-count"></span>
+      <label class="sort-control">
+        <span>Sort:</span>
+        <select id="sort-mode" onchange="setSortMode(this.value)">
+          <option value="smart">Smart (default)</option>
+          <option value="due">Due date — soonest first</option>
+          <option value="priority">Priority — high to low</option>
+          <option value="status">Status</option>
+          <option value="added">Recently added</option>
+        </select>
+      </label>
       <div class="spacer"></div>
       <div class="segmented" id="view-toggle">
         <button data-view="flat" class="active" onclick="setView('flat')">Flat</button>
@@ -220,6 +277,7 @@ td input:focus, td select:focus, td textarea:focus { outline: none; box-shadow: 
       </div>
       <label class="check-toggle"><input type="checkbox" id="t-hide-completed" onchange="toggleHideCompleted(this.checked)"> Hide completed</label>
       <label class="check-toggle"><input type="checkbox" id="t-show-archived"  onchange="toggleShowArchived(this.checked)"> Show archived</label>
+      <button class="btn-secondary" onclick="openCategoryManager()" title="Add or remove categories">Categories</button>
       <button class="btn-secondary" onclick="exportCSV()">Export CSV</button>
       <button class="btn-secondary" onclick="exportBackup()" title="Download a JSON backup of all tasks">Backup</button>
       <button class="btn-secondary" onclick="importBackup()" title="Restore tasks from a JSON backup">Restore</button>
@@ -246,6 +304,44 @@ td input:focus, td select:focus, td textarea:focus { outline: none; box-shadow: 
     FAM Tracker · <span id="version-stamp"></span> · <a href="#" onclick="testSync(event)" style="color:var(--blue-accent); text-decoration:none;">Test Sync</a>
   </div>
 </div>
+<!-- Category Manager Modal -->
+<div class="modal-overlay" id="cat-modal" style="display:none;" onclick="if(event.target===this) closeCategoryManager()">
+  <div class="modal-dialog" role="dialog" aria-labelledby="cat-modal-title">
+    <div class="modal-header">
+      <h2 id="cat-modal-title">Manage Categories</h2>
+      <button class="btn-icon modal-close" onclick="closeCategoryManager()" title="Close" aria-label="Close">✕</button>
+    </div>
+    <div class="modal-body" id="cat-list"></div>
+    <div class="modal-footer">
+      <button class="btn-primary" onclick="promptNewCategory()">+ Add Category</button>
+      <div class="spacer"></div>
+      <button class="btn-secondary" onclick="closeCategoryManager()">Done</button>
+    </div>
+  </div>
+</div>
+
+<!-- Notes Editor Modal -->
+<div class="modal-overlay" id="notes-modal" style="display:none;" onclick="if(event.target===this) closeNotesEditor()">
+  <div class="modal-dialog notes-dialog" role="dialog" aria-labelledby="notes-modal-title">
+    <div class="modal-header">
+      <h2 id="notes-modal-title">Notes</h2>
+      <button class="btn-icon modal-close" onclick="closeNotesEditor()" title="Close" aria-label="Close">✕</button>
+    </div>
+    <div class="notes-toolbar">
+      <button type="button" class="btn-secondary notes-tool-btn" onclick="insertBullet()" title="Insert bullet point">• Bullet</button>
+      <span class="notes-hint">Enter on a bullet line continues the list · Cmd/Ctrl + Enter saves</span>
+    </div>
+    <div class="notes-body">
+      <textarea id="notes-textarea" placeholder="Write detailed notes here. Click • Bullet to start a list." onkeydown="notesTextareaKeydown(event)"></textarea>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="closeNotesEditor()">Cancel</button>
+      <div class="spacer"></div>
+      <button class="btn-primary" onclick="saveNotesEditor()">Save</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -254,12 +350,13 @@ const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJ
 const STORAGE_KEY = 'fam_tracker';
 const UI_PREFS_KEY = 'fam_tracker_ui';
 
-const CATEGORIES = ['Finance','Admin','IT','Plano','Facility','TW'];
+const DEFAULT_CATEGORIES = ['Finance','Admin','IT','Plano','Facility','TW'];
+let CATEGORIES = [...DEFAULT_CATEGORIES];
 const PRIORITIES = ['High','Medium','Low'];
 const STATUSES   = ['Not Started','In Progress','Completed','On Hold','Overdue'];
 const SELECT_FIELDS = new Set(['category','priority','status','dueDate']);
 const ARCHIVE_DAYS = 30;
-const APP_VERSION  = 'v1.1 · 2026-06-10';
+const APP_VERSION  = 'v1.3 · 2026-06-10';
 
 let tasks = [];
 let viewMode = 'flat';            // 'flat' | 'grouped'
@@ -267,6 +364,7 @@ let hideCompleted = false;
 let showArchived = false;
 let selectedIds = new Set();
 let collapsedGroups = new Set();
+let sortMode = 'smart';
 
 /* ============ Supabase ============ */
 async function sbFetch(table, options = {}) {
@@ -311,28 +409,55 @@ async function loadTasks() {
       const v = typeof latest.value === 'string' ? (() => { try { return JSON.parse(latest.value); } catch (e) { return null; } })() : latest.value;
       const cloudTime = (v && v.updated) || '';
       const cloudTasks = (v && Array.isArray(v.tasks)) ? v.tasks : null;
+      const cloudCategories = (v && Array.isArray(v.categories) && v.categories.length > 0) ? v.categories : null;
 
       // If local cache is newer than cloud (e.g. save was still in flight last
       // session), trust local and push it up to cloud.
       if (localTasks && localTime && localTime > cloudTime) {
         tasks = localTasks.map(normalizeTask);
+        CATEGORIES = loadLocalCategories();
+        ensureCategoriesCoverTasks();
         setSync('synced','Synced');
         saveTasks(true);
         return;
       }
       if (cloudTasks) {
         tasks = cloudTasks.map(normalizeTask);
+        CATEGORIES = cloudCategories || loadLocalCategories();
+        ensureCategoriesCoverTasks();
+        saveLocalCategories();
         setSync('synced','Synced');
         return;
       }
     }
     tasks = (localTasks || seedTasks()).map(normalizeTask);
+    CATEGORIES = loadLocalCategories();
+    ensureCategoriesCoverTasks();
     await saveTasks(true);
   } catch (e) {
     console.warn('Supabase load failed; using localStorage', e);
     tasks = (localTasks || seedTasks()).map(normalizeTask);
+    CATEGORIES = loadLocalCategories();
+    ensureCategoriesCoverTasks();
     setSync('local','Local only', e);
   }
+}
+
+function loadLocalCategories() {
+  try {
+    const stored = JSON.parse(localStorage.getItem(STORAGE_KEY + '_categories') || 'null');
+    if (Array.isArray(stored) && stored.length > 0) return stored;
+  } catch (e) {}
+  return [...DEFAULT_CATEGORIES];
+}
+function saveLocalCategories() {
+  localStorage.setItem(STORAGE_KEY + '_categories', JSON.stringify(CATEGORIES));
+}
+// Forgiving: if tasks reference a category not in the list, add it so nothing
+// gets visually orphaned. Maintains DEFAULT_CATEGORIES order at top.
+function ensureCategoriesCoverTasks() {
+  const present = new Set(CATEGORIES);
+  tasks.forEach(t => { if (t.category && !present.has(t.category)) { CATEGORIES.push(t.category); present.add(t.category); } });
 }
 
 let saveTimer = null;
@@ -340,6 +465,7 @@ let savePending = false;
 function saveTasks(immediate=false) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks));
   localStorage.setItem(STORAGE_KEY + '_updated', new Date().toISOString());
+  saveLocalCategories();
   clearTimeout(saveTimer);
   savePending = true;
   setSync('saving', 'Saving…');
@@ -347,7 +473,7 @@ function saveTasks(immediate=false) {
     try {
       await sbFetch('kv_store', {
         method: 'POST',
-        body: { key: STORAGE_KEY, value: { tasks, updated: new Date().toISOString() } },
+        body: { key: STORAGE_KEY, value: { tasks, categories: CATEGORIES, updated: new Date().toISOString() } },
         prefer: 'resolution=merge-duplicates,return=minimal'
       });
       savePending = false;
@@ -376,7 +502,7 @@ function flushPendingSave() {
         'Content-Type': 'application/json',
         'Prefer': 'resolution=merge-duplicates,return=minimal'
       },
-      body: JSON.stringify({ key: STORAGE_KEY, value: { tasks, updated: new Date().toISOString() } }),
+      body: JSON.stringify({ key: STORAGE_KEY, value: { tasks, categories: CATEGORIES, updated: new Date().toISOString() } }),
       keepalive: true
     });
   } catch (e) { /* ignore — page is unloading */ }
@@ -449,15 +575,17 @@ function loadUIPrefs() {
     viewMode      = p.viewMode === 'grouped' ? 'grouped' : 'flat';
     hideCompleted = !!p.hideCompleted;
     showArchived  = !!p.showArchived;
+    sortMode      = ['smart','due','priority','status','added'].includes(p.sortMode) ? p.sortMode : 'smart';
     collapsedGroups = new Set(Array.isArray(p.collapsedGroups) ? p.collapsedGroups : []);
   } catch (e) {}
   document.getElementById('t-hide-completed').checked = hideCompleted;
   document.getElementById('t-show-archived').checked  = showArchived;
+  document.getElementById('sort-mode').value = sortMode;
   document.querySelectorAll('#view-toggle button').forEach(b => b.classList.toggle('active', b.dataset.view === viewMode));
 }
 function saveUIPrefs() {
   localStorage.setItem(UI_PREFS_KEY, JSON.stringify({
-    viewMode, hideCompleted, showArchived,
+    viewMode, hideCompleted, showArchived, sortMode,
     collapsedGroups: Array.from(collapsedGroups)
   }));
 }
@@ -551,14 +679,31 @@ function refreshDropdowns() {
 }
 
 function sortTasks(arr) {
-  const pr = { High:0, Medium:1, Low:2 };
-  return arr.slice().sort((a,b) => {
+  const PRI = { High:0, Medium:1, Low:2 };
+  const STA = { 'Overdue':0, 'In Progress':1, 'Not Started':2, 'On Hold':3, 'Completed':4 };
+  const dateKey = t => t.dueDate || '9999-12-31';
+  const cmpDate = (a, b) => { const da = dateKey(a), db = dateKey(b); return da < db ? -1 : (da > db ? 1 : 0); };
+  const cmpPri  = (a, b) => (PRI[a.priority] ?? 9) - (PRI[b.priority] ?? 9);
+  const cmpSta  = (a, b) => (STA[a.status]   ?? 9) - (STA[b.status]   ?? 9);
+
+  if (sortMode === 'due') {
+    return arr.slice().sort((a, b) => cmpDate(a, b) || cmpPri(a, b));
+  }
+  if (sortMode === 'priority') {
+    return arr.slice().sort((a, b) => cmpPri(a, b) || cmpDate(a, b));
+  }
+  if (sortMode === 'status') {
+    return arr.slice().sort((a, b) => cmpSta(a, b) || cmpDate(a, b));
+  }
+  if (sortMode === 'added') {
+    // id = Date.now() at creation, so larger id = newer
+    return arr.slice().sort((a, b) => b.id - a.id);
+  }
+  // 'smart' default: overdue at top, then ascending date, then priority
+  return arr.slice().sort((a, b) => {
     const oa = isOverdue(a), ob = isOverdue(b);
     if (oa !== ob) return oa ? -1 : 1;
-    const da = a.dueDate || '9999-12-31';
-    const db = b.dueDate || '9999-12-31';
-    if (da !== db) return da < db ? -1 : 1;
-    return (pr[a.priority] ?? 9) - (pr[b.priority] ?? 9);
+    return cmpDate(a, b) || cmpPri(a, b);
   });
 }
 
@@ -636,6 +781,7 @@ function renderTable(rows, opts = {}) {
     return `
       <tr data-id="${t.id}" class="${selectedIds.has(t.id)?'selected':''} ${archived?'archived':''}">
         <td class="col-check"><input type="checkbox" class="row-check" data-id="${t.id}" ${selectedIds.has(t.id)?'checked':''}></td>
+        ${opts.draggable ? `<td class="col-drag"><span class="drag-handle" draggable="true" ondragstart="onDragStart(event, ${t.id})" ondragend="onDragEnd(event)" title="Drag to move category">⋮⋮</span></td>` : ''}
         ${opts.showNum ? `<td class="col-num">${i+1}</td>` : ''}
         <td class="editable select-field" data-field="category">${escapeHtml(t.category||'')}</td>
         <td class="editable col-task"     data-field="task">${escapeHtml(t.task||'')}${archTag}</td>
@@ -643,7 +789,7 @@ function renderTable(rows, opts = {}) {
         <td class="editable select-field" data-field="priority"><span class="badge badge-priority-${t.priority||'Low'}">${escapeHtml(t.priority||'')}</span></td>
         <td class="editable select-field" data-field="status"><span class="badge badge-status-${(t.status||'').replace(/\s+/g,'')}">${escapeHtml(t.status||'')}</span></td>
         <td class="editable select-field" data-field="dueDate">${dueHtml}</td>
-        <td class="editable col-notes"    data-field="notes">${escapeHtml(t.notes||'')}</td>
+        <td class="editable col-notes"    data-field="notes">${renderNotesPreview(t.notes, t.id)}</td>
         <td class="editable col-link"     data-field="link">${linkHtml}</td>
         <td class="col-actions"><button class="btn-icon" onclick="deleteTask(${t.id})" title="Delete">✕</button></td>
       </tr>`;
@@ -654,6 +800,7 @@ function renderTable(rows, opts = {}) {
     <table>
       <thead><tr>
         <th class="col-check"><input type="checkbox" class="select-all" data-ids="${allIds.join(',')}" ${allSelected?'checked':''}></th>
+        ${opts.draggable ? '<th class="col-drag"></th>' : ''}
         ${opts.showNum ? '<th class="col-num">#</th>' : ''}
         <th>Category</th><th>Task</th><th>Owner</th>
         <th>Priority</th><th>Status</th><th>Due Date</th><th>Notes</th><th>Link</th><th></th>
@@ -669,16 +816,23 @@ function renderGrouped(filtered) {
     const collapsed = collapsedGroups.has(cat);
     const body = rows.length === 0
       ? `<div class="group-empty">No tasks${getFilters().task || getFilters().status || getFilters().priority || getFilters().owner || getFilters().dueFrom || getFilters().dueTo ? ' matching filters' : ''}.</div>`
-      : renderTable(rows, { showNum: false });
+      : renderTable(rows, { showNum: false, draggable: true });
+    const safeCat = escapeHtml(cat).replace(/'/g, "\\'");
     return `
       <div class="group">
-        <div class="group-header ${collapsed?'collapsed':''}" data-cat="${cat}">
+        <div class="group-header ${collapsed?'collapsed':''}" data-cat="${escapeHtml(cat)}"
+             ondragover="onGroupDragOver(event, '${safeCat}')"
+             ondragleave="onGroupDragLeave(event)"
+             ondrop="onGroupDrop(event, '${safeCat}')">
           <span class="group-caret">▾</span>
-          <span class="group-title">${cat}</span>
+          <span class="group-title">${escapeHtml(cat)}</span>
           <span class="group-count">${rows.length} task${rows.length===1?'':'s'}</span>
-          <button class="btn-add-group" onclick="event.stopPropagation(); addTask('${cat}');">+ Add</button>
+          <button class="btn-add-group" onclick="event.stopPropagation(); addTask('${safeCat}');">+ Add</button>
         </div>
-        <div class="group-body ${collapsed?'collapsed':''}">${body}</div>
+        <div class="group-body ${collapsed?'collapsed':''}" data-cat="${escapeHtml(cat)}"
+             ondragover="onGroupDragOver(event, '${safeCat}')"
+             ondragleave="onGroupDragLeave(event)"
+             ondrop="onGroupDrop(event, '${safeCat}')">${body}</div>
       </div>`;
   }).join('');
 }
@@ -933,6 +1087,260 @@ function showSyncError() {
   }
 }
 
+/* ============ Notes Preview ============ */
+function renderNotesPreview(notes, taskId) {
+  if (!notes) return '<span class="notes-empty-hint">— click to add</span>';
+  const lines = String(notes).split('\n');
+  const PREVIEW_LINES = 4;
+  const shown = lines.slice(0, PREVIEW_LINES);
+  const hidden = lines.length - PREVIEW_LINES;
+  const body = escapeHtml(shown.join('\n'));
+  const more = hidden > 0
+    ? `<a class="notes-more" onclick="event.stopPropagation(); openNotesEditor(${taskId})">+${hidden} more line${hidden===1?'':'s'} — click to view</a>`
+    : '';
+  return `<div class="notes-preview">${body}</div>${more}`;
+}
+
+/* ============ Notes Editor Modal ============ */
+let editingNotesTaskId = null;
+let editingNotesOriginal = '';
+
+function openNotesEditor(id) {
+  const task = tasks.find(t => t.id === id);
+  if (!task) return;
+  editingNotesTaskId = id;
+  editingNotesOriginal = task.notes || '';
+  document.getElementById('notes-modal-title').textContent =
+    'Notes — ' + (task.task ? (task.task.length > 60 ? task.task.slice(0, 60) + '…' : task.task) : 'Untitled task');
+  const ta = document.getElementById('notes-textarea');
+  ta.value = editingNotesOriginal;
+  document.getElementById('notes-modal').style.display = 'flex';
+  setTimeout(() => {
+    ta.focus();
+    ta.setSelectionRange(ta.value.length, ta.value.length);
+  }, 10);
+}
+
+function closeNotesEditor(force) {
+  const ta = document.getElementById('notes-textarea');
+  if (!force && ta && ta.value !== editingNotesOriginal) {
+    if (!confirm('Discard unsaved changes to notes?')) return;
+  }
+  document.getElementById('notes-modal').style.display = 'none';
+  editingNotesTaskId = null;
+  editingNotesOriginal = '';
+}
+
+function saveNotesEditor() {
+  if (editingNotesTaskId == null) return;
+  const task = tasks.find(t => t.id === editingNotesTaskId);
+  if (!task) { closeNotesEditor(true); return; }
+  const newNotes = document.getElementById('notes-textarea').value;
+  if (newNotes !== (task.notes || '')) {
+    task.notes = newNotes;
+    saveTasks();
+    toast('Notes saved');
+  }
+  editingNotesOriginal = newNotes;
+  closeNotesEditor(true);
+  render();
+}
+
+function insertBullet() {
+  const ta = document.getElementById('notes-textarea');
+  const pos = ta.selectionStart;
+  const val = ta.value;
+  const lineStart = val.lastIndexOf('\n', pos - 1) + 1;
+  const atLineStart = pos === lineStart;
+  const lineHasContent = val.slice(lineStart, pos).trim().length > 0;
+  const prefix = (atLineStart || !lineHasContent) ? '• ' : '\n• ';
+  ta.value = val.slice(0, pos) + prefix + val.slice(pos);
+  const newPos = pos + prefix.length;
+  ta.selectionStart = ta.selectionEnd = newPos;
+  ta.focus();
+}
+
+function notesTextareaKeydown(e) {
+  const ta = e.target;
+  // Cmd/Ctrl + Enter saves
+  if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+    e.preventDefault();
+    saveNotesEditor();
+    return;
+  }
+  // Auto-continue bullets on plain Enter
+  if (e.key === 'Enter' && !e.shiftKey) {
+    const pos = ta.selectionStart;
+    const val = ta.value;
+    const lineStart = val.lastIndexOf('\n', pos - 1) + 1;
+    const currentLine = val.slice(lineStart, pos);
+    if (currentLine.startsWith('• ')) {
+      // Empty bullet line ("• " only) — kill the bullet to exit the list
+      if (currentLine.trim() === '•') {
+        e.preventDefault();
+        ta.value = val.slice(0, lineStart) + val.slice(pos);
+        ta.selectionStart = ta.selectionEnd = lineStart;
+        return;
+      }
+      e.preventDefault();
+      const insert = '\n• ';
+      ta.value = val.slice(0, pos) + insert + val.slice(pos);
+      ta.selectionStart = ta.selectionEnd = pos + insert.length;
+    }
+  }
+  // Esc closes
+  if (e.key === 'Escape') { e.preventDefault(); closeNotesEditor(); }
+}
+
+/* ============ Category Manager Modal ============ */
+function openCategoryManager() {
+  renderCategoryList();
+  document.getElementById('cat-modal').style.display = 'flex';
+}
+function closeCategoryManager() {
+  document.getElementById('cat-modal').style.display = 'none';
+}
+function renderCategoryList() {
+  const list = document.getElementById('cat-list');
+  if (CATEGORIES.length === 0) {
+    list.innerHTML = '<div class="cat-empty">No categories yet. Add one below.</div>';
+    return;
+  }
+  list.innerHTML = CATEGORIES.map((c, i) => {
+    const used = tasks.filter(t => t.category === c).length;
+    const meta = used === 0 ? 'not in use' : `${used} task${used===1?'':'s'}`;
+    return `<div class="cat-row">
+      <div>
+        <span class="cat-name">${escapeHtml(c)}</span>
+        <span class="cat-meta">${meta}</span>
+      </div>
+      <button class="btn-icon" onclick="deleteCategory(${i})" title="Delete category" aria-label="Delete ${escapeHtml(c)}">✕</button>
+    </div>`;
+  }).join('');
+}
+function addCategory(name) {
+  name = (name || '').trim();
+  if (!name) return null;
+  const existing = CATEGORIES.find(c => c.toLowerCase() === name.toLowerCase());
+  if (existing) { toast('"' + existing + '" already exists'); return existing; }
+  CATEGORIES.push(name);
+  saveTasks(); // syncs categories to cloud
+  return name;
+}
+function promptNewCategory() {
+  const name = prompt('Name for new category:');
+  if (!name || !name.trim()) return null;
+  const added = addCategory(name.trim());
+  if (added) {
+    if (document.getElementById('cat-modal').style.display !== 'none') renderCategoryList();
+    render();
+    toast('Added "' + added + '"');
+  }
+  return added;
+}
+function deleteCategory(index) {
+  const cat = CATEGORIES[index];
+  if (!cat) return;
+  if (CATEGORIES.length === 1) {
+    alert('Cannot delete the last category — at least one must exist.');
+    return;
+  }
+  const using = tasks.filter(t => t.category === cat);
+  if (using.length > 0) {
+    const target = CATEGORIES.find((c, i) => i !== index);
+    if (!confirm(`"${cat}" is used by ${using.length} task${using.length===1?'':'s'}.\n\nDelete it and reassign those tasks to "${target}"?`)) return;
+    using.forEach(t => { t.category = target; });
+  } else {
+    if (!confirm(`Delete category "${cat}"?`)) return;
+  }
+  CATEGORIES.splice(index, 1);
+  collapsedGroups.delete(cat);
+  saveUIPrefs();
+  saveTasks(); // saves both tasks (potentially reassigned) and categories
+  renderCategoryList();
+  render();
+  toast(`Deleted "${cat}"`);
+}
+
+/* ============ Drag & Drop (Grouped View) ============ */
+let dragData = null;
+
+function onDragStart(e, taskId) {
+  // If the dragged task is part of a multi-selection, drag all selected
+  const ids = selectedIds.has(taskId) ? Array.from(selectedIds) : [taskId];
+  dragData = { ids };
+  try { e.dataTransfer.effectAllowed = 'move'; } catch (err) {}
+  try { e.dataTransfer.setData('text/plain', String(taskId)); } catch (err) {}
+  // Make the drag ghost the row itself (not just the tiny handle)
+  const tr = e.target.closest('tr');
+  if (tr) { try { e.dataTransfer.setDragImage(tr, 20, 20); } catch (err) {} }
+  // Visually fade all dragged rows
+  setTimeout(() => {
+    ids.forEach(id => {
+      const row = document.querySelector(`tr[data-id="${id}"]`);
+      if (row) row.classList.add('dragging');
+    });
+  }, 0);
+}
+
+function onDragEnd(e) {
+  document.querySelectorAll('tr.dragging').forEach(r => r.classList.remove('dragging'));
+  document.querySelectorAll('.drop-target').forEach(g => g.classList.remove('drop-target'));
+  dragData = null;
+}
+
+function onGroupDragOver(e, cat) {
+  if (!dragData) return;
+  e.preventDefault();
+  try { e.dataTransfer.dropEffect = 'move'; } catch (err) {}
+  e.currentTarget.classList.add('drop-target');
+}
+
+function onGroupDragLeave(e) {
+  // Only clear highlight if we're actually leaving this element (not entering a child)
+  const related = e.relatedTarget;
+  if (!related || !e.currentTarget.contains(related)) {
+    e.currentTarget.classList.remove('drop-target');
+  }
+}
+
+function onGroupDrop(e, cat) {
+  if (!dragData) return;
+  e.preventDefault();
+  e.currentTarget.classList.remove('drop-target');
+
+  let moved = 0;
+  dragData.ids.forEach(id => {
+    const t = tasks.find(x => x.id === id);
+    if (t && t.category !== cat) {
+      t.category = cat;
+      moved++;
+    }
+  });
+
+  // If we dropped onto a collapsed group, expand it so the user sees the move land
+  if (collapsedGroups.has(cat)) {
+    collapsedGroups.delete(cat);
+    saveUIPrefs();
+  }
+
+  if (moved > 0) {
+    saveTasks();
+    render();
+    toast(`Moved ${moved} task${moved===1?'':'s'} to ${cat}`);
+  } else {
+    render(); // still re-render to clean up any lingering drop-target styling
+  }
+  dragData = null;
+}
+
+/* ============ Sort Mode ============ */
+function setSortMode(mode) {
+  sortMode = mode;
+  saveUIPrefs();
+  render();
+}
+
 /* ============ Init ============ */
 ['f-task','f-category','f-owner','f-priority','f-status','f-due-from','f-due-to'].forEach(id => {
   const el = document.getElementById(id);
@@ -949,7 +1357,7 @@ async function testSync(e) {
     lines.push(`✓ Read OK — ${rows ? rows.length : 0} row(s) found for key '${STORAGE_KEY}'`);
     if (rows && rows.length > 0) {
       const v = typeof rows[0].value === 'string' ? JSON.parse(rows[0].value) : rows[0].value;
-      lines.push(`   Cloud has ${v?.tasks?.length ?? 0} task(s), last updated ${v?.updated || '(no timestamp)'}`);
+      lines.push(`   Cloud has ${v?.tasks?.length ?? 0} task(s), ${v?.categories?.length ?? 0} categor${v?.categories?.length === 1 ? 'y' : 'ies'}, last updated ${v?.updated || '(no timestamp)'}`);
       if (typeof rows[0].value === 'string') lines.push('   ⚠ value column is stored as TEXT, not JSONB — this works but is non-standard');
     }
   } catch (err) {
