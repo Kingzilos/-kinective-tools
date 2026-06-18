@@ -155,6 +155,7 @@ td input:focus, td select:focus, td textarea:focus { outline: none; box-shadow: 
 .notes-toolbar { display: flex; align-items: center; gap: 10px; padding: 12px 22px; border-bottom: 1px solid var(--border-light); flex-wrap: wrap; }
 .notes-tool-btn { font-size: 0.8125rem; padding: 6px 12px; }
 .notes-hint { color: var(--text-muted); font-size: 0.75rem; }
+.notes-hint kbd { display: inline-block; padding: 1px 5px; font-family: 'SF Mono', Menlo, Consolas, monospace; font-size: 0.7rem; background: var(--bg); color: var(--text-primary); border: 1px solid var(--border-light); border-radius: 3px; }
 .notes-body { padding: 14px 22px; overflow: auto; flex: 1; }
 .notes-body textarea { width: 100%; min-height: 260px; padding: 12px; font-size: 0.9rem; line-height: 1.5; border: 1px solid var(--border-light); border-radius: 8px; font-family: var(--font); color: var(--text-primary); resize: vertical; background: white; }
 .notes-body textarea:focus { outline: none; border-color: var(--blue-accent); box-shadow: 0 0 0 3px rgba(37,99,235,0.1); }
@@ -164,6 +165,7 @@ td input:focus, td select:focus, td textarea:focus { outline: none; box-shadow: 
 .notes-more { display: inline-block; color: var(--blue-accent); font-size: 0.75rem; margin-top: 4px; cursor: pointer; text-decoration: none; }
 .notes-more:hover { text-decoration: underline; }
 .notes-empty-hint { color: var(--text-muted); font-size: 0.8125rem; }
+.col-notes { cursor: pointer; }
 
 /* Category manager */
 .cat-row { display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; border-bottom: 1px solid var(--border-light); }
@@ -329,10 +331,10 @@ tr.dragging td { opacity: 0.45; }
     </div>
     <div class="notes-toolbar">
       <button type="button" class="btn-secondary notes-tool-btn" onclick="insertBullet()" title="Insert bullet point">• Bullet</button>
-      <span class="notes-hint">Enter on a bullet line continues the list · Cmd/Ctrl + Enter saves</span>
+      <span class="notes-hint">Type <kbd>-</kbd> + space to start a bullet · Enter continues the list · Shift+Enter for a plain new line · Cmd/Ctrl + Enter saves</span>
     </div>
     <div class="notes-body">
-      <textarea id="notes-textarea" placeholder="Write detailed notes here. Click • Bullet to start a list." onkeydown="notesTextareaKeydown(event)"></textarea>
+      <textarea id="notes-textarea" placeholder="Write detailed notes here. Type - then space for a bullet, or use the • Bullet button." oninput="notesTextareaInput(event)" onkeydown="notesTextareaKeydown(event)"></textarea>
     </div>
     <div class="modal-footer">
       <button class="btn-secondary" onclick="closeNotesEditor()">Cancel</button>
@@ -356,7 +358,7 @@ const PRIORITIES = ['High','Medium','Low'];
 const STATUSES   = ['Not Started','In Progress','Completed','On Hold','Overdue'];
 const SELECT_FIELDS = new Set(['category','priority','status','dueDate']);
 const ARCHIVE_DAYS = 30;
-const APP_VERSION  = 'v1.3 · 2026-06-10';
+const APP_VERSION  = 'v1.5 · 2026-06-10';
 
 let tasks = [];
 let viewMode = 'flat';            // 'flat' | 'grouped'
@@ -858,6 +860,12 @@ function beginEdit(td) {
   const task = tasks.find(t => t.id === id);
   if (!task) return;
 
+  // Notes always open in the full modal — that's where the bullet shortcuts work
+  if (field === 'notes') {
+    openNotesEditor(id);
+    return;
+  }
+
   const val = task[field] || '';
   let html;
   if (field === 'category') {
@@ -868,8 +876,6 @@ function beginEdit(td) {
     html = `<select>${STATUSES.map(s => `<option ${s===val?'selected':''}>${s}</option>`).join('')}</select>`;
   } else if (field === 'dueDate') {
     html = `<input type="date" value="${val}">`;
-  } else if (field === 'notes') {
-    html = `<textarea>${escapeHtml(val)}</textarea>`;
   } else if (field === 'link') {
     html = `<input type="url" value="${escapeHtml(val)}" placeholder="https://...">`;
   } else {
@@ -1168,7 +1174,7 @@ function notesTextareaKeydown(e) {
     saveNotesEditor();
     return;
   }
-  // Auto-continue bullets on plain Enter
+  // Auto-continue bullets on plain Enter (Shift+Enter falls through = plain new line)
   if (e.key === 'Enter' && !e.shiftKey) {
     const pos = ta.selectionStart;
     const val = ta.value;
@@ -1190,6 +1196,23 @@ function notesTextareaKeydown(e) {
   }
   // Esc closes
   if (e.key === 'Escape') { e.preventDefault(); closeNotesEditor(); }
+}
+
+// Auto-convert "- " typed at the start of a line into "• " (markdown-style bullet)
+function notesTextareaInput(e) {
+  // Only convert on real insertion, never on delete or composition mid-IME
+  if (e.inputType && e.inputType.startsWith('delete')) return;
+  const ta = e.target;
+  const pos = ta.selectionStart;
+  const val = ta.value;
+  const lineStart = val.lastIndexOf('\n', pos - 1) + 1;
+  const lineUpToCursor = val.slice(lineStart, pos);
+  // Trigger only when the line so far is exactly "- " (dash + space) — i.e. the
+  // user just typed dash-space at the start of a fresh line.
+  if (lineUpToCursor === '- ') {
+    ta.value = val.slice(0, lineStart) + '• ' + val.slice(pos);
+    ta.selectionStart = ta.selectionEnd = lineStart + 2;
+  }
 }
 
 /* ============ Category Manager Modal ============ */
