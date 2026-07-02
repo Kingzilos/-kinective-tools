@@ -158,11 +158,39 @@ table.pvt tr:hover td{background:var(--accent-bg)}
     <span id="stxt">Upload the T&T Excel file to begin.</span>
   </div>
 
-  <!-- NEW PAYROLL FORMAT CONVERTER -->
+  <!-- NEW PAYROLL FORMAT CONVERTER + CLASSIFIER -->
   <div class="conv-card">
     <div class="conv-head">
       <span class="conv-badge">🔄 Converter</span>
-      <span class="conv-title">New payroll report → T&amp;T format</span>
+      <span class="conv-title">New payroll report → T&amp;T format (with pay-code classification)</span>
+    </div>
+
+    <!-- Step 1: department files (optional, for class/pilates/session split) -->
+    <div style="font-size:10.5px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--text3);margin-bottom:6px">
+      Step 1 — Department files <span style="font-weight:400;text-transform:none">(optional — enables Classes / Pilates / Sessions split; matched to the pay period automatically)</span>
+    </div>
+    <div class="dept-grid">
+      <div class="drop dept-drop" id="drop-gfi" ondragover="dov(event)" ondrop="ddr(event,'gfi')" ondragleave="this.classList.remove('over')">
+        <input type="file" accept=".xlsx,.xls" onchange="ldf(event,'gfi')">
+        <div class="dept-t">🧘 GFI</div><div class="dept-s">Group Fitness</div><div class="drop-fn" id="gfi-fn"></div>
+      </div>
+      <div class="drop dept-drop" id="drop-pt" ondragover="dov(event)" ondrop="ddr(event,'pt')" ondragleave="this.classList.remove('over')">
+        <input type="file" accept=".xlsx,.xls" onchange="ldf(event,'pt')">
+        <div class="dept-t">💪 PT</div><div class="dept-s">Personal Training</div><div class="drop-fn" id="pt-fn"></div>
+      </div>
+      <div class="drop dept-drop" id="drop-general" ondragover="dov(event)" ondrop="ddr(event,'general')" ondragleave="this.classList.remove('over')">
+        <input type="file" accept=".xlsx,.xls" onchange="ldf(event,'general')">
+        <div class="dept-t">🏢 General</div><div class="dept-s">Hourly staff</div><div class="drop-fn" id="general-fn"></div>
+      </div>
+      <div class="drop dept-drop" id="drop-massage" ondragover="dov(event)" ondrop="ddr(event,'massage')" ondragleave="this.classList.remove('over')">
+        <input type="file" accept=".xlsx,.xls" onchange="ldf(event,'massage')">
+        <div class="dept-t">💆 Massage</div><div class="dept-s">Massage Therapy</div><div class="drop-fn" id="massage-fn"></div>
+      </div>
+    </div>
+
+    <!-- Step 2: payroll company file -->
+    <div style="font-size:10.5px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--text3);margin:14px 0 6px">
+      Step 2 — Payroll company report
     </div>
     <div class="conv-body">
       <div class="drop conv-drop" id="drop-conv" ondragover="dov(event)" ondrop="ddr(event,'conv')" ondragleave="this.classList.remove('over')">
@@ -173,20 +201,43 @@ table.pvt tr:hover td{background:var(--accent-bg)}
         <div class="drop-fn" id="conv-fn"></div>
       </div>
       <div class="conv-note" id="conv-note">
-        Got a report in the <b>new payroll company format</b> (Company Name / Pay Type / Net Amount columns)?
-        Drop it here to download a converted <b>T&T-format</b> file, then drop that into the box above.
+        Drop the <b>department files</b> above (Step 1) so the tool can split "Regular" into <b>Classes / Pilates / Sessions</b>,
+        then drop the <b>payroll company report</b> here. It converts to <b>T&T format</b>, reconciles every total to the
+        payroll amount, and flags anything that doesn't line up. Then drop the converted file into the box at the very top.
       </div>
+    </div>
+
+    <!-- Reconciliation / flag panel -->
+    <div id="recon-panel" style="display:none;margin-top:14px">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+        <span style="font-size:10.5px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--text3)">Reconciliation &amp; flags</span>
+        <span id="recon-status" style="font-size:11px;font-weight:600;padding:2px 8px;border-radius:4px"></span>
+      </div>
+      <div id="recon-tabs" style="font-size:11px;color:var(--text2);margin-bottom:8px"></div>
+      <div id="recon-split" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px"></div>
+      <div id="recon-flags"></div>
     </div>
   </div>
   <style>
     .conv-card{background:var(--surface);border:0.5px solid var(--border);border-left:3px solid var(--accent);border-radius:var(--r);padding:14px 16px;margin-bottom:18px}
-    .conv-head{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+    .conv-head{display:flex;align-items:center;gap:8px;margin-bottom:12px}
     .conv-badge{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--accent);background:var(--accent-bg);padding:3px 8px;border-radius:4px}
     .conv-title{font-size:12.5px;font-weight:600;color:var(--text)}
     .conv-body{display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:center}
     .conv-drop{margin:0;padding:16px}
     .conv-note{font-size:11.5px;color:var(--text2);line-height:1.7}
-    @media(max-width:700px){.conv-body{grid-template-columns:1fr}}
+    .dept-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+    .dept-drop{margin:0;padding:12px 10px;text-align:center}
+    .dept-t{font-size:12px;font-weight:600}
+    .dept-s{font-size:10px;color:var(--text2);margin-top:1px}
+    .recon-chip{font-size:11px;padding:5px 10px;border-radius:6px;background:var(--surface2);border:0.5px solid var(--border)}
+    .recon-chip b{font-variant-numeric:tabular-nums}
+    .flag-item{font-size:11.5px;padding:7px 10px;border-radius:5px;margin-bottom:5px;line-height:1.5;border-left:3px solid}
+    .flag-scaled{background:#faf3e6;border-color:var(--amber);color:#5c3a06}
+    .flag-remainder{background:#eef4fb;border-color:var(--accent);color:#123a66}
+    .flag-unmatched{background:#fbeaea;border-color:var(--red);color:#7a1f1f}
+    .flag-coverage{background:var(--surface2);border-color:var(--border2);color:var(--text2)}
+    @media(max-width:700px){.conv-body{grid-template-columns:1fr}.dept-grid{grid-template-columns:1fr 1fr}}
   </style>
 
   <div class="mrow" id="mrow" style="display:none">
@@ -478,6 +529,7 @@ function lookupKFCPos(posCode,fn,ln,payCode){
   const fnU=(fn||'').toUpperCase().trim();const lnU=(ln||'').toUpperCase().trim();
   const codeU=(payCode||'').toUpperCase().trim();const dept=A_TO_B[pos]||'';
   if(fnU==='JACQUELINE'&&lnU==='HERNANDEZ'&&codeU==='HOURLY')return'Lead Group Fitness';
+  if(fnU==='ANGEL'&&lnU==='GONZALEZ')return'Sales Manager (El Paso)';
   if([522021,522011,522002].includes(posNum)&&codeU.includes('CLASS'))return'Group Fitness Instructors (Classes)';
   if([522011,522001].includes(posNum)&&codeU.includes('SESS'))return'Personal Training Sessions';
   if([522021,522011].includes(posNum)&&codeU.includes('PILATE'))return'Pilates Instructors (Pilates Classes)';
@@ -612,6 +664,7 @@ function ldf(e,t){const f=e.target.files[0];if(f)pf(f,t)}
 
 function pf(file,type){
   if(type==='conv'){convertNewToTT(file);return;}
+  if(['gfi','pt','general','massage'].includes(type)){loadDeptFile(file,type);return;}
   if(type==='pdf'){document.getElementById('pdf-fn').textContent='✓ '+file.name;document.getElementById('drop-pdf').classList.add('done');return;}
   const r=new FileReader();
   r.onload=e=>{
@@ -694,6 +747,71 @@ function pf(file,type){
 // ─── NEW PAYROLL COMPANY FORMAT → T&T FORMAT CONVERTER ───────────────────────
 // Reads the new payroll co. summary report and writes a T&T-format .xlsx
 // that this tool can load. Same mapping verified against real 06/05 data.
+// ─── DEPARTMENT-FILE-AWARE CONVERTER + PAY-CODE CLASSIFIER ───────────────────
+// G.dept holds parsed department workbooks keyed by GFI/PT/General/Massage.
+if(typeof G!=='undefined' && !G.dept) G.dept={};
+
+function loadDeptFile(file,type){
+  const r=new FileReader();
+  r.onload=e=>{
+    try{
+      const wb=XLSX.read(e.target.result,{type:'array',raw:true});
+      G.dept[type]=wb;
+      document.getElementById(type+'-fn').textContent='✓ '+file.name;
+      document.getElementById('drop-'+type).classList.add('done');
+    }catch(err){document.getElementById(type+'-fn').textContent='✗ read error';console.error(err);}
+  };
+  r.readAsArrayBuffer(file);
+}
+
+// fuzzy name matching
+// Nickname aliases (surname-scoped): normalize dept-file nicknames to the payroll given name.
+// Add new pairs here as needed — {sur, from (nickname), to (payroll name)}.
+const _NICK=[
+  {sur:'CAMACHO',from:'ZEKE',to:'SERGIO'},
+  {sur:'RIVERA', from:'LOUIE',to:'JOSE'},
+];
+// Salaried employees — their Regular beyond class/session activity is coded SSAL (salary), not HOURLY.
+const _SALARIED=[
+  {giv:'SAMUEL',sur:'VEGA'},
+  {giv:'GRISELDA',sur:'GUALDUCCI'},
+  {giv:'KRAIG',sur:'STRICKLAND'},
+  {giv:'CHRISTINA',sur:'MUNOZ'},
+];
+function _toks(name){
+  name=String(name).trim().toUpperCase().replace(/\./g,'').replace(/-/g,' ');
+  if(!name||name==='NAN')return null;
+  let giv,sur;
+  if(name.includes(',')){const m=name.split(/,(.*)/s);sur=new Set(m[0].trim().split(/\s+/));giv=new Set((m[1]||'').trim().split(/\s+/).filter(Boolean));}
+  else{const t=name.split(/\s+/);if(t.length<2)return null;giv=new Set([t[0]]);sur=new Set(t.slice(1));}
+  // apply nickname aliases (surname-scoped)
+  for(const a of _NICK){ if(sur.has(a.sur)&&giv.has(a.from)){giv.delete(a.from);giv.add(a.to);} }
+  return {giv,sur};
+}
+function _isSalaried(tok){ return !!tok && _SALARIED.some(s=>tok.sur.has(s.sur)&&tok.giv.has(s.giv)); }
+function _ov(x,y){
+  for(const p of x)if(y.has(p))return true;
+  for(const p of x)for(const q of y)if(p.length>=2&&q.length>=2&&(p.startsWith(q)||q.startsWith(p)))return true;
+  return false;
+}
+function _nameMatch(a,b){return a&&b&&_ov(a.sur,b.sur)&&_ov(a.giv,b.giv);}
+
+// period → tab matching via date signatures
+const _MONTHS=['january','february','march','april','may','june','july','august','september','october','november','december'];
+function _sigs(m,d,y){const yy=String(y).slice(2);return [`${m}${d}`,`${m}${String(d).padStart(2,'0')}`,`${String(m).padStart(2,'0')}${String(d).padStart(2,'0')}`,`${m}${d}${y}`,`${m}${String(d).padStart(2,'0')}${y}`,`${String(m).padStart(2,'0')}${String(d).padStart(2,'0')}${yy}`,`${_MONTHS[m-1]}${d}`];}
+function _findTab(wb,pps,ppe){
+  const s1=_sigs(pps.m,pps.d,pps.y),s2=_sigs(ppe.m,ppe.d,ppe.y);let best=null,bs=0;
+  for(const nm of wb.SheetNames){const n=nm.toLowerCase().replace(/[^a-z0-9]/g,'');const a=s1.filter(s=>n.includes(s)).length,b=s2.filter(s=>n.includes(s)).length;if(a>0&&b>0&&a+b>bs){bs=a+b;best=nm;}}
+  return best;
+}
+const _num=x=>{const n=parseFloat(x);return isNaN(n)?0:n;};
+function _rows(wb,tab){return XLSX.utils.sheet_to_json(wb.Sheets[tab],{header:1,raw:true,defval:''});}
+
+function _parseGFI(wb,tab){const r=_rows(wb,tab),out=[];for(let i=3;i<r.length;i++){const nm=String(r[i][2]||'').trim();if(!nm||nm.toUpperCase()==='NAN')continue;if(nm.toUpperCase().includes('TOTAL'))break;const C=_num(r[i][15]),P=_num(r[i][24]),t=_num(r[i][25]);out.push({tok:_toks(nm),name:nm,CLASS:C,PILATE:P,HOURLY:Math.max(0,t-C-P)});}return out;}
+function _parsePT(wb,tab){const r=_rows(wb,tab),out=[];for(let i=2;i<r.length;i++){const nm=String(r[i][0]||'').trim();if(nm.toUpperCase().includes('DETAILED')||nm.toUpperCase().includes('BREAKDOWN'))break;if(!nm||nm.toUpperCase()==='NAN'||nm.toUpperCase()==='EMPLOYEE NAME')continue;out.push({tok:_toks(nm),name:nm,HOURLY:_num(r[i][3]),SESS:_num(r[i][5])});}return out;}
+function _parseMassage(wb,tab){const r=_rows(wb,tab),out=[];let h2=-1;for(let i=0;i<r.length;i++)if(String(r[i][1]||'').toUpperCase().includes('ADJUSTED')){h2=i;break;}if(h2<0)return out;for(let i=h2+1;i<r.length;i++){const nm=String(r[i][0]||'').trim();if(!nm||nm.toUpperCase()==='NAN'||nm.toUpperCase().includes('NOTE'))continue;out.push({tok:_toks(nm),name:nm,MASAGE:_num(r[i][12])});}return out;}
+function _parseGeneral(wb,tab){const r=_rows(wb,tab),out=[];for(let i=1;i<r.length;i++){const nm=String(r[i][2]||'').trim();if(!nm||nm.toUpperCase()==='NAN'||nm.toUpperCase()==='EMPLOYEE')continue;out.push({tok:_toks(nm),name:nm});}return out;}
+
 function convertNewToTT(file){
   const noteEl=document.getElementById('conv-note');
   const r=new FileReader();
@@ -702,40 +820,26 @@ function convertNewToTT(file){
       const wb=XLSX.read(e.target.result,{type:'array',raw:true});
       const ws=wb.Sheets[wb.SheetNames[0]];
       const raw=XLSX.utils.sheet_to_json(ws,{header:1,raw:true,defval:''});
-
-      // Find header row (contains "Company Name")
       let hdrIdx=raw.findIndex(row=>row.some(c=>typeof c==='string'&&c.toLowerCase().includes('company name')));
       if(hdrIdx<0)hdrIdx=2;
-
-      // Column positions (new co. layout is fixed, but locate defensively)
-      const H=raw[hdrIdx].map(h=>(h||'').toString().trim().toLowerCase());
-      const col=name=>H.findIndex(h=>h.replace(/[\/\s\-]/g,'').includes(name.replace(/[\/\s\-]/g,'')));
-      const iComp=0, iName=1, iChkDt=2, iPos=3, iChkNo=4, iPeriod=5,
-            iPayT=6, iHrs=7, iRate=8, iPay=9,
-            iTaxT=10, iTaxAmt=11, iDedT=12, iDedAmt=13;
-
+      const iComp=0,iName=1,iChkDt=2,iPos=3,iChkNo=4,iPeriod=5,iPayT=6,iHrs=7,iPay=9,iTaxT=10,iDedT=12,iDedAmt=13;
       const pn=v=>{if(typeof v==='number')return v;return parseFloat((v||'').toString().replace(/[^0-9.\-]/g,''))||0;};
 
-      // ── Parse employee blocks (with TOTALS-bleed fix) ──
+      // Parse employees (with TOTALS-bleed fix)
       const emps=[]; let cur=null;
       for(let i=hdrIdx+1;i<raw.length;i++){
         const row=raw[i];
         const comp=(row[iComp]||'').toString().trim();
         const name=(row[iName]||'').toString().trim();
-        // Skip only truly empty rows — a row may carry ONLY a tax or deduction line
-        const hasContent=(row[iPayT]||'').toString().trim()||(row[iTaxT]||'').toString().trim()||(row[iDedT]||'').toString().trim();
-        if(!comp&&!name&&!hasContent)continue;
-        // Stop attributing rows once we hit the grand-totals footer
+        const has=(row[iPayT]||'').toString().trim()||(row[iTaxT]||'').toString().trim()||(row[iDedT]||'').toString().trim();
+        if(!comp&&!name&&!has)continue;
         if(name.toUpperCase().includes('TOTALS FOR ALL')){cur=null;continue;}
         if(comp&&name){
-          cur={
-            name,
-            checkDate:(row[iChkDt]||'').toString().replace(/Check Dt:\s*/i,'').trim(),
+          cur={name,checkDate:(row[iChkDt]||'').toString().replace(/Check Dt:\s*/i,'').trim(),
             position:(row[iPos]||'').toString().replace(/Pos:\s*/i,'').trim(),
             checkNum:(row[iChkNo]||'').toString().replace(/Check No:\s*/i,'').trim(),
             period:(row[iPeriod]||'').toString().replace(/Period:\s*/i,'').trim(),
-            payLines:[], dedLines:[]
-          };
+            payLines:[],dedLines:[],tok:_toks(name)};
           emps.push(cur);
         }
         if(!cur)continue;
@@ -744,61 +848,164 @@ function convertNewToTT(file){
         const dt=(row[iDedT]||'').toString().trim();
         if(dt&&dt!=='Deductions')cur.dedLines.push({dedType:dt,amount:pn(row[iDedAmt])});
       }
-
       if(!emps.length){noteEl.innerHTML='<span style="color:var(--red)">Could not find employee data. Is this the new payroll company format?</span>';return;}
 
-      // ── Mapping tables (verified against real data) ──
+      // Period → PPS/PPE
+      const pp=(emps[0].period||'').split('-');
+      const a=(pp[0]||'').trim().split('/').map(Number), b=(pp[1]||'').trim().split('/').map(Number);
+      const pps={m:a[0],d:a[1],y:a[2]}, ppe={m:b[0],d:b[1],y:b[2]};
+      const mdY=s=>{const p=s.trim().split('/');return new Date(+p[2],+p[0]-1,+p[1]);};
+
+      // Load department data for this period
+      const dept={}; const tabInfo=[];
+      const parsers={GFI:_parseGFI,PT:_parsePT,Massage:_parseMassage,General:_parseGeneral};
+      const keymap={GFI:'gfi',PT:'pt',Massage:'massage',General:'general'};
+      for(const [label,fn] of Object.entries(parsers)){
+        const w=G.dept[keymap[label]];
+        if(!w){tabInfo.push(`${label}: <span style="color:var(--text3)">not loaded</span>`);continue;}
+        const tab=_findTab(w,pps,ppe);
+        if(!tab){tabInfo.push(`${label}: <span style="color:var(--red)">no matching tab for this period</span>`);continue;}
+        dept[label]=fn(w,tab);
+        tabInfo.push(`${label}: <b>${tab}</b> (${dept[label].length})`);
+      }
+      const generalNames=dept.General||[];
+      const splitFiles=['GFI','PT','Massage'].filter(k=>dept[k]);
+
+      // Classify each employee's Regular
       const PAY_MAP={'Regular':'HOURLY','Overtime 1.5':'OT','BONUS $':'BONREG','VACATION':'HOURLY','Expense Reimbursement':'REIMBE'};
       const DED_MAP={'Client Voluntary Medical Pre Tax (CR)':'HIPT1','Colonial PreTax (CR)':'SCOPT','Colonial Post (CR)':'SCOAT'};
+      const INSTR=new Set(['522021','5220211','5220212','522002','522011','522001','522012']);
+      const flags=[]; const agg={CLASS:0,PILATE:0,SESS:0,HOURLY:0,MASAGE:0,SSAL:0,OT:0,BONREG:0,REIMBE:0};
+      let totReg=0, totSplit=0;
 
-      const mdY=s=>{const p=s.trim().split('/');return new Date(+p[2],+p[0]-1,+p[1]);};
-      const parsePeriod=p=>{const parts=p.split('-');return[mdY(parts[0]),mdY(parts[1])];};
-
-      // ── Build T&T rows ──
       const hdr=['Employee ID','EE Client ID','First Name','Last Name','Position-Job Title','Check Number','PPS','PPE','Check Date','Payroll Record Type','Payroll Code','Units To Pay','Amount','WC Transaction'];
       const out=[hdr];
+
       emps.forEach(emp=>{
         const np=emp.name.split(',');
-        const last=(np[0]||'').trim();
-        const first=(np[1]||'').trim();
-        const pos=emp.position;
-        const chk=emp.checkNum;
-        const[pps,ppe]=parsePeriod(emp.period);
-        const chkDate=mdY(emp.checkDate);
-        const base=(rt,code,units,amt,wc)=>[chk,'522',first,last,pos,chk,pps,ppe,chkDate,rt,code,units,amt,wc];
-        // One State Taxes row per employee (matches T&T)
+        const last=(np[0]||'').trim(); const first=(np[1]||'').trim();
+        const pos=emp.position; const chk=emp.checkNum;
+        const ppsD=mdY(emp.period.split('-')[0]); const ppeD=mdY(emp.period.split('-')[1]); const chkD=mdY(emp.checkDate);
+        const base=(rt,code,units,amt,wc)=>[chk,'522',first,last,pos,chk,ppsD,ppeD,chkD,rt,code,units,amt,wc];
         out.push(base('State Taxes','TX',0,0,''));
-        // Pay Codes — one per source pay line (preserve splits)
+
+        // Regular total for this employee
+        let regTotal=0, regHours=0;
+        emp.payLines.forEach(pl=>{ if(PAY_MAP[pl.payType]==='HOURLY'){regTotal+=pl.pay;regHours+=pl.hours;} });
+        regTotal=Math.round(regTotal*100)/100;
+        totReg+=regTotal;
+
+        // Non-Regular pay lines pass through directly
         emp.payLines.forEach(pl=>{
           const code=PAY_MAP[pl.payType]||'HOURLY';
+          if(code==='HOURLY')return; // Regular handled via classification below
           out.push(base('Pay Codes',code,pl.hours,pl.pay,code==='REIMBE'?'':'TX9063'));
+          if(agg[code]!==undefined)agg[code]+=pl.pay;
         });
+
+        // Classify Regular via dept files
+        const split={CLASS:0,PILATE:0,SESS:0,HOURLY:0,MASAGE:0,SSAL:0};
+        const salBucket=_isSalaried(emp.tok)?'SSAL':'HOURLY';  // where base/leftover pay goes
+        if(regTotal>0){
+          const cats={CLASS:0,PILATE:0,SESS:0,HOURLY:0,MASAGE:0}; const srcs=[];
+          if(splitFiles.length){
+            for(const k of splitFiles){
+              const h=dept[k].find(x=>_nameMatch(emp.tok,x.tok));
+              if(h){srcs.push(k);for(const c of ['CLASS','PILATE','SESS','HOURLY','MASAGE'])cats[c]+=(h[c]||0);}
+            }
+          }
+          const D=Object.values(cats).reduce((s,v)=>s+v,0);
+          if(D===0){
+            split[salBucket]+=regTotal;
+            if(salBucket==='SSAL'){
+              flags.push({t:'remainder',m:`${emp.name} — $${regTotal.toFixed(2)} coded as salary (SSAL, manager pay).`});
+            } else if(INSTR.has(pos)&&splitFiles.length){
+              const inGeneral=generalNames.some(x=>_nameMatch(emp.tok,x.tok));
+              if(!inGeneral)flags.push({t:'unmatched',m:`${emp.name} (pos ${pos}) — not found in ${splitFiles.join('/')} files; $${regTotal.toFixed(2)} left as HOURLY. Check name spelling/nickname in dept file.`});
+            }
+          } else if(Math.abs(D-regTotal)<=0.01){
+            for(const c in cats)split[c]=cats[c];
+          } else if(D<regTotal){
+            for(const c in cats)split[c]=cats[c];
+            const rem=Math.round((regTotal-D)*100)/100;
+            split[salBucket]+=rem;
+            if(rem>1){
+              if(salBucket==='SSAL')flags.push({t:'remainder',m:`${emp.name} — $${rem.toFixed(2)} of Regular beyond ${srcs.join('+')} activity coded as salary (SSAL, manager pay).`});
+              else flags.push({t:'remainder',m:`${emp.name} — $${rem.toFixed(2)} of Regular is beyond ${srcs.join('+')} activity (base pay) → HOURLY.`});
+            }
+          } else {
+            const sc=regTotal/D;
+            for(const c in cats)split[c]=Math.round(cats[c]*sc*100)/100;
+            const diff=Math.round((regTotal-Object.values(split).reduce((s,v)=>s+v,0))*100)/100;
+            split[salBucket]+=diff;
+            flags.push({t:'scaled',m:`${emp.name} — ${srcs.join('+')} prep total $${D.toFixed(2)} exceeds payroll Regular $${regTotal.toFixed(2)} by $${(D-regTotal).toFixed(2)}; scaled proportionally to reconcile.`});
+          }
+        }
+
+        // Emit Regular split as pay-code rows (units apportioned by $ share)
+        const catList=[['CLASS',split.CLASS],['PILATE',split.PILATE],['SESS',split.SESS],['MASAGE',split.MASAGE],['SSAL',split.SSAL],['HOURLY',split.HOURLY]];
+        catList.forEach(([code,amt])=>{
+          if(amt<=0)return;
+          const units=regTotal>0?Math.round((regHours*amt/regTotal)*100)/100:0;
+          out.push(base('Pay Codes',code,units,Math.round(amt*100)/100,'TX9063'));
+          agg[code]+=amt; totSplit+=amt;
+        });
+
         // Deductions
-        emp.dedLines.forEach(dl=>{
-          if(dl.amount>0)out.push(base('Deductions',DED_MAP[dl.dedType]||dl.dedType,0,dl.amount,''));
-        });
+        emp.dedLines.forEach(dl=>{ if(dl.amount>0)out.push(base('Deductions',DED_MAP[dl.dedType]||dl.dedType,0,dl.amount,'')); });
       });
 
-      // ── Write & download ──
+      // Coverage flags: names in dept files not found in payroll
+      const payToks=emps.map(e=>e.tok).filter(Boolean);
+      for(const k of splitFiles){
+        for(const d of dept[k]){
+          const hasActivity=(d.CLASS||0)+(d.PILATE||0)+(d.SESS||0)+(d.HOURLY||0)+(d.MASAGE||0)>0;
+          if(hasActivity && !payToks.some(pt=>_nameMatch(pt,d.tok)))
+            flags.push({t:'coverage',m:`${d.name} appears in the ${k} file (paid activity) but was not found in the payroll report.`});
+        }
+      }
+
+      // Write & download
       const owb=XLSX.utils.book_new();
       const ows=XLSX.utils.aoa_to_sheet(out,{cellDates:true});
       ows['!cols']=[{wch:13},{wch:12},{wch:14},{wch:16},{wch:16},{wch:13},{wch:12},{wch:12},{wch:12},{wch:18},{wch:12},{wch:11},{wch:11},{wch:14}];
       XLSX.utils.book_append_sheet(owb,ows,'Employee Payroll Transactions');
-      // Filename from check date
-      const cd=emps[0].checkDate.replace(/\//g,'_');
+      const cd=(emps[0].checkDate||'').replace(/\//g,'_');
       const outName=`Kinective_Payroll_${cd}_TT.xlsx`;
       XLSX.writeFile(owb,outName);
 
       const payRows=out.filter(r=>r[9]==='Pay Codes').length;
       document.getElementById('conv-fn').textContent='✓ '+file.name;
       document.getElementById('drop-conv').classList.add('done');
-      noteEl.innerHTML=`<b style="color:var(--green)">✓ Converted ${emps.length} employees (${payRows} pay rows).</b><br>Downloaded <b>${outName}</b> — now drop that file into the T&T box above to load it.`;
+      noteEl.innerHTML=`<b style="color:var(--green)">✓ Converted ${emps.length} employees (${payRows} pay rows).</b> Downloaded <b>${outName}</b> — drop it into the T&T box at the top to load it.`;
+
+      renderReconPanel(tabInfo, agg, flags, totReg, totSplit, splitFiles.length>0);
     }catch(err){noteEl.innerHTML=`<span style="color:var(--red)">Conversion error: ${err.message}</span>`;console.error(err);}
   };
   r.readAsArrayBuffer(file);
 }
 
+function renderReconPanel(tabInfo, agg, flags, totReg, totSplit, didSplit){
+  const panel=document.getElementById('recon-panel'); panel.style.display='block';
+  const reconciles=Math.abs(totReg-totSplit)<0.05;
+  const st=document.getElementById('recon-status');
+  st.textContent=reconciles?'✓ Reconciles to the penny':`⚠ Off by $${(totReg-totSplit).toFixed(2)}`;
+  st.style.background=reconciles?'var(--green-bg)':'var(--red-bg)';
+  st.style.color=reconciles?'var(--green)':'var(--red)';
+  document.getElementById('recon-tabs').innerHTML='Period tabs used → '+tabInfo.join(' &nbsp;·&nbsp; ');
+  const codes=[['CLASS','Classes'],['PILATE','Pilates'],['SESS','Sessions'],['MASAGE','Massage'],['SSAL','Salary'],['HOURLY','Hourly'],['OT','Overtime'],['BONREG','Bonus'],['REIMBE','Reimburse']];
+  document.getElementById('recon-split').innerHTML=codes.filter(([c])=>agg[c]>0).map(([c,lbl])=>`<span class="recon-chip">${lbl}: <b>$${agg[c].toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}</b></span>`).join('');
+  const fl=document.getElementById('recon-flags');
+  if(!flags.length){fl.innerHTML='<div style="font-size:11.5px;color:var(--green)">No discrepancies — every employee classified and reconciled.</div>';return;}
+  const order={unmatched:0,scaled:1,coverage:2,remainder:3};
+  const label={unmatched:'⚠ NEEDS ATTENTION',scaled:'ⓘ SCALED TO RECONCILE',coverage:'ⓘ IN DEPT FILE, NOT PAYROLL',remainder:'ⓘ BASE/SALARY → HOURLY'};
+  flags.sort((a,b)=>order[a.t]-order[b.t]);
+  fl.innerHTML=`<div style="font-size:11px;color:var(--text2);margin-bottom:6px">${flags.length} flag${flags.length>1?'s':''}:</div>`+
+    flags.map(f=>`<div class="flag-item flag-${f.t}"><b>${label[f.t]}</b> — ${f.m}</div>`).join('');
+}
+
 function setSt(t,m){document.getElementById('sdot').className='sdot '+(t==='ok'?'ok':'err');document.getElementById('stxt').textContent=m;}
+
 
 function fmt(n,dec=2){
   if(n===null||n===undefined||isNaN(n)||n==='')return'';
