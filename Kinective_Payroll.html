@@ -448,10 +448,15 @@ function lookupKFCPos(posCode,fn,ln,payCode){
   const fnU=(fn||'').toUpperCase().trim();const lnU=(ln||'').toUpperCase().trim();
   const codeU=(payCode||'').toUpperCase().trim();const dept=A_TO_B[pos]||'';
   if(fnU==='JACQUELINE'&&lnU==='HERNANDEZ'&&codeU==='HOURLY')return'Lead Group Fitness';
+  // Base 6-digit + any known 7-digit suffix variants (payroll company appends a digit sometimes)
+  const GFI_INSTR=[522021,5220211,5220212];       // Group Fitness Instructors
+  const PT_INSTR =[522011];                        // Personal Trainers
+  const GFI_MGR  =[522002];                        // GFI Manager
+  const PT_MGR   =[522001];                        // PT Manager
   if(fnU==='ANGEL'&&lnU==='GONZALEZ')return'Sales Manager (El Paso)';
-  if([522021,522011,522002].includes(posNum)&&codeU.includes('CLASS'))return'Group Fitness Instructors (Classes)';
-  if([522011,522001].includes(posNum)&&codeU.includes('SESS'))return'Personal Training Sessions';
-  if([522021,522011].includes(posNum)&&codeU.includes('PILATE'))return'Pilates Instructors (Pilates Classes)';
+  if(GFI_INSTR.concat(PT_INSTR,GFI_MGR).includes(posNum)&&codeU.includes('CLASS'))return'Group Fitness Instructors (Classes)';
+  if(PT_INSTR.concat(PT_MGR).includes(posNum)&&codeU.includes('SESS'))return'Personal Training Sessions';
+  if(GFI_INSTR.concat(PT_INSTR).includes(posNum)&&codeU.includes('PILATE'))return'Pilates Instructors (Pilates Classes)';
   return B_TO_C[dept]||'';
 }
 
