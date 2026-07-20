@@ -1248,7 +1248,7 @@
               <span style="width:28px;"></span>
             </div>
           </div>
-          <div class="analytic-row" style="margin-top:10px; padding-top:10px; border-top:1px solid var(--gold); display:flex; justify-content:space-between; align-items:center;" id="capex-ytd-row">
+          <div class="analytic-row" style="margin-top:10px; padding-top:10px; border-top:1px solid var(--gold); display:flex; justify-content:space-between; align-items:center;">
             <span class="analytic-name" style="font-family:'DM Mono',monospace; font-size:10px; letter-spacing:0.1em; text-transform:uppercase; color:var(--gold); font-weight:700;">2026 YTD Accumulated CAPEX</span>
             <div class="analytic-vals" style="gap:8px;">
               <span class="analytic-val" style="font-weight:700; min-width:120px; text-align:right; color:var(--gold); font-size:14px;" id="capex-ytd-display">—</span>
@@ -2094,7 +2094,6 @@ function recalcCapex() {
   if (dispPlano) dispPlano.textContent = planoTotal > 0 ? fmt(planoTotal) : '—';
   if (dispAmd)   dispAmd.textContent   = amdTotal > 0   ? fmt(amdTotal)   : '—';
 
-  // 2026 YTD Accumulated CAPEX = baseline + sum of past weeks' CAPEX + current week live total
   const dispYTD = document.getElementById('capex-ytd-display');
   if (dispYTD) {
     let ytd = CAPEX_YTD_BASELINE;
@@ -2182,7 +2181,7 @@ attachCapexListeners();
 //  STORAGE: Supabase (cloud) + localStorage fallback
 // ═══════════════════════════════════════════════════════════════
 const LS_PREFIX      = 'cashflow_week_';
-const CAPEX_YTD_BASELINE = 1513235.56; // Pre-week-8 cumulative CAPEX
+const CAPEX_YTD_BASELINE = 1513235.56;
 const SB_TABLE       = 'cashflow_weeks';
 const SB_URL_DEFAULT = 'https://jbqvtnukspnlpxgosmhp.supabase.co';
 const SB_KEY_DEFAULT = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpicXZ0bnVrc3BubHB4Z29zbWhwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyNzU0NjcsImV4cCI6MjA4ODg1MTQ2N30.0EvUKNrSbH2UkQPEkTWXKS8PGNVr4G0dvWoJp9HBROs';
@@ -2713,7 +2712,7 @@ function loadWeekIntoUI(weekNum, readOnly) {
   (week.expenses?.amd   || []).forEach(e => amdExpenses.push(e));
   renderExpenses();
 
-  // CAPEX — always reset all rows first so stale values don't bleed when switching weeks
+  // CAPEX — reset all rows before populating (prevents stale values bleeding between weeks)
   capex2026 = week.capexYTD || 0;
   const capexRows = document.getElementById('capex-rows');
   if (capexRows) {
@@ -3036,7 +3035,9 @@ function parseXLS(buffer, filename) {
     const descUp  = desc.toUpperCase();
     const hasCheck = checkNo.length > 0 && /\d/.test(checkNo); // has a numeric check number
 
-    const isLoanAdvance = descUp.includes('ADV FROM 90050168') || descUp.includes('ADVANCE FROM 90050168');
+    // Loan drawdown — matches "Adv from 90050168", "Adv fromLn 0168", "ADVANCE FROM 90050168", etc.
+    // Any description containing "ADV" and "0168" is treated as a loan advance
+    const isLoanAdvance = descUp.includes('ADV') && descUp.includes('0168');
     if (isLoanAdvance) {
       if (credit > 0) {
         if (!window._pendingFinancingItems) window._pendingFinancingItems = [];
@@ -3044,7 +3045,7 @@ function parseXLS(buffer, filename) {
         if (!window._loanAdjustments) window._loanAdjustments = {};
         window._loanAdjustments[acctNum] = (window._loanAdjustments[acctNum] || 0) + credit;
       }
-      continue;
+      continue; // never touch income/expense/transfer for a loan advance
     }
     // "Transit Debit" WITH a check number = a real check payment → expense, not a transfer
     // "Transit Debit" WITHOUT a check number = internal account-to-account move → wash it
