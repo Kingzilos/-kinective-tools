@@ -94,8 +94,17 @@ td.pos-title{font-size:11.5px}
 .badge{display:inline-block;font-size:10px;font-weight:600;padding:2px 6px;border-radius:3px}
 .page-layout{display:flex;gap:16px;align-items:flex-start}
 .main-col{flex:1;min-width:0}
-.hist-sidebar{width:220px;flex-shrink:0;background:var(--surface);border:0.5px solid var(--border);border-radius:var(--r);padding:14px}
-.hist-title{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--text3);margin-bottom:10px}
+.hist-sidebar{width:220px;flex-shrink:0;background:var(--surface);border:0.5px solid var(--border);border-radius:var(--r);padding:14px;transition:width .2s}
+.hist-sidebar.collapsed{width:44px;padding:14px 8px}
+.hist-sidebar.collapsed .hist-title,.hist-sidebar.collapsed #hist-list{display:none}
+.hist-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;gap:6px}
+.hist-toggle{background:transparent;border:0.5px solid var(--border);border-radius:6px;width:28px;height:24px;font-size:14px;cursor:pointer;color:var(--text2);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.hist-toggle:hover{background:var(--surface2)}
+.hist-title{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--text3);flex:1}
+.loc-toggle{display:inline-flex;background:var(--surface2);border:0.5px solid var(--border);border-radius:8px;padding:2px;margin-right:10px}
+.loc-btn{background:transparent;border:0;padding:6px 14px;font-size:12px;font-weight:500;color:var(--text2);cursor:pointer;border-radius:6px;transition:.15s}
+.loc-btn.active{background:var(--surface);color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.06);font-weight:600}
+.loc-btn:hover:not(.active){color:var(--text)}
 .hist-item{padding:10px;border-radius:var(--rs);cursor:pointer;border:0.5px solid transparent;margin-bottom:6px;transition:.1s}
 .hist-item:hover{background:var(--surface2);border-color:var(--border)}
 .pivot-wrap{background:var(--surface);border:0.5px solid var(--border);border-radius:var(--r);overflow:hidden;max-width:440px}
@@ -127,6 +136,10 @@ table.pvt tr:hover td{background:var(--accent-bg)}
   <div style="flex:1">
     <div class="hdr-title">Kinective Fitness — Payroll Work Paper</div>
     <div class="hdr-sub">T&T Staff Management · Upload Excel to populate</div>
+  </div>
+  <div class="loc-toggle" id="loc-toggle">
+    <button class="loc-btn active" data-loc="el_paso" onclick="setLocation('el_paso')">El Paso</button>
+    <button class="loc-btn" data-loc="plano" onclick="setLocation('plano')">Plano</button>
   </div>
   <button class="btn-export" id="btn-export" onclick="exportXLSX()" style="display:none">
     ⬇ Export Excel
@@ -430,8 +443,11 @@ table.pvt tr:hover td{background:var(--accent-bg)}
 
 </div><!-- end main-col -->
 
-<div class="hist-sidebar">
-  <div class="hist-title">Payroll history</div>
+<div class="hist-sidebar" id="hist-sidebar">
+  <div class="hist-header">
+    <div class="hist-title" id="hist-title">Payroll history</div>
+    <button class="hist-toggle" id="hist-toggle" onclick="toggleHistory()" title="Collapse/expand history">«</button>
+  </div>
   <div id="hist-list"><div style="font-size:11px;color:var(--text3);text-align:center;padding:8px 0">No saved payrolls yet</div></div>
 </div>
 
@@ -477,6 +493,44 @@ const SB_URL='https://jbqvtnukspnlpxgosmhp.supabase.co';
 const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpicXZ0bnVrc3BubHB4Z29zbWhwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyNzU0NjcsImV4cCI6MjA4ODg1MTQ2N30.0EvUKNrSbH2UkQPEkTWXKS8PGNVr4G0dvWoJp9HBROs';
 const SB_HDR={'apikey':SB_KEY,'Authorization':`Bearer ${SB_KEY}`,'Content-Type':'application/json','Prefer':'return=minimal'};
 
+// ─── LOCATION (El Paso / Plano) ────────────────────────────────────────
+// Which location is currently active. Persisted in localStorage.
+// Each location has its own payroll_history via the `location` column.
+// Existing rows default to 'el_paso' (see SQL run once in Supabase).
+let CUR_LOC = localStorage.getItem('kfc_location') || 'el_paso';
+const LOC_LABEL = {el_paso:'El Paso', plano:'Plano'};
+
+function setLocation(loc){
+  if(loc===CUR_LOC) return;
+  CUR_LOC = loc;
+  localStorage.setItem('kfc_location', loc);
+  // Update toggle button styles
+  document.querySelectorAll('.loc-btn').forEach(b=>{
+    b.classList.toggle('active', b.dataset.loc===loc);
+  });
+  // Refresh the history list for the new location
+  renderHistory();
+  // Optional: clear currently loaded payroll since it belongs to the other location
+  setSt('ok', `Switched to ${LOC_LABEL[loc]}. Drop a payroll file for ${LOC_LABEL[loc]} to begin.`);
+}
+
+// Detect location from filename. Returns 'el_paso', 'plano', or null (unknown).
+function detectFileLocation(filename){
+  const n = (filename||'').toLowerCase().replace(/[^a-z]/g,'');
+  if(n.includes('elpaso')) return 'el_paso';
+  if(n.includes('plano'))  return 'plano';
+  return null;
+}
+
+// ─── SIDEBAR COLLAPSE ──────────────────────────────────────────────────
+function toggleHistory(){
+  const bar = document.getElementById('hist-sidebar');
+  const btn = document.getElementById('hist-toggle');
+  const collapsed = bar.classList.toggle('collapsed');
+  btn.textContent = collapsed ? '»' : '«';
+  localStorage.setItem('kfc_hist_collapsed', collapsed ? '1':'0');
+}
+
 async function sbFetch(path,opts={}){
   const res=await fetch(SB_URL+path,{...opts,headers:{...SB_HDR,...(opts.headers||{})}});
   if(!res.ok){const t=await res.text();throw new Error(`Supabase ${res.status}: ${t}`);}
@@ -497,7 +551,7 @@ async function saveToHistory(manual=false){
   };
   try{
     await sbFetch('/rest/v1/payroll_history',{method:'POST',headers:{'Prefer':'resolution=merge-duplicates'},
-      body:JSON.stringify({check_date:G.period.checkDate,period_start:G.period.pps,period_end:G.period.ppe,payload})});
+      body:JSON.stringify({check_date:G.period.checkDate,period_start:G.period.pps,period_end:G.period.ppe,location:CUR_LOC,payload})});
     if(btn){btn.textContent='✓ Saved';btn.style.background='#e0f4ee';btn.style.color='#0d6b52';}
     setTimeout(()=>{if(btn){btn.textContent='💾 Save';btn.disabled=false;btn.style.background='#fff';btn.style.color='#1a4d8f';}},2000);
     if(manual)showToast('Payroll saved to history ✓');
@@ -517,13 +571,13 @@ function showToast(msg){
 }
 
 async function loadHistory(){
-  try{const data=await sbFetch('/rest/v1/payroll_history?select=check_date,period_start,period_end,saved_at&order=check_date.desc');return data||[];}
+  try{const data=await sbFetch(`/rest/v1/payroll_history?location=eq.${CUR_LOC}&select=check_date,period_start,period_end,saved_at&order=check_date.desc`);return data||[];}
   catch(e){console.warn('loadHistory failed:',e.message);return[];}
 }
 
 async function loadPayrollFromHistory(checkDate){
   try{
-    const data=await sbFetch(`/rest/v1/payroll_history?check_date=eq.${encodeURIComponent(checkDate)}&select=payload`);
+    const data=await sbFetch(`/rest/v1/payroll_history?check_date=eq.${encodeURIComponent(checkDate)}&location=eq.${CUR_LOC}&select=payload`);
     if(!data||!data.length)return;
     const D=data[0].payload;
     G.period=D.period;G.deds=D.deds;G.wpRows=D.rows;G.wpRaw=D.rows;
@@ -543,7 +597,7 @@ async function loadPayrollFromHistory(checkDate){
 async function deleteHistoryEntry(checkDate,e){
   e.stopPropagation();
   if(!confirm(`Delete payroll for ${checkDate}?`))return;
-  try{await sbFetch(`/rest/v1/payroll_history?check_date=eq.${encodeURIComponent(checkDate)}`,{method:'DELETE'});renderHistory();}
+  try{await sbFetch(`/rest/v1/payroll_history?check_date=eq.${encodeURIComponent(checkDate)}&location=eq.${CUR_LOC}`,{method:'DELETE'});renderHistory();}
   catch(e){console.warn('Delete failed:',e.message);}
 }
 
@@ -556,7 +610,7 @@ async function renderHistory(){
   for(const row of rows){
     let gross=0,total=0,eeCount=0,rowCount=0;
     try{
-      const detail=await sbFetch(`/rest/v1/payroll_history?check_date=eq.${encodeURIComponent(row.check_date)}&select=payload`);
+      const detail=await sbFetch(`/rest/v1/payroll_history?check_date=eq.${encodeURIComponent(row.check_date)}&location=eq.${CUR_LOC}&select=payload`);
       if(detail&&detail.length){
         const D=detail[0].payload;
         gross=D.rows.filter(r=>!r.isReim).reduce((s,r)=>s+r.amount,0);
@@ -588,6 +642,14 @@ function ldf(e,t){const f=e.target.files[0];if(f)pf(f,t)}
 
 function pf(file,type){
   if(type==='pdf'){document.getElementById('pdf-fn').textContent='✓ '+file.name;document.getElementById('drop-pdf').classList.add('done');return;}
+  // Location safety check: if the filename says a different location than the one
+  // currently selected, refuse to load — user must switch first.
+  const fileLoc = detectFileLocation(file.name);
+  if(fileLoc && fileLoc !== CUR_LOC){
+    setSt('err', `This file looks like ${LOC_LABEL[fileLoc]} payroll, but you have ${LOC_LABEL[CUR_LOC]} selected. Switch to ${LOC_LABEL[fileLoc]} at the top before loading it.`);
+    document.getElementById('xl-fn').textContent = '';
+    return;
+  }
   const r=new FileReader();
   r.onload=e=>{
     try{
@@ -756,7 +818,9 @@ function convertNewFormat(wb){
     // A new employee block: name present AND check-date cell present (which only appears on the first row of a block)
     if(name && chkDt){
       cur={name,checkDate:chkDt.replace(/Check Dt:\s*/i,'').trim(),
-        position:(row[iPos]||'').toString().replace(/^\w+\s*\|\s*/,'').replace(/Pos:\s*/i,'').trim(),
+        // Strip any prefix up to the last pipe (handles bare "Pos:XXX",
+        // "O | Pos:XXX", and "Loc:1 | Pos:XXX" from location-sorted exports).
+        position:(row[iPos]||'').toString().replace(/^.*\|\s*/,'').replace(/Pos:\s*/i,'').trim(),
         checkNum:(row[iChkNo]||'').toString().replace(/Check No:\s*/i,'').trim(),
         period:(row[iPeriod]||'').toString().replace(/Period:\s*/i,'').trim(),
         payLines:[],dedLines:[],tok:_toks(name)};
@@ -1106,7 +1170,7 @@ async function renderTrendChart(){
   noData.style.display='none';
   const periods=[];const sorted=[...allRows].sort((a,b)=>a.check_date.localeCompare(b.check_date));
   for(const row of sorted){
-    try{const detail=await sbFetch(`/rest/v1/payroll_history?check_date=eq.${encodeURIComponent(row.check_date)}&select=payload`);
+    try{const detail=await sbFetch(`/rest/v1/payroll_history?check_date=eq.${encodeURIComponent(row.check_date)}&location=eq.${CUR_LOC}&select=payload`);
       if(!detail||!detail.length)continue;const D=detail[0].payload;
       const gross=D.rows.filter(r=>!r.isReim).reduce((s,r)=>s+r.amount,0);const tx=gross*0.1365;const credits=D.deds.reduce((s,d)=>s+d.amount,0);const total=gross+tx-credits;
       periods.push({label:row.check_date,gross,tx,total,ees:new Set(D.rows.map(r=>r.id)).size});
@@ -1136,8 +1200,8 @@ async function renderPOP(){
   const curRow=curIdx>=0?sorted[curIdx]:sorted[sorted.length-1];const priorRow=curIdx>0?sorted[curIdx-1]:sorted[sorted.length-2];
   let curD,priorD;
   try{
-    const cr=await sbFetch(`/rest/v1/payroll_history?check_date=eq.${encodeURIComponent(curRow.check_date)}&select=payload`);
-    const pr=await sbFetch(`/rest/v1/payroll_history?check_date=eq.${encodeURIComponent(priorRow.check_date)}&select=payload`);
+    const cr=await sbFetch(`/rest/v1/payroll_history?check_date=eq.${encodeURIComponent(curRow.check_date)}&location=eq.${CUR_LOC}&select=payload`);
+    const pr=await sbFetch(`/rest/v1/payroll_history?check_date=eq.${encodeURIComponent(priorRow.check_date)}&location=eq.${CUR_LOC}&select=payload`);
     if(!cr||!cr.length||!pr||!pr.length)return;curD=cr[0].payload;priorD=pr[0].payload;
   }catch(e){return;}
   const calc=D=>{const gross=D.rows.filter(r=>!r.isReim).reduce((s,r)=>s+r.amount,0);const tx=gross*0.1365;const credits=D.deds.reduce((s,d)=>s+d.amount,0);return{gross,tx,total:gross+tx-credits,ees:new Set(D.rows.map(r=>r.id)).size,otCost:D.rows.filter(r=>r.code==='OT').reduce((s,r)=>s+r.amount,0)};};
@@ -1152,13 +1216,13 @@ async function renderTenure(){
   const allRows=await loadHistory();const sorted=[...allRows].sort((a,b)=>a.check_date.localeCompare(b.check_date));
   const empHistory={};
   for(const row of sorted){
-    try{const detail=await sbFetch(`/rest/v1/payroll_history?check_date=eq.${encodeURIComponent(row.check_date)}&select=payload`);
+    try{const detail=await sbFetch(`/rest/v1/payroll_history?check_date=eq.${encodeURIComponent(row.check_date)}&location=eq.${CUR_LOC}&select=payload`);
       if(!detail||!detail.length)continue;const D=detail[0].payload;const seen=new Set();
       D.rows.forEach(r=>{if(!r.id||seen.has(r.id))return;seen.add(r.id);if(!empHistory[r.id])empHistory[r.id]={fn:r.fn,ln:r.ln,kfcPos:r.kfcPos,periods:[]};empHistory[r.id].periods.push(row.check_date);});
     }catch(e){}
   }
   const curCheckDate=G.period.checkDate;const curEEs=new Set();
-  if(curCheckDate){try{const detail=await sbFetch(`/rest/v1/payroll_history?check_date=eq.${encodeURIComponent(curCheckDate)}&select=payload`);if(detail&&detail.length)detail[0].payload.rows.forEach(r=>{if(r.id)curEEs.add(r.id);});}catch(e){}}
+  if(curCheckDate){try{const detail=await sbFetch(`/rest/v1/payroll_history?check_date=eq.${encodeURIComponent(curCheckDate)}&location=eq.${CUR_LOC}&select=payload`);if(detail&&detail.length)detail[0].payload.rows.forEach(r=>{if(r.id)curEEs.add(r.id);});}catch(e){}}
   const allEEs=Object.entries(empHistory).map(([id,v])=>({id,fn:v.fn,ln:v.ln,kfcPos:v.kfcPos,count:v.periods.length,isNew:v.periods.length===1&&v.periods[0]===curCheckDate,inCurrent:curEEs.has(id)}));
   const newEEs=allEEs.filter(e=>e.isNew);const active=allEEs.filter(e=>e.inCurrent);
   document.getElementById('tenure-summary').innerHTML=`<div style="display:flex;gap:8px"><div class="an-stat" style="flex:1"><div class="an-stat-val ${newEEs.length>0?'flag-ot':''}">${newEEs.length}</div><div class="an-stat-lbl">New this period</div></div><div class="an-stat" style="flex:1"><div class="an-stat-val">${active.length}</div><div class="an-stat-lbl">Active employees</div></div><div class="an-stat" style="flex:1"><div class="an-stat-val">${sorted.length}</div><div class="an-stat-lbl">Periods tracked</div></div></div>`;
@@ -1169,6 +1233,19 @@ async function renderTenure(){
       return`<tr style="background:${i%2?'var(--surface2)':'var(--surface)'}"><td>${e.fn} ${e.ln}</td><td style="font-size:10.5px;color:var(--text2)">${e.kfcPos||'—'}</td><td class="num">${e.count}</td><td>${bdg}</td></tr>`;
     }).join('');
 }
+
+// ─── Init location + sidebar state from localStorage ─────────────────────
+(function initLocationAndSidebar(){
+  // location toggle: reflect stored value
+  document.querySelectorAll('.loc-btn').forEach(b=>{
+    b.classList.toggle('active', b.dataset.loc===CUR_LOC);
+  });
+  // sidebar collapse: reflect stored value
+  if(localStorage.getItem('kfc_hist_collapsed')==='1'){
+    document.getElementById('hist-sidebar').classList.add('collapsed');
+    document.getElementById('hist-toggle').textContent='»';
+  }
+})();
 
 renderHistory();
 </script>
