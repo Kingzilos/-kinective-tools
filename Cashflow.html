@@ -1861,12 +1861,7 @@ function updateTotals() {
 
   if (window._xlsUploadedThisSession) {
     const ob = (week && week.openingBalances) || {};
-    function expForAcct(k) {
-      const tagged = [...kinExpenses,...amdExpenses].filter(e=>(e.account||'').startsWith(k)).reduce((s,x)=>s+x.amount,0);
-      if (k === '3775') return tagged + amdExpenses.filter(e => !e.account).reduce((s,x)=>s+x.amount,0);
-      if (k === '2213') return tagged + kinExpenses.filter(e => !e.account).reduce((s,x)=>s+x.amount,0);
-      return tagged;
-    }
+    function expForAcct(k) { return [...kinExpenses,...amdExpenses].filter(e=>(e.account||'').startsWith(k)).reduce((s,x)=>s+x.amount,0); }
     function incForAcct(k) { return (incomeData.kin[k]?.amount||0)+(incomeData.amd[k]?.amount||0); }
     function xferForAcct(k) { return (window.transferAdjustments||{})[k]||0; }
     const ac={};
@@ -1947,15 +1942,10 @@ function updateTotals() {
   const cbKinEl = document.getElementById('cb-kin');
   if (cbKinEl) cbKinEl.textContent = fmt(cbKin);
 
-  // ── Auto-update Accumulated Cash Flow ──
-  // = prev week accumFlow + current week (El Paso OCF + Plano OCF)
-  const prevAccum = (allWeeks[currentWeekNum - 1]?.accumFlow) || 0;
-  const newAccum  = prevAccum + kinOCF + planoFCF;
-  const accumEl   = document.getElementById('accum-2026');
-  if (accumEl) {
-    accumEl.textContent = fmt(newAccum);
-    recalcVariance();
-  }
+  // NOTE: YTD Accumulated Cash Flow is MANUALLY reported (per Stephen's rule).
+  // Never auto-recalculate from prior YTD + current FCF — take it from source PDF as-is.
+  // Just refresh the variance display based on whatever's currently in the field.
+  recalcVariance();
 
   // ── AMD Capital column ──
   setVal('cf-amd-inc',         amdInc);
@@ -2669,45 +2659,8 @@ function loadWeekIntoUI(weekNum, readOnly) {
     }
   }
 
-  // Opening balances — auto-derive by RECOMPUTING previous week's closing from raw data.
-  // This ignores stale stored closingBalances and always uses fresh math.
+  // Opening balances
   const ob = week.openingBalances || {};
-  const prevWeek = allWeeks[weekNum - 1];
-  if (prevWeek && prevWeek.saved) {
-    const pOB = prevWeek.openingBalances || {};
-    const pKinExp = (prevWeek.expenses?.kin || []).map(e => ({ ...e, account: e.account || '2213 WestStar' }));
-    const pAmdExp = (prevWeek.expenses?.amd || []).map(e => ({ ...e, account: e.account || '3775 WestStar' }));
-    const pPlanoExp = prevWeek.expenses?.plano || [];
-    const pIncData = prevWeek.income?.data || { kin: {}, amd: {} };
-    const pXfer = prevWeek.transferAdjustments || {};
-    // Rebuild loan adjustments from prev's saved financing items
-    const pLoan = {};
-    (prevWeek.financingItems || []).forEach(fi => {
-      if (fi.name && fi.name.includes('Loan Proceeds') && fi.amount > 0) {
-        const acct = fi._acct || '3775';
-        pLoan[acct] = (pLoan[acct] || 0) + fi.amount;
-      }
-    });
-    function pExp(k) {
-      const tagged = [...pKinExp, ...pAmdExp].filter(e => (e.account || '').startsWith(k)).reduce((s,x) => s + (x.amount||0), 0);
-      if (k === '3775') return tagged + pAmdExp.filter(e => !e.account).reduce((s,x) => s + (x.amount||0), 0);
-      if (k === '2213') return tagged + pKinExp.filter(e => !e.account).reduce((s,x) => s + (x.amount||0), 0);
-      return tagged;
-    }
-    function pInc(k) { return (pIncData.kin?.[k]?.amount || 0) + (pIncData.amd?.[k]?.amount || 0); }
-    function pXf(k) { return pXfer[k] || 0; }
-    function pLn(k) { return pLoan[k] || 0; }
-    // Recompute prev week's closing per account using SAME formula as updateTotals
-    ['8152','2213','9753','0211'].forEach(k => ob[k] = (pOB[k]||0) + pInc(k) - pExp(k) + pXf(k));
-    ['6299','6280'].forEach(k => {
-      const planoExpK = pPlanoExp.filter(e => (e.account||'').startsWith(k)).reduce((s,x) => s + (x.amount||0), 0);
-      ob[k] = (pOB[k]||0) + pInc(k) - planoExpK + pXf(k);
-    });
-    ob['3472'] = (pOB['3472']||0) + pInc('3472') + pXf('3472');
-    ['3775','7698'].forEach(k => ob[k] = (pOB[k]||0) + pInc(k) - pExp(k) + pXf(k) + pLn(k));
-    ob['2085'] = (pOB['2085']||0) + pInc('2085') + pXf('2085');
-    week.openingBalances = ob;
-  }
   ['8152','2213','9753','0211','3472','6299','6280','3775','7698','2085'].forEach(id => {
     if (ob[id] !== undefined) setEl('ob-' + id, fmt(ob[id]));
   });
@@ -2749,9 +2702,9 @@ function loadWeekIntoUI(weekNum, readOnly) {
   kinExpenses.length   = 0;
   planoExpenses.length = 0;
   amdExpenses.length   = 0;
-  (week.expenses?.kin   || []).forEach(e => kinExpenses.push({ ...e, account: e.account || '2213 WestStar' }));
+  (week.expenses?.kin   || []).forEach(e => kinExpenses.push(e));
   (week.expenses?.plano || []).forEach(e => planoExpenses.push(e));
-  (week.expenses?.amd   || []).forEach(e => amdExpenses.push({ ...e, account: e.account || '3775 WestStar' }));
+  (week.expenses?.amd   || []).forEach(e => amdExpenses.push(e));
   renderExpenses();
 
   // CAPEX — reset all rows before populating (prevents stale values bleeding between weeks)
@@ -2832,8 +2785,8 @@ function loadWeekIntoUI(weekNum, readOnly) {
   if (rnBanner) rnBanner.style.display = 'none';
   if (rnNum)    rnNum.textContent = weekNum;
 
-  window._xlsUploadedThisSession = true;
   updateTotals();
+  // Recompute combined total AFTER all cells are set
   recomputeCombinedTotal();
 }
 
