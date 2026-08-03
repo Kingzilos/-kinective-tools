@@ -778,31 +778,31 @@
         </div>
         <div class="account-row alt">
           <span class="acct-name"><strong>8152</strong> WestStar — Income</span>
-          <span class="acct-amount" id="ob-8152">$213,574.97</span>
+          <span class="acct-amount editable" contenteditable="true" id="ob-8152" oninput="obEdited('8152')" onblur="obBlur('8152')">$213,574.97</span>
         </div>
         <div class="account-row">
           <span class="acct-name"><strong>2213</strong> WestStar — Expenses</span>
-          <span class="acct-amount" id="ob-2213">$69,529.06</span>
+          <span class="acct-amount editable" contenteditable="true" id="ob-2213" oninput="obEdited('2213')" onblur="obBlur('2213')">$69,529.06</span>
         </div>
         <div class="account-row alt">
           <span class="acct-name"><strong>9753</strong> Wells Fargo — Income</span>
-          <span class="acct-amount" id="ob-9753">$18,078.91</span>
+          <span class="acct-amount editable" contenteditable="true" id="ob-9753" oninput="obEdited('9753')" onblur="obBlur('9753')">$18,078.91</span>
         </div>
         <div class="account-row">
           <span class="acct-name"><strong>0211</strong> Wells Fargo — Expenses</span>
-          <span class="acct-amount" id="ob-0211">$49,711.04</span>
+          <span class="acct-amount editable" contenteditable="true" id="ob-0211" oninput="obEdited('0211')" onblur="obBlur('0211')">$49,711.04</span>
         </div>
         <div class="account-row alt">
           <span class="acct-name"><strong>3472</strong> Investment — 4.09% Interest</span>
-          <span class="acct-amount large" id="ob-3472">$4,111,595.77</span>
+          <span class="acct-amount large editable" contenteditable="true" id="ob-3472" oninput="obEdited('3472')" onblur="obBlur('3472')">$4,111,595.77</span>
         </div>
         <div class="account-row">
           <span class="acct-name"><strong>6299</strong> Plano — Income</span>
-          <span class="acct-amount" id="ob-6299">$0.00</span>
+          <span class="acct-amount editable" contenteditable="true" id="ob-6299" oninput="obEdited('6299')" onblur="obBlur('6299')">$0.00</span>
         </div>
         <div class="account-row alt">
           <span class="acct-name"><strong>6280</strong> Plano — Expenses</span>
-          <span class="acct-amount" id="ob-6280">$0.00</span>
+          <span class="acct-amount editable" contenteditable="true" id="ob-6280" oninput="obEdited('6280')" onblur="obBlur('6280')">$0.00</span>
         </div>
         <div class="account-row total-row">
           <span class="acct-name total-label">Kinective Total</span>
@@ -818,15 +818,15 @@
         </div>
         <div class="account-row alt">
           <span class="acct-name"><strong>3775</strong> WestStar</span>
-          <span class="acct-amount" id="ob-3775">$68,319.42</span>
+          <span class="acct-amount editable" contenteditable="true" id="ob-3775" oninput="obEdited('3775')" onblur="obBlur('3775')">$68,319.42</span>
         </div>
         <div class="account-row">
           <span class="acct-name"><strong>7698</strong> Wells Fargo</span>
-          <span class="acct-amount" id="ob-7698">$25,467.65</span>
+          <span class="acct-amount editable" contenteditable="true" id="ob-7698" oninput="obEdited('7698')" onblur="obBlur('7698')">$25,467.65</span>
         </div>
         <div class="account-row alt">
           <span class="acct-name"><strong>2085</strong> Money Market — Interest</span>
-          <span class="acct-amount large" id="ob-2085">$3,516,613.27</span>
+          <span class="acct-amount large editable" contenteditable="true" id="ob-2085" oninput="obEdited('2085')" onblur="obBlur('2085')">$3,516,613.27</span>
         </div>
         <div class="account-row total-row">
           <span class="acct-name total-label">AMD Total</span>
@@ -1861,7 +1861,12 @@ function updateTotals() {
 
   if (window._xlsUploadedThisSession) {
     const ob = (week && week.openingBalances) || {};
-    function expForAcct(k) { return [...kinExpenses,...amdExpenses].filter(e=>(e.account||'').startsWith(k)).reduce((s,x)=>s+x.amount,0); }
+    function expForAcct(k) {
+      const tagged = [...kinExpenses,...amdExpenses].filter(e=>(e.account||'').startsWith(k)).reduce((s,x)=>s+x.amount,0);
+      if (k === '3775') return tagged + amdExpenses.filter(e => !e.account).reduce((s,x)=>s+x.amount,0);
+      if (k === '2213') return tagged + kinExpenses.filter(e => !e.account).reduce((s,x)=>s+x.amount,0);
+      return tagged;
+    }
     function incForAcct(k) { return (incomeData.kin[k]?.amount||0)+(incomeData.amd[k]?.amount||0); }
     function xferForAcct(k) { return (window.transferAdjustments||{})[k]||0; }
     const ac={};
@@ -1942,9 +1947,7 @@ function updateTotals() {
   const cbKinEl = document.getElementById('cb-kin');
   if (cbKinEl) cbKinEl.textContent = fmt(cbKin);
 
-  // NOTE: YTD Accumulated Cash Flow is MANUALLY reported (per Stephen's rule).
-  // Never auto-recalculate from prior YTD + current FCF — take it from source PDF as-is.
-  // Just refresh the variance display based on whatever's currently in the field.
+  // Accumulated Cash Flow is MANUALLY reported — no auto-recompute.
   recalcVariance();
 
   // ── AMD Capital column ──
@@ -2632,6 +2635,40 @@ function loadWeek(weekNum) {
 }
 
 // ── LOAD WEEK INTO UI ─────────────────────────────
+function obEdited(acctId) {
+  const el = document.getElementById('ob-' + acctId);
+  if (!el) return;
+  const week = allWeeks[currentWeekNum];
+  if (!week) return;
+  if (!week.openingBalances) week.openingBalances = {};
+  const raw = el.textContent.replace(/[$,\s()]/g,'').trim();
+  const neg = el.textContent.includes('(');
+  const n = parseFloat(raw) || 0;
+  week.openingBalances[acctId] = neg ? -n : n;
+  window._xlsUploadedThisSession = true;
+  updateTotals();
+  recomputeCombinedTotal();
+}
+
+function obBlur(acctId) {
+  const el = document.getElementById('ob-' + acctId);
+  if (!el) return;
+  const raw = el.textContent.replace(/[$,\s()]/g,'').trim();
+  const neg = el.textContent.includes('(');
+  const n = parseFloat(raw) || 0;
+  const val = neg ? -n : n;
+  const week = allWeeks[currentWeekNum];
+  if (week) {
+    if (!week.openingBalances) week.openingBalances = {};
+    week.openingBalances[acctId] = val;
+  }
+  el.textContent = fmt(val);
+  window._xlsUploadedThisSession = true;
+  updateTotals();
+  recomputeCombinedTotal();
+  if (!isReadOnly && typeof saveCurrentWeek === 'function') saveCurrentWeek();
+}
+
 function loadWeekIntoUI(weekNum, readOnly) {
   const week = allWeeks[weekNum];
   if (!week) return;
@@ -2702,9 +2739,9 @@ function loadWeekIntoUI(weekNum, readOnly) {
   kinExpenses.length   = 0;
   planoExpenses.length = 0;
   amdExpenses.length   = 0;
-  (week.expenses?.kin   || []).forEach(e => kinExpenses.push(e));
+  (week.expenses?.kin   || []).forEach(e => kinExpenses.push({ ...e, account: e.account || '2213 WestStar' }));
   (week.expenses?.plano || []).forEach(e => planoExpenses.push(e));
-  (week.expenses?.amd   || []).forEach(e => amdExpenses.push(e));
+  (week.expenses?.amd   || []).forEach(e => amdExpenses.push({ ...e, account: e.account || '3775 WestStar' }));
   renderExpenses();
 
   // CAPEX — reset all rows before populating (prevents stale values bleeding between weeks)
@@ -2785,8 +2822,8 @@ function loadWeekIntoUI(weekNum, readOnly) {
   if (rnBanner) rnBanner.style.display = 'none';
   if (rnNum)    rnNum.textContent = weekNum;
 
+  window._xlsUploadedThisSession = true;
   updateTotals();
-  // Recompute combined total AFTER all cells are set
   recomputeCombinedTotal();
 }
 
