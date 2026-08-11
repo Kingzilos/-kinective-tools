@@ -1,0 +1,2048 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Plano Construction — Loan & Draw Status</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+  :root {
+    --bg:           #F4F6F9;
+    --card:         #FFFFFF;
+    --shadow:       0 2px 12px rgba(0,0,0,0.07);
+    --shadow-sm:    0 1px 3px rgba(0,0,0,0.05);
+    --radius:       16px;
+    --radius-sm:    10px;
+    --radius-xs:    8px;
+    --font:         'Inter', 'SF Pro Display', system-ui, sans-serif;
+
+    --text-primary: #111827;
+    --text-secondary: #6B7280;
+    --text-muted:   #9CA3AF;
+
+    --green:        #16A34A;
+    --green-bg:     #F0FDF4;
+    --green-badge:  #DCFCE7;
+    --red:          #DC2626;
+    --red-bg:       #FEF2F2;
+    --red-badge:    #FEE2E2;
+    --amber:        #D97706;
+    --amber-bg:     #FFFBEB;
+    --amber-badge:  #FEF3C7;
+    --blue-accent:  #2563EB;
+    --blue-light:   #EFF6FF;
+    --blue-badge:   #DBEAFE;
+    --gray-badge:   #F3F4F6;
+
+    --border-light: #E5E7EB;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: var(--font); background: var(--bg); color: var(--text-primary); font-size: 13.5px; line-height: 1.55; -webkit-font-smoothing: antialiased; }
+
+  /* HEADER */
+  .header { background: var(--card); box-shadow: var(--shadow-sm); padding: 0 32px; position: sticky; top: 0; z-index: 50; }
+  .header-inner { max-width: 1280px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; height: 68px; gap: 24px; }
+  .header-title { display: flex; align-items: baseline; gap: 12px; }
+  .header-title h1 { font-size: 16px; font-weight: 700; letter-spacing: -0.3px; }
+  .header-title .sub { color: var(--text-muted); font-weight: 400; font-size: 13px; }
+  .header-meta { display: flex; gap: 8px; align-items: center; }
+  .badge { display: inline-flex; align-items: center; padding: 4px 10px; border-radius: 100px; font-size: 11px; font-weight: 500; }
+  .badge.green { background: var(--green-badge); color: var(--green); }
+  .badge.red { background: var(--red-badge); color: var(--red); }
+  .badge.blue { background: var(--blue-badge); color: var(--blue-accent); }
+  .badge.amber { background: var(--amber-badge); color: var(--amber); }
+  .badge.gray { background: var(--gray-badge); color: var(--text-secondary); }
+
+  /* MAIN */
+  .main { max-width: 1280px; margin: 0 auto; padding: 28px 32px 60px; }
+  .section-title { font-size: 14px; font-weight: 600; letter-spacing: -0.1px; margin-bottom: 4px; }
+  .section-sub { font-size: 12px; color: var(--text-muted); margin-bottom: 14px; }
+  .row-head { display: flex; align-items: flex-end; justify-content: space-between; margin: 32px 0 14px; }
+  .row-head:first-child { margin-top: 8px; }
+
+  /* KPI GRID */
+  .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; }
+  .kpi { background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); padding: 20px 22px; }
+  .kpi-label { font-size: 11.5px; font-weight: 500; color: var(--text-secondary); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.04em; }
+  .kpi-value { font-size: 24px; font-weight: 700; letter-spacing: -0.5px; line-height: 1.1; }
+  .kpi-value.green { color: var(--green); }
+  .kpi-value.red { color: var(--red); }
+  .kpi-value.blue { color: var(--blue-accent); }
+  .kpi-value.amber { color: var(--amber); }
+  .kpi-sub { font-size: 11.5px; color: var(--text-muted); margin-top: 6px; }
+
+  /* CARDS */
+  .card { background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); padding: 22px 24px; margin-bottom: 18px; }
+  .card-tight { padding: 18px 22px; }
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+  .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+
+  /* PROGRESS */
+  .prog-block { margin-top: 8px; }
+  .prog-track { background: #F3F4F6; border-radius: 100px; height: 14px; overflow: hidden; position: relative; }
+  .prog-fill { height: 100%; border-radius: 100px; min-width: 2px; }
+  .prog-fill.blue { background: linear-gradient(90deg, #2563EB, #3b82f6); }
+  .prog-fill.green { background: linear-gradient(90deg, #16a34a, #22c55e); }
+  .prog-fill.red { background: linear-gradient(90deg, #dc2626, #ef4444); }
+  .prog-meta { display: flex; justify-content: space-between; font-size: 12px; color: var(--text-secondary); margin-top: 8px; }
+
+  /* TABLE */
+  .table-wrap { background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; margin-bottom: 18px; }
+  .table-head { padding: 18px 22px 14px; display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+  .table-scroll { overflow-x: auto; }
+
+  /* EDITABLE CELLS */
+  td.editable { cursor: pointer; position: relative; transition: background 0.12s; }
+  td.editable:hover { background: #FEF9E7 !important; box-shadow: inset 0 0 0 1.5px #FCD34D; }
+  td.editable:hover::after { content: '✎'; position: absolute; right: 4px; top: 50%; transform: translateY(-50%); color: #D97706; font-size: 10px; opacity: 0.6; pointer-events: none; }
+  td.editable.num:hover::after { right: auto; left: 4px; }
+  td.editable input, td.editable select { outline: none; }
+
+  /* COLLAPSIBLE */
+  details.collapsible { background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); margin-bottom: 18px; overflow: hidden; }
+  details.collapsible > summary { list-style: none; cursor: pointer; padding: 18px 22px; display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; user-select: none; transition: background 0.15s; }
+  details.collapsible > summary::-webkit-details-marker { display: none; }
+  details.collapsible > summary:hover { background: #FAFBFC; }
+  details.collapsible > summary .summary-left { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
+  details.collapsible > summary .summary-right { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+  details.collapsible > summary .chevron { width: 18px; height: 18px; color: var(--text-muted); transition: transform 0.2s; flex-shrink: 0; }
+  details.collapsible[open] > summary .chevron { transform: rotate(180deg); }
+  details.collapsible > .details-body { border-top: 1px solid #F3F4F6; }
+  table { width: 100%; border-collapse: collapse; }
+  thead tr { background: #F9FAFB; }
+  th { padding: 10px 16px; text-align: left; font-size: 11px; font-weight: 600; color: var(--text-secondary); letter-spacing: 0.4px; text-transform: uppercase; white-space: nowrap; }
+  td { padding: 12px 16px; font-size: 13px; border-top: 1px solid #F3F4F6; vertical-align: middle; white-space: nowrap; }
+  tbody tr:hover td { background: var(--blue-light); }
+  .num { text-align: right; font-variant-numeric: tabular-nums; }
+  .val-green { color: var(--green); font-weight: 500; }
+  .val-red { color: var(--red); font-weight: 500; }
+  .val-blue { color: var(--blue-accent); font-weight: 500; }
+  .val-amber { color: var(--amber); font-weight: 500; }
+  .val-dim { color: var(--text-muted); }
+  .total-row td { background: #F9FAFB; font-weight: 600; border-top: 1.5px solid var(--border-light); }
+
+  /* INFO BOX */
+  .info-box { background: var(--blue-light); border-radius: var(--radius-sm); padding: 14px 18px; font-size: 12.5px; color: #1E40AF; line-height: 1.6; margin-bottom: 16px; }
+  .warn-box { background: var(--amber-bg); border-radius: var(--radius-sm); padding: 14px 18px; font-size: 12.5px; color: #92400E; line-height: 1.6; margin-bottom: 16px; }
+  .info-box strong, .warn-box strong { font-weight: 600; }
+
+  /* CHART */
+  .chart-wrap { position: relative; height: 320px; margin-top: 8px; }
+  .chart-wrap.tall { height: 380px; }
+
+  /* TERMS CARD */
+  .term-list { display: grid; grid-template-columns: 1fr 2fr; gap: 8px 20px; margin-top: 10px; font-size: 13px; }
+  .term-list .term-label { color: var(--text-secondary); font-weight: 500; }
+  .term-list .term-val { color: var(--text-primary); }
+
+  /* SCENARIO CARDS */
+  .scenario { padding: 16px 18px; border-radius: var(--radius-sm); border: 1.5px solid transparent; }
+  .scenario h3 { font-size: 13px; font-weight: 600; margin-bottom: 4px; }
+  .scenario .stat { font-size: 22px; font-weight: 700; letter-spacing: -0.4px; margin: 4px 0 2px; }
+  .scenario .detail { font-size: 11.5px; color: var(--text-secondary); }
+  .scenario.good { background: var(--green-bg); border-color: #BBF7D0; }
+  .scenario.good h3, .scenario.good .stat { color: var(--green); }
+  .scenario.warn { background: var(--amber-bg); border-color: #FDE68A; }
+  .scenario.warn h3, .scenario.warn .stat { color: var(--amber); }
+  .scenario.bad { background: var(--red-bg); border-color: #FECACA; }
+  .scenario.bad h3, .scenario.bad .stat { color: var(--red); }
+
+  /* KEY-VALUE ROWS (funding gap) */
+  .kv-list { margin-top: 10px; }
+  .kv-row { display: flex; justify-content: space-between; padding: 9px 0; font-size: 13px; border-bottom: 1px solid #F3F4F6; }
+  .kv-row:last-child { border-bottom: none; }
+  .kv-row.total { font-weight: 600; border-top: 1.5px solid var(--border-light); border-bottom: none; margin-top: 4px; padding-top: 12px; }
+  .kv-label { color: var(--text-secondary); }
+  .kv-val { font-variant-numeric: tabular-nums; }
+
+  @media (max-width: 900px) {
+    .grid-2, .grid-3 { grid-template-columns: 1fr; }
+    .header, .main { padding-left: 16px; padding-right: 16px; }
+    .kpi-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+    .kpi-value { font-size: 20px; }
+    .term-list { grid-template-columns: 1fr; gap: 2px 0; }
+    .term-list .term-label { margin-top: 6px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-inner">
+    <div class="header-title">
+      <h1>Plano Construction <span class="sub">/ Loan &amp; Draw Status</span></h1>
+    </div>
+    <div class="header-meta">
+      <span class="badge gray">AMD Capital LLC</span>
+      <span class="badge blue">Through PA15 · Jul 10, 2026</span>
+      <span class="badge amber">PA15 Pending</span>
+    </div>
+  </div>
+</div>
+
+<div class="main">
+
+  <!-- ═══════════ HEADLINE KPIs ═══════════ -->
+  <div class="row-head">
+    <div>
+      <div class="section-title">Where we stand today</div>
+      <div class="section-sub" id="header-sub">$25M WestStar construction loan · AMD Capital · 15 pay apps processed (PA5 through PA15 pending)</div>
+    </div>
+    <div style="display:flex; align-items:center; gap:12px;">
+      <span id="sync-indicator" style="display:flex; align-items:center; gap:6px; font-size:11px; color:var(--text-secondary);" title="Supabase sync status">
+        <span id="sync-dot" style="width:7px; height:7px; border-radius:50%; background:#D1D5DB; flex-shrink:0; transition:background 0.3s;"></span>
+        <span id="sync-label">Local only</span>
+      </span>
+      <button onclick="editProjSettings()" style="padding:6px 12px; border-radius:100px; font-size:11px; font-weight:500; border:1.5px solid var(--border-light); background:var(--card); color:var(--text-secondary); cursor:pointer; font-family:var(--font);" title="Edit projection assumptions (opening date, IO end date, interest rate, inspection fee)">⚙ Projection assumptions</button>
+    </div>
+  </div>
+
+  <div class="kpi-grid">
+    <div class="kpi">
+      <div class="kpi-label">Loan Drawn to Date</div>
+      <div class="kpi-value blue" id="kpi-drawn">$5,773,256</div>
+      <div class="kpi-sub"><span id="kpi-drawn-pct">23.1%</span> of $25M facility</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Loan Remaining</div>
+      <div class="kpi-value green" id="kpi-avail">$19,226,744</div>
+      <div class="kpi-sub">Available capacity</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Owner Cash Deployed</div>
+      <div class="kpi-value" id="kpi-owner">$5,625,219</div>
+      <div class="kpi-sub" id="kpi-owner-sub">Incl. interest + inspection fees</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Projected Total Interest</div>
+      <div class="kpi-value amber" id="kpi-int-proj">~$865,000</div>
+      <div class="kpi-sub">Through 18-month interest-only period (May 19, 2027) at 6.50%</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Original Contract Sum</div>
+      <div class="kpi-value">$30,438,883</div>
+      <div class="kpi-sub">Structure Tone Southwest · Base GMP lump sum</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Total Project Cost (w/ Approved COs)</div>
+      <div class="kpi-value" id="kpi-cost">$31,059,266</div>
+      <div class="kpi-sub" id="kpi-co-sub">Base $30.44M + $620K approved COs</div>
+    </div>
+  </div>
+
+  <!-- ═══════════ CARRYING COSTS ═══════════ -->
+  <div class="row-head">
+    <div>
+      <div class="section-title">Cost of the loan — what we've paid so far</div>
+      <div class="section-sub">Interest payments (editable log below) + inspection fees (from pay app ledger)</div>
+    </div>
+    <span class="badge amber" id="carrying-badge">Total carrying cost: $60,497</span>
+  </div>
+
+  <div class="card">
+    <div class="grid-2">
+      <div>
+        <div class="kpi-label" style="margin-bottom:6px;">Interest Paid on Loan</div>
+        <div class="kpi-value amber" id="int-paid-total">$42,247</div>
+        <div class="kpi-sub" id="int-paid-sub">Sum of monthly interest payments below</div>
+      </div>
+      <div>
+        <div class="kpi-label" style="margin-bottom:6px;">Inspection Fees Paid</div>
+        <div class="kpi-value amber" id="insp-fees-total">$18,250</div>
+        <div class="kpi-sub" id="insp-fees-sub">From the pay app ledger's Inspection Fee column</div>
+      </div>
+    </div>
+
+    <!-- Interest Payments Log -->
+    <div style="margin-top:24px; padding-top:20px; border-top:1px solid var(--border-light);">
+      <div style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:10px;">
+        <div>
+          <div class="section-title" style="font-size:13px;">Interest payment log</div>
+          <div class="section-sub" style="font-size:11.5px;">Click any cell to edit · Add each monthly interest bill from WestStar as it hits</div>
+        </div>
+        <button onclick="addInterestPayment()" style="padding:5px 11px; border-radius:100px; font-size:11px; font-weight:500; border:1.5px solid var(--border-light); background:var(--card); color:var(--text-primary); cursor:pointer; font-family:var(--font);">+ Add interest payment</button>
+      </div>
+      <div class="table-scroll"><table style="font-size:12.5px;">
+        <thead><tr>
+          <th>Date</th><th>Note</th><th class="num">Amount</th><th></th>
+        </tr></thead>
+        <tbody id="int-payments-tbody"></tbody>
+        <tfoot><tr class="total-row" id="int-payments-total"></tr></tfoot>
+      </table></div>
+    </div>
+  </div>
+
+  <!-- ═══════════ LOAN CAPACITY ═══════════ -->
+  <div class="row-head">
+    <div>
+      <div class="section-title">Loan capacity utilization</div>
+      <div class="section-sub">Draws began at PA11 (May 11, 2026); owner cash funded PA5 through PA10</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:6px;">
+      <div style="font-size:14px; font-weight:600;">$25,000,000 Construction Draw Note</div>
+      <div style="font-size:13px; color:var(--text-secondary);"><strong id="cap-used-txt">$5,773,256 used</strong> · <span id="cap-rem-txt">$19,226,744 remaining</span></div>
+    </div>
+    <div class="prog-track"><div class="prog-fill blue" id="cap-fill" style="width:0%"></div></div>
+    <div class="prog-meta">
+      <span id="cap-pct-drawn">23.1% drawn</span>
+      <span id="cap-pct-avail">76.9% available</span>
+    </div>
+  </div>
+
+  <!-- ═══════════ LOAN RUNWAY + PROJECT COVERAGE ═══════════ -->
+  <div class="grid-2">
+    <div class="card">
+      <div class="section-title">Loan balance trajectory — will $25M cover us?</div>
+      <div class="section-sub" id="runway-sub">Historical draws + projection to end of construction (May 2027) vs. $25M ceiling</div>
+      <div class="chart-wrap tall"><canvas id="runwayChart"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="section-title">Total project cost coverage — where's the shortfall?</div>
+      <div class="section-sub" id="coverage-sub">Everything owed vs. everything we have to pay it with</div>
+      <div class="chart-wrap tall"><canvas id="coverageChart"></canvas></div>
+    </div>
+  </div>
+  <!-- Legacy charts hidden — kept so any old JS references don't break -->
+  <div style="display:none;">
+    <canvas id="drawChart"></canvas>
+    <canvas id="fundingChart"></canvas>
+  </div>
+
+  <!-- ═══════════ PAY APP TABLE ═══════════ -->
+  <details class="collapsible">
+    <summary>
+      <div class="summary-left">
+        <div class="section-title">Pay application ledger — funding source (fully editable)</div>
+        <div class="section-sub">Click any cell to edit · Click PA# to open PDF · Shift+click PA# to replace PDF · Use "+ New pay app" for future rows</div>
+      </div>
+      <div class="summary-right">
+        <button onclick="event.stopPropagation(); addNewPayApp();" style="padding:5px 11px; border-radius:100px; font-size:11px; font-weight:500; border:1.5px solid var(--border-light); background:var(--card); color:var(--text-primary); cursor:pointer; font-family:var(--font);">+ New pay app</button>
+        <button onclick="event.stopPropagation(); bulkAttachPdfs();" style="padding:5px 11px; border-radius:100px; font-size:11px; font-weight:500; border:1.5px solid var(--border-light); background:var(--card); color:var(--text-secondary); cursor:pointer; font-family:var(--font);">Bulk attach PDFs</button>
+        <button onclick="event.stopPropagation(); resetAllPayAppEdits();" style="padding:5px 11px; border-radius:100px; font-size:11px; font-weight:500; border:1.5px solid var(--border-light); background:var(--card); color:var(--text-secondary); cursor:pointer; font-family:var(--font);" title="Reset all pay app data back to the original numbers">Reset edits</button>
+        <span class="badge gray" id="pa-ledger-badge">$11.36M billed · 36.6% of contract</span>
+        <svg class="chevron" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 8l4 4 4-4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+    </summary>
+    <div class="details-body">
+      <div class="table-scroll"><table>
+        <thead><tr>
+          <th>App</th><th>Date</th>
+          <th class="num">Payment Amount</th>
+          <th class="num">Loan Draw</th>
+          <th class="num">Owner Cash</th>
+          <th class="num">Inspection Fee</th>
+          <th class="num">Cumul. Loan</th>
+          <th>Status</th>
+          <th></th>
+        </tr></thead>
+        <tbody id="payapp-tbody"></tbody>
+        <tfoot><tr class="total-row" id="payapp-total"></tr></tfoot>
+      </table></div>
+    </div>
+  </details>
+
+  <!-- ═══════════ INTEREST PROJECTION ═══════════ -->
+  <div class="row-head">
+    <div>
+      <div class="section-title">Interest — actual paid + straight-line projection</div>
+      <div class="section-sub">18-month interest-only period runs through May 19, 2027; then converts to P&amp;I on 10-year amortization</div>
+    </div>
+    <span class="badge amber">Rate: 6.50% (WSJP 6.75% − 0.25%) · 5.0% floor dormant</span>
+  </div>
+
+  <div class="grid-2">
+    <div class="card">
+      <div class="chart-wrap tall"><canvas id="interestChart"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="section-title">Interest scenarios (construction period)</div>
+      <div class="section-sub" id="int-scenarios-sub">Assumes remaining loan drawn linearly through May 2027 IO period end</div>
+      <div class="kv-list">
+        <div class="kv-row"><span class="kv-label">Interest paid to date</span><span class="kv-val" data-int="paid">$42,247</span></div>
+        <div class="kv-row"><span class="kv-label">Projected additional interest (at floor 5.0% — needs WSJP ≤ 5.25%)</span><span class="kv-val" data-int="floor">~$577,000</span></div>
+        <div class="kv-row"><span class="kv-label">Projected additional interest (at 6.50% — current rate)</span><span class="kv-val val-amber" data-int="current">~$822,000</span></div>
+        <div class="kv-row"><span class="kv-label">Projected additional interest (if WSJP rises to 7.50%)</span><span class="kv-val val-red" data-int="high">~$917,000</span></div>
+        <div class="kv-row total"><span class="kv-label">Est. total construction-period interest at 6.50%</span><span class="kv-val val-amber" data-int="total">~$865,000</span></div>
+      </div>
+      <div class="info-box" style="margin-top:14px; margin-bottom:0;">
+        <strong>Interest math verified at 6.50%:</strong> Model rebuilt from daily balances (May 11 first draw → July 31). At 6.50% (WSJP 6.75% − 0.25%): produces $42,571 vs. $42,247 paid — <strong>0.8% variance</strong>, spot-on. WSJ Prime has held at 6.75% since Dec 2025 per Commerce Bank. The 5.0% floor is dormant and would only engage if Prime dropped below 5.25%.
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════ CHANGE ORDER IMPACT ═══════════ -->
+  <div class="row-head">
+    <div>
+      <div class="section-title">Change order impact on total project cost</div>
+      <div class="section-sub">Only approved COs affect the contract ceiling; pending are shown as scenarios</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="chart-wrap" style="height:280px;"><canvas id="waterfallChart"></canvas></div>
+  </div>
+
+  <div class="grid-3" style="margin-bottom:18px;">
+    <div class="card scenario good" id="scenario-approved">
+      <h3>Baseline · Approved only</h3>
+      <div class="stat">—</div>
+      <div class="detail">—</div>
+    </div>
+    <div class="card scenario warn" id="scenario-pending">
+      <h3>+ All Pending Approved</h3>
+      <div class="stat">—</div>
+      <div class="detail">—</div>
+    </div>
+    <div class="card scenario bad" id="scenario-denied">
+      <h3>+ Denied Reopened</h3>
+      <div class="stat">—</div>
+      <div class="detail">—</div>
+    </div>
+  </div>
+
+  <!-- ═══════════ FUNDING GAP ═══════════ -->
+  <div class="grid-2">
+    <div class="card">
+      <div class="section-title">Funding gap analysis</div>
+      <div class="section-sub">Loan capacity is $25M — anything above that must come from owner cash</div>
+      <div class="kv-list" id="funding-gap-list">
+        <div class="kv-row"><span class="kv-label">Original contract sum (base GMP)</span><span class="kv-val" data-fg="original">—</span></div>
+        <div class="kv-row"><span class="kv-label">+ Approved change orders</span><span class="kv-val val-blue" data-fg="approvedcos">—</span></div>
+        <div class="kv-row"><span class="kv-label">= Total project cost (w/ approved COs)</span><span class="kv-val" data-fg="contract" style="font-weight:600">—</span></div>
+        <div class="kv-row"><span class="kv-label">Loan facility maximum</span><span class="kv-val val-blue">($25,000,000)</span></div>
+        <div class="kv-row"><span class="kv-label">Owner cash required (min, over life of project)</span><span class="kv-val val-amber" data-fg="needed">—</span></div>
+        <div class="kv-row"><span class="kv-label">Owner cash contributed to date</span><span class="kv-val val-green" data-fg="paid">—</span></div>
+        <div class="kv-row total"><span class="kv-label">Owner cash still owed to STSW <span style="color:var(--text-muted); font-weight:400; font-size:11px;">(covers owner's share of retainage release)</span></span><span class="kv-val val-red" data-fg="still">—</span></div>
+      </div>
+      <div class="kv-list" style="margin-top:14px; padding-top:10px; border-top:1px dashed var(--border-light);">
+        <div style="font-size:12px; color:var(--text-secondary); font-weight:600; text-transform:uppercase; letter-spacing:0.04em; margin-bottom:6px;">Plus these ongoing owner obligations</div>
+        <div class="kv-row"><span class="kv-label">Projected remaining interest at 6.50% (through May 2027 — full 18-mo IO period)</span><span class="kv-val val-amber" data-fg="proj-int">~$822,000</span></div>
+        <div class="kv-row"><span class="kv-label">Projected remaining inspection fees (9 pay apps × $3,650 to April 2027 opening)</span><span class="kv-val val-amber" data-fg="proj-insp">~$32,850</span></div>
+        <div class="kv-row total"><span class="kv-label">Est. total additional owner outlay from today</span><span class="kv-val val-red" data-fg="grandtotal">—</span></div>
+      </div>
+      <div class="info-box" style="margin-top:14px; margin-bottom:0; font-size:11.5px;">
+        <strong>Note on retainage:</strong> The ~$3.04M retainage release at substantial completion is not double-listed here — the owner's share (~$477K) is already inside "Owner cash still owed to STSW". The remaining ~$2.56M of that release is funded by the last of the loan draws, not owner cash.
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="section-title">Loan terms — quick reference</div>
+      <div class="section-sub">WestStar Bank commitment letter dated Nov 19, 2025</div>
+      <div class="term-list">
+        <div class="term-label">Borrower</div><div class="term-val">AMD Capital LLC</div>
+        <div class="term-label">Facility</div><div class="term-val">$25,000,000 (LTV ≤ 75%)</div>
+        <div class="term-label">Type</div><div class="term-val">Secured Construction Draw Note</div>
+        <div class="term-label">Maturity</div><div class="term-val">138 months (11.5 years)</div>
+        <div class="term-label">Construction Rate</div><div class="term-val">WSJP − 0.25% floating · <strong>5.0% floor</strong> · 18 months</div>
+        <div class="term-label">Perm Rate</div><div class="term-val">5-yr Treasury + 280 bps · 5.0% floor · reprices at yr 6</div>
+        <div class="term-label">Payments</div><div class="term-val">Interest-only 18 mo · then P&amp;I on 10-yr amort</div>
+        <div class="term-label">Origination Fee</div><div class="term-val">0.75% ($187,500) — paid</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════ CHANGE ORDER DETAIL TABLE ═══════════ -->
+  <details class="collapsible">
+    <summary>
+      <div class="summary-left">
+        <div class="section-title">Change order register (fully editable)</div>
+        <div class="section-sub" id="co-ledger-subtitle">Click any cell to edit · Totals recalculate live</div>
+      </div>
+      <div class="summary-right">
+        <button onclick="event.stopPropagation(); addNewCo();" style="padding:5px 11px; border-radius:100px; font-size:11px; font-weight:500; border:1.5px solid var(--border-light); background:var(--card); color:var(--text-primary); cursor:pointer; font-family:var(--font);">+ New CR</button>
+        <button onclick="event.stopPropagation(); resetAllCoEdits();" style="padding:5px 11px; border-radius:100px; font-size:11px; font-weight:500; border:1.5px solid var(--border-light); background:var(--card); color:var(--text-secondary); cursor:pointer; font-family:var(--font);">Reset edits</button>
+        <span class="badge green" id="co-badge-approved">$620K approved</span>
+        <span class="badge amber" id="co-badge-pending">$524K pending</span>
+        <svg class="chevron" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 8l4 4 4-4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+    </summary>
+    <div class="details-body">
+      <div class="table-scroll"><table>
+        <thead><tr>
+          <th>CR#</th><th>Date</th><th>Description</th>
+          <th class="num">Cost Impact</th>
+          <th class="num">Days</th>
+          <th>Approved In</th>
+          <th>Status</th>
+          <th>Paid</th>
+          <th></th>
+        </tr></thead>
+        <tbody id="co-tbody"></tbody>
+        <tfoot id="co-tfoot"></tfoot>
+      </table></div>
+    </div>
+  </details>
+
+</div>
+
+<script>
+// ═════════════════════════ SUPABASE PERSISTENCE ═════════════════════════
+const SB_URL = 'https://jbqvtnukspnlpxgosmhp.supabase.co';
+const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpicXZ0bnVrc3BubHB4Z29zbWhwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyNzU0NjcsImV4cCI6MjA4ODg1MTQ2N30.0EvUKNrSbH2UkQPEkTWXKS8PGNVr4G0dvWoJp9HBROs';
+const STATE_KEY = 'plano_loan_state';
+
+// Unified save/load via kv_store table. Everything gets serialized to a single JSON blob.
+async function sbLoadState() {
+  try {
+    const res = await fetch(`${SB_URL}/rest/v1/kv_store?key=eq.${STATE_KEY}&select=value`, {
+      headers: { 'apikey': SB_KEY, 'Authorization': `Bearer ${SB_KEY}` }
+    });
+    if (!res.ok) return null;
+    const rows = await res.json();
+    if (rows.length > 0) {
+      const raw = rows[0].value;
+      return typeof raw === 'string' ? JSON.parse(raw) : raw;
+    }
+    return null;
+  } catch (err) { console.warn('Supabase load failed:', err); return null; }
+}
+
+async function sbSaveState(state) {
+  updateSyncStatus('saving');
+  try {
+    const res = await fetch(`${SB_URL}/rest/v1/kv_store`, {
+      method: 'POST',
+      headers: {
+        'apikey': SB_KEY, 'Authorization': `Bearer ${SB_KEY}`,
+        'Content-Type': 'application/json',
+        'Prefer': 'resolution=merge-duplicates'
+      },
+      body: JSON.stringify({ key: STATE_KEY, value: JSON.stringify(state) })
+    });
+    updateSyncStatus(res.ok ? 'synced' : 'error');
+    return res.ok;
+  } catch (err) { console.warn('Supabase save failed:', err); updateSyncStatus('error'); return false; }
+}
+
+// Debounced save so we don't hammer Supabase on every keystroke
+let _saveTimer = null;
+function saveAll() {
+  const state = {
+    payapps: PAYAPPS,
+    cos: COS,
+    interestPayments: INTEREST_PAYMENTS,
+    userPdfs: USER_PDFS,
+    projSettings: PROJ_SETTINGS,
+  };
+  // Immediate localStorage cache
+  try { localStorage.setItem(STATE_KEY, JSON.stringify(state)); } catch {}
+  // Debounced Supabase save
+  clearTimeout(_saveTimer);
+  _saveTimer = setTimeout(() => sbSaveState(state), 800);
+}
+
+function updateSyncStatus(state) {
+  const dot = document.getElementById('sync-dot');
+  const label = document.getElementById('sync-label');
+  if (!dot) return;
+  const map = {
+    synced:  ['#22C55E', 'Synced'],
+    saving:  ['#F59E0B', 'Saving...'],
+    error:   ['#EF4444', 'Sync error'],
+    offline: ['#D1D5DB', 'Local only']
+  };
+  const [color, text] = map[state] || map.offline;
+  dot.style.background = color;
+  label.textContent = text;
+}
+
+// ═════════════════════════ DATA ═════════════════════════
+const LOAN_MAX = 25_000_000;
+const CONTRACT_BASE = 30_438_883;
+
+// ═════════════════ PROJECTION ASSUMPTIONS (editable defaults) ═════════════════
+// Edit these here or via the "Assumptions" panel — everything downstream recalculates.
+let PROJ_SETTINGS = {
+  rateCurrent: 0.065,     // Current effective rate — WSJP 6.75% − 0.25%
+  rateFloor:   0.050,     // Loan floor
+  rateHigh:    0.075,     // Stress scenario if WSJP rises
+  ioMonthsRemaining: 10,  // Months from today until end of 18-mo interest-only period (May 2027)
+  ioEndLabel:  'May 2027',
+  openingMonthsRemaining: 9,  // Months until anticipated opening (April 2027)
+  openingLabel: 'April 2027',
+  inspFeePerPa: 3650,     // Inspection fee per pay app
+};
+
+// Load any saved overrides
+try {
+  const saved = JSON.parse(localStorage.getItem('plano_proj_settings') || 'null');
+  if (saved) PROJ_SETTINGS = { ...PROJ_SETTINGS, ...saved };
+} catch {}
+
+function persistProjSettings() { saveAll(); }
+
+function editProjSettings() {
+  const openingMonths = prompt(`Months from today until anticipated OPENING (currently ${PROJ_SETTINGS.openingMonthsRemaining} = ${PROJ_SETTINGS.openingLabel}):`, PROJ_SETTINGS.openingMonthsRemaining);
+  if (openingMonths === null) return;
+  const openingLabel = prompt(`Opening date label (e.g. "April 2027"):`, PROJ_SETTINGS.openingLabel);
+  if (openingLabel === null) return;
+  const ioMonths = prompt(`Months from today until end of 18-mo INTEREST-ONLY period (currently ${PROJ_SETTINGS.ioMonthsRemaining} = ${PROJ_SETTINGS.ioEndLabel}):`, PROJ_SETTINGS.ioMonthsRemaining);
+  if (ioMonths === null) return;
+  const ioLabel = prompt(`IO end date label (e.g. "May 2027"):`, PROJ_SETTINGS.ioEndLabel);
+  if (ioLabel === null) return;
+  const rate = prompt(`Current effective interest rate (%, currently ${(PROJ_SETTINGS.rateCurrent*100).toFixed(2)}):`, (PROJ_SETTINGS.rateCurrent*100).toFixed(2));
+  if (rate === null) return;
+  const insp = prompt(`Inspection fee per pay app (currently $${PROJ_SETTINGS.inspFeePerPa}):`, PROJ_SETTINGS.inspFeePerPa);
+  if (insp === null) return;
+  PROJ_SETTINGS.openingMonthsRemaining = parseInt(openingMonths) || PROJ_SETTINGS.openingMonthsRemaining;
+  PROJ_SETTINGS.openingLabel = openingLabel;
+  PROJ_SETTINGS.ioMonthsRemaining = parseInt(ioMonths) || PROJ_SETTINGS.ioMonthsRemaining;
+  PROJ_SETTINGS.ioEndLabel = ioLabel;
+  PROJ_SETTINGS.rateCurrent = (parseFloat(rate) || (PROJ_SETTINGS.rateCurrent*100)) / 100;
+  PROJ_SETTINGS.inspFeePerPa = parseFloat(insp) || PROJ_SETTINGS.inspFeePerPa;
+  persistProjSettings();
+  renderAll();
+}
+
+// Interest payments log — editable, persisted to localStorage
+const BASE_INTEREST_PAYMENTS = [
+  { date:'6/1/2026',  amount:5637,  note:'May 2026 interest (20 days on ~$1.58M)' },
+  { date:'7/1/2026',  amount:14748, note:'June 2026 interest' },
+  { date:'8/1/2026',  amount:21862, note:'July 2026 interest' },
+];
+let INTEREST_PAYMENTS = BASE_INTEREST_PAYMENTS.map(p => ({ ...p }));
+
+(function loadIntPayments() {
+  try {
+    const saved = JSON.parse(localStorage.getItem('plano_interest_payments') || 'null');
+    if (saved && Array.isArray(saved)) INTEREST_PAYMENTS = saved;
+  } catch (err) { console.warn('Could not load interest payments:', err); }
+})();
+
+function persistIntPayments() { saveAll(); }
+
+function getIntPaid() { return INTEREST_PAYMENTS.reduce((s,p) => s + (parseFloat(p.amount) || 0), 0); }
+
+// Legacy constant name — points at live sum so nothing downstream breaks
+Object.defineProperty(window, 'INT_PAID', { get: getIntPaid, configurable: true });
+
+// Pay apps from Google Sheet + G702 records — user-editable, persisted to localStorage
+const BASE_PAYAPPS = [
+  { app:1,  date:'5/2024',     amt:0,          loan:0,          owner:0,          insp:0,    status:'Paid',    pdfKey:'PA1'  },
+  { app:2,  date:'6/2024',     amt:0,          loan:0,          owner:0,          insp:0,    status:'Paid',    pdfKey:'PA2'  },
+  { app:3,  date:'9/2024',     amt:0,          loan:0,          owner:0,          insp:0,    status:'Paid',    pdfKey:'PA3'  },
+  { app:4,  date:'7/2024',     amt:0,          loan:0,          owner:0,          insp:0,    status:'Paid',    pdfKey:'PA4'  },
+  { app:5,  date:'10/31/2025', amt:1424292.46, loan:0,          owner:1424292.46, insp:0,    status:'Paid',    pdfKey:'PA5'  },
+  { app:6,  date:'11/25/2025', amt:363216.19,  loan:0,          owner:363216.19,  insp:0,    status:'Paid',    pdfKey:'PA6'  },
+  { app:7,  date:'1/12/2026',  amt:171937.00,  loan:0,          owner:171937.00,  insp:0,    status:'Paid',    pdfKey:'PA7'  },
+  { app:8,  date:'1/30/2026',  amt:932489.57,  loan:0,          owner:932489.57,  insp:0,    status:'Paid',    pdfKey:'PA8'  },
+  { app:9,  date:'3/9/2026',   amt:1064800.43, loan:0,          owner:1064800.43, insp:0,    status:'Paid',    pdfKey:'PA9'  },
+  { app:10, date:'3/31/2026',  amt:1626236.04, loan:0,          owner:1626236.04, insp:0,    status:'Paid',    pdfKey:'PA10' },
+  { app:11, date:'5/11/2026',  amt:1582764.46, loan:1582764.46, owner:0,          insp:3650, status:'Paid',    pdfKey:'PA11' },
+  { app:12, date:'6/4/2026',   amt:1243291.49, loan:1243291.49, owner:0,          insp:3650, status:'Paid',    pdfKey:'PA12' },
+  { app:13, date:'6/11/2026',  amt:90580.82,   loan:90580.82,   owner:0,          insp:3650, status:'Paid',    pdfKey:'PA13' },
+  { app:14, date:'7/10/2026',  amt:1558585.34, loan:1558585.34, owner:0,          insp:3650, status:'Paid',    pdfKey:'PA14' },
+  { app:15, date:'7/23/2026',  amt:1298033.73, loan:1298033.73, owner:0,          insp:3650, status:'Pending', pdfKey:'PA15' },
+];
+
+// Live PAYAPPS array — starts as a copy of BASE_PAYAPPS, overwritten by any saved edits on load
+let PAYAPPS = BASE_PAYAPPS.map(pa => ({ ...pa }));
+
+// Restore any saved edits/added rows from localStorage
+(function loadPayAppEdits() {
+  try {
+    const saved = JSON.parse(localStorage.getItem('plano_payapps_data') || 'null');
+    if (saved && Array.isArray(saved) && saved.length > 0) {
+      PAYAPPS = saved;
+    }
+  } catch (err) {
+    console.warn('Could not load saved pay app data:', err);
+  }
+})();
+
+function persistPayApps() { saveAll(); }
+
+function resetAllPayAppEdits() {
+  if (!confirm('Reset all pay app data (dates, amounts, statuses) back to the original numbers?\n\nThis does NOT remove attached PDFs.')) return;
+  PAYAPPS = BASE_PAYAPPS.map(pa => ({ ...pa }));
+  localStorage.removeItem('plano_payapps_data');
+  renderAll();
+}
+
+// ═════════════════ PDF ATTACHMENTS (pay apps + change orders) ═════════════════
+// EMBEDDED_PDFS = base64 payloads baked in at build time (pay app PDFs only, for size reasons).
+// USER_PDFS     = anything the user uploads via the UI (pay apps OR change orders), persisted to localStorage.
+const EMBEDDED_PDFS = {}; // populated by embed_pdfs.py
+let USER_PDFS = JSON.parse(localStorage.getItem('plano_pa_user_pdfs') || '{}');
+
+function getPdfB64(key) { return USER_PDFS[key] || EMBEDDED_PDFS[key] || null; }
+
+const _blobUrlCache = {};
+function getPdfBlobUrl(key) {
+  if (_blobUrlCache[key]) return _blobUrlCache[key];
+  const b64 = getPdfB64(key);
+  if (!b64) return null;
+  const bin = atob(b64);
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  const blob = new Blob([bytes], { type: 'application/pdf' });
+  const url = URL.createObjectURL(blob);
+  _blobUrlCache[key] = url;
+  return url;
+}
+
+// File names of the pay app PDFs (for display / bulk-attach matching)
+const PA_FILENAMES = {
+  PA1:  '21002711 Kinective Fitness Plano PA1 May  Executed.pdf',
+  PA2:  '21002711 Kinective Fitness Plano PA2 June  Executed.pdf',
+  PA3:  '21002711 Kinective Fitness Plano PA3 Sep  Executed.pdf',
+  PA4:  '21002711 Kinective Fitness Plano PA4 July 2024  Executed.pdf',
+  PA5:  '21002711 Kinective Fitness Plano PA5 October 2025  Executed.pdf',
+  PA6:  '21002711 Kinective Fitness Plano PA6 November 2025  DRAFT_01 2.pdf',
+  PA7:  '21002711 Kinective Fitness Plano PA7 December 2025  Executed.pdf',
+  PA8:  '21002711 Kinective Fitness Plano PA8 January 2026  Executed_rdc 1.pdf',
+  PA9:  '21002711 Kinective Fitness Plano PA9 February 2026  Executed_rdc 1 3.pdf',
+  PA10: '21002711 Kinective Fitness Plano PA10 March 2026 R1 rdc 1.pdf',
+  PA11: '21002711 Kinective Fitness Plano PA11 April 2026  DRAFT_REV02 1.pdf',
+  PA12: '21002711 Kinective Fitness Plano PA12 May 2026  Executed_rdc 1.pdf',
+  PA13: '21002711 Kinective Fitness Plano PA13 June 2026  Kemna Deposit  Executed_ 1.pdf',
+  PA14: '21002711 Kinective Fitness Plano PA14 June 2026  DRAFT_01 2.pdf',
+  PA15: '21002711 Kinective Fitness Plano PA15 July 2026  DRAFT_01.pdf',
+};
+
+// CO register — user-editable, persisted to localStorage
+const BASE_COS = [
+  // ── Early approvals (PA8/PA9) — net $11,507.99 ──
+  { num:'CR01', status:'Approved', date:'—',          desc:'Addendum to Contract',                cost:0,          days:0, pa:'—'    },
+  { num:'CR02', status:'Approved', date:'11/7/2025',  desc:'Additional Dirt Import (1,224 CY)',   cost:22155.95,   days:0, pa:'PA8' },
+  { num:'CR03', status:'Approved', date:'12/3/2025',  desc:'Transformer Conduit (Oncor)',         cost:10043.63,   days:0, pa:'PA8' },
+  { num:'CR04', status:'Approved', date:'1/27/2026',  desc:'Civil Permit Drawing Revision',       cost:-20691.59,  days:0, pa:'PA9' },
+
+  // ── CR05 resolved at $0 (PA12), CR07 denied ──
+  { num:'CR05', status:'Approved', date:'5/11/2026',  desc:'Permit Delay REV 1 (resolved at $0)', cost:0,          days:0, pa:'PA12' },
+  { num:'CR07', status:'Denied',   date:'2/4/2026',   desc:'Building Pad Location Discrepancy',   cost:16096.61,   days:4, pa:'—'    },
+
+  // ── Approved in PA10 (3/2/2026) ──
+  { num:'CR08', status:'Approved', date:'3/2/2026',   desc:'Exterior Masonry — Blackson brick',   cost:205700.00,  days:0, pa:'PA10' },
+  { num:'CR10', status:'Approved', date:'3/2/2026',   desc:'Roof Material Application (Dexcell/TPO)', cost:49477.96, days:0, pa:'PA10' },
+
+  // ── Approved in PA11 (Mar–Apr 2026) ──
+  { num:'CR09', status:'Approved', date:'3/30/2026',  desc:'Exterior Elevator Pit Waterproofing (net deductive)', cost:-5214.00, days:0, pa:'PA11' },
+  { num:'CR11', status:'Approved', date:'3/30/2026',  desc:'RFI 27 — Door L2-09 solid wood',      cost:-1729.85,   days:0, pa:'PA11' },
+  { num:'CR12', status:'Approved', date:'4/13/2026',  desc:'IFC / Addendum B drawings changes (REV 2)', cost:231619.42, days:0, pa:'PA11' },
+  { num:'CR14', status:'Approved', date:'3/30/2026',  desc:'RFI 0052 Ice Maker Substitution',     cost:2288.58,    days:0, pa:'PA11' },
+  { num:'CR15', status:'Approved', date:'4/7/2026',   desc:'RTU Modifications (Energy Recovery Wheel + RTU2 upsize)', cost:68768.19, days:0, pa:'PA11' },
+
+  // ── Approved in PA12 (Apr–May 2026) — the $38,983.03 batch ──
+  { num:'CR16', status:'Approved', date:'4/30/2026',  desc:'Termite Protection scope addition',   cost:4897.27,    days:0, pa:'PA12' },
+  { num:'CR17', status:'Approved', date:'5/12/2026',  desc:'Showroom Temp Power',                 cost:25743.33,   days:0, pa:'PA12' },
+  { num:'CR18', status:'Approved', date:'5/12/2026',  desc:'Community Court Demo & Pour Back',    cost:3991.80,    days:0, pa:'PA12' },
+  { num:'CR19', status:'Approved', date:'5/14/2026',  desc:'Pool Tile Change (restock/freight)',  cost:4350.63,    days:0, pa:'PA12' },
+
+  // ── Approved in PA15 (Jun 2026) ──
+  { num:'CR20', status:'Approved', date:'6/1/2026',   desc:'Misc Concrete Work (sidewalk/EV pedestals/pier)', cost:20251.14, days:0, pa:'PA15' },
+  { num:'CR21', status:'Approved', date:'6/1/2026',   desc:'Sauna Floor Tile & Waterproofing (RFI 100)', cost:8411.43, days:0, pa:'PA15' },
+  { num:'CR25', status:'Approved', date:'6/17/2026',  desc:'PS-02 → WC-05 (plaster→wall covering)', cost:-12432.00, days:0, pa:'PA15' },
+  { num:'CR26', status:'Approved', date:'6/17/2026',  desc:'RFI 108 Pool Storefront (thermal glass)', cost:2750.66,  days:0, pa:'PA15' },
+
+  // ── Still pending (not yet in a pay app) ──
+  { num:'CR22', status:'Pending',  date:'5/22/2026',  desc:'Decorative Light Fixtures (RFI 5)',   cost:61158.13,   days:0, pa:'—' },
+  { num:'CR24', status:'Pending',  date:'6/12/2026',  desc:'RFI 99.1 Electrified Hardware (Door L1-18B)', cost:3015.60, days:0, pa:'—' },
+  { num:'CR27', status:'Pending',  date:'6/12/2026',  desc:'Pool Targets and Lane Lines (Bradford)', cost:10138.60,   days:0, pa:'—' },
+  { num:'CR28', status:'Pending',  date:'6/15/2026',  desc:'Breakroom Lockers Addition (Type C, Hollman)', cost:19019.07, days:0, pa:'—' },
+  { num:'CR29', status:'Pending',  date:'7/7/2026',   desc:'ASI 2 Steel Changes',                 cost:14151.73,   days:1, pa:'—' },
+  { num:'CR30', status:'Pending',  date:'7/7/2026',   desc:'RFI 128 FD-2 Floor Drains for Pool',  cost:3770.27,    days:0, pa:'—' },
+  { num:'CR31', status:'Pending',  date:'7/7/2026',   desc:'RFI 106 F20 Light Fixtures (Stair 1 Screen Wall)', cost:52322.50, days:0, pa:'—' },
+  { num:'CR32', status:'Pending',  date:'7/24/2026',  desc:'ASI 2 Scope Changes (multi-trade)',   cost:184808.23,  days:0, pa:'—' },
+  { num:'CR33', status:'Pending',  date:'7/22/2026',  desc:'RFI 121 L2-10 Hardware Change',       cost:704.84,     days:0, pa:'—' },
+  { num:'CR34', status:'Pending',  date:'7/22/2026',  desc:'Removal of Bar Security Grill (deductive)', cost:-15864.25, days:0, pa:'—' },
+  { num:'CR35', status:'Pending',  date:'7/24/2026',  desc:'Interior Lighting Submittal (F3/F4/F9/F22/F27/F36)', cost:129113.21, days:0, pa:'—' },
+  { num:'CR36', status:'Pending',  date:'7/24/2026',  desc:'RFI 145 Room L2-11 Plumbing',         cost:30708.93,   days:0, pa:'—' },
+  { num:'CR37', status:'Pending',  date:'—',          desc:'Showroom Modifications (fencing, gate, irrigation, sod)', cost:30828.98, days:0, pa:'—' },
+];
+
+// Live COS array — starts as copy of BASE_COS with paid defaulting to false, overwritten by saved edits on load
+let COS = BASE_COS.map(c => ({ paid: false, ...c }));
+
+(function loadCoEdits() {
+  try {
+    const saved = JSON.parse(localStorage.getItem('plano_cos_data') || 'null');
+    if (saved && Array.isArray(saved) && saved.length > 0) {
+      // Ensure paid field exists on every loaded row (default false)
+      COS = saved.map(c => ({ paid: false, ...c }));
+    }
+  } catch (err) { console.warn('Could not load saved CO data:', err); }
+})();
+
+function persistCos() { saveAll(); }
+
+function resetAllCoEdits() {
+  if (!confirm('Reset all change order data back to original numbers?')) return;
+  COS = BASE_COS.map(c => ({ paid: false, ...c }));
+  localStorage.removeItem('plano_cos_data');
+  renderAll();
+}
+
+// ═════════════════════════ LIVE TOTALS (computed from COS + PAYAPPS) ═════════════════════════
+// ═════════════════ LIVE PROJECTION HELPERS ═════════════════
+// Interest projection — assumes remaining loan drawn linearly through the IO period, then flat at cap.
+// Returns the additional interest (from today, on top of what's already paid).
+function projectRemainingInterest(rate) {
+  const drawn = getTotalDrawn();
+  const remaining = Math.max(0, LOAN_MAX - drawn);
+  const monthsRamp = Math.max(1, PROJ_SETTINGS.openingMonthsRemaining); // draws happen during construction
+  const monthsFlat = Math.max(0, PROJ_SETTINGS.ioMonthsRemaining - PROJ_SETTINGS.openingMonthsRemaining);
+  // Ramp phase: balance goes from drawn → LOAN_MAX linearly
+  const avgBalRamp = (drawn + LOAN_MAX) / 2;
+  const interestRamp = avgBalRamp * rate * (monthsRamp / 12);
+  // Flat phase: balance sits at LOAN_MAX
+  const interestFlat = LOAN_MAX * rate * (monthsFlat / 12);
+  return interestRamp + interestFlat;
+}
+
+// Inspection fees projection — assumes 1 pay app/month through opening
+function projectRemainingInspections() {
+  return PROJ_SETTINGS.openingMonthsRemaining * PROJ_SETTINGS.inspFeePerPa;
+}
+
+function getApprovedCos()     { return COS.filter(c => c.status === 'Approved').reduce((s,c) => s + (parseFloat(c.cost) || 0), 0); }
+function getApprovedPaid()    { return COS.filter(c => c.status === 'Approved' &&  c.paid).reduce((s,c) => s + (parseFloat(c.cost) || 0), 0); }
+function getApprovedUnpaid()  { return COS.filter(c => c.status === 'Approved' && !c.paid).reduce((s,c) => s + (parseFloat(c.cost) || 0), 0); }
+function getPendingCos()      { return COS.filter(c => c.status === 'Pending' ).reduce((s,c) => s + (parseFloat(c.cost) || 0), 0); }
+function getDeniedCos()       { return COS.filter(c => c.status === 'Denied'  ).reduce((s,c) => s + (parseFloat(c.cost) || 0), 0); }
+function getTotalDrawn()   { return PAYAPPS.reduce((s,p) => s + (parseFloat(p.loan)  || 0), 0); }
+function getTotalOwner()   { return PAYAPPS.reduce((s,p) => s + (parseFloat(p.owner) || 0), 0); }
+function getTotalInsp()    { return PAYAPPS.reduce((s,p) => s + (parseFloat(p.insp)  || 0), 0); }
+function getTotalBilled()  { return PAYAPPS.reduce((s,p) => s + (parseFloat(p.amt)   || 0), 0); }
+
+// ═════════════════════════ FORMATTERS ═════════════════════════
+const f = (n, d=0) => {
+  if (n===null || isNaN(n)) return '—';
+  const s = Math.abs(n).toLocaleString('en-US', {minimumFractionDigits:d, maximumFractionDigits:d});
+  return n < 0 ? `($${s})` : `$${s}`;
+};
+const fk = n => {
+  if (Math.abs(n) >= 1e6) return `$${(n/1e6).toFixed(2)}M`;
+  if (Math.abs(n) >= 1e3) return `$${(n/1e3).toFixed(0)}K`;
+  return `$${n.toFixed(0)}`;
+};
+const pct = n => (n*100).toFixed(1) + '%';
+const statusBadge = s => {
+  const m = { Paid:'green', Approved:'green', Pending:'amber', Denied:'red', Open:'gray' };
+  return `<span class="badge ${m[s]||'gray'}">${s}</span>`;
+};
+
+// ═════════════════════════ TABLES ═════════════════════════
+function paLinkCell(pa) {
+  const b64 = getPdfB64(pa.pdfKey);
+  const attached = !!b64;
+  const iconColor = attached ? '#16A34A' : '#9CA3AF';
+  const source = USER_PDFS[pa.pdfKey] ? ' (uploaded)' : '';
+  const title = attached
+    ? `Click: open PDF · Shift+click: replace${source}`
+    : `Click to attach PDF for PA${pa.app}`;
+  return `
+    <td>
+      <a href="javascript:void(0)"
+         onclick="handlePaClick(event, '${pa.pdfKey}')"
+         title="${title.replace(/'/g, "\\'")}"
+         style="text-decoration:none; color:var(--text-primary); font-weight:600; display:inline-flex; align-items:center; gap:6px;">
+        <span>PA${pa.app}</span>
+        <svg width="12" height="12" viewBox="0 0 20 20" fill="none" stroke="${iconColor}" stroke-width="2" style="flex-shrink:0;">
+          <path d="M14 3h3v3M17 3l-8 8M8 4H4v12h12v-4" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </a>
+    </td>`;
+}
+
+function handlePaClick(e, key) {
+  e.preventDefault();
+  if (e.shiftKey) { attachPdfForKey(key); return; }
+  if (!getPdfB64(key)) {
+    if (confirm(`No PDF attached for ${key} yet. Attach one now?`)) attachPdfForKey(key);
+    return;
+  }
+  const url = getPdfBlobUrl(key);
+  if (url) window.open(url, '_blank', 'noopener,noreferrer');
+}
+
+function attachPdfForKey(key) {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = 'application/pdf,.pdf';
+  input.onchange = () => {
+    const file = input.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const b64 = reader.result.split(',')[1];
+      USER_PDFS[key] = b64;
+      try {
+        saveAll();
+      } catch (err) {
+        alert(`Storage error: ${err.message}\n\nThe PDF may be too large for browser localStorage. Try a smaller file.`);
+        delete USER_PDFS[key];
+        return;
+      }
+      if (_blobUrlCache[key]) { URL.revokeObjectURL(_blobUrlCache[key]); delete _blobUrlCache[key]; }
+      renderPayApps();
+      renderCOs();
+      alert(`Attached "${file.name}" to ${key}.`);
+    };
+    reader.readAsDataURL(file);
+  };
+  input.click();
+}
+
+function bulkAttachPdfs() {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = 'application/pdf,.pdf';
+  input.multiple = true;
+  input.onchange = async () => {
+    const files = Array.from(input.files);
+    if (!files.length) return;
+    let attached = 0, skipped = 0;
+    for (const file of files) {
+      const name = file.name.toUpperCase();
+      let key = null;
+      // Match pay app keys (longer first so PA1 doesn't grab PA10)
+      for (const k of ['PA15','PA14','PA13','PA12','PA11','PA10','PA9','PA8','PA7','PA6','PA5','PA4','PA3','PA2','PA1']) {
+        if (new RegExp('\\b' + k + '\\b').test(name)) { key = k; break; }
+      }
+      // Fall back to change order keys (CR37 → CR1). Match CR followed by 1-2 digits, optionally with zero-padding.
+      if (!key) {
+        const m = name.match(/\bCR[_\s]?0*(\d{1,2})\b/);
+        if (m) key = 'CR' + m[1].padStart(2, '0');
+      }
+      if (!key) { skipped++; continue; }
+      const b64 = await new Promise(res => {
+        const r = new FileReader();
+        r.onload = () => res(r.result.split(',')[1]);
+        r.readAsDataURL(file);
+      });
+      USER_PDFS[key] = b64;
+      if (_blobUrlCache[key]) { URL.revokeObjectURL(_blobUrlCache[key]); delete _blobUrlCache[key]; }
+      attached++;
+    }
+    try { saveAll(); }
+    catch (err) { alert('Storage quota exceeded. Some attachments may not have saved.'); }
+    renderPayApps();
+    renderCOs();
+    alert(`Attached ${attached} PDF${attached === 1 ? '' : 's'}${skipped ? ` · ${skipped} could not be matched to a PA or CR number` : ''}.`);
+  };
+  input.click();
+}
+
+function addNewPayApp() {
+  const appNum = prompt('New pay app number (e.g. 16):');
+  if (!appNum) return;
+  const n = parseInt(appNum);
+  if (isNaN(n) || n < 1) { alert('Invalid pay app number'); return; }
+  if (PAYAPPS.find(p => p.app === n)) { alert(`PA${n} already exists`); return; }
+  const date = prompt(`PA${n} — date (M/D/YYYY):`) || '—';
+  const amt = parseFloat(prompt(`PA${n} — payment amount (invoice total):`) || '0') || 0;
+  const loan = parseFloat(prompt(`PA${n} — loan draw portion (0 if all owner cash):`) || '0') || 0;
+  const owner = parseFloat(prompt(`PA${n} — owner cash portion:`) || String(amt - loan)) || 0;
+  const insp = parseFloat(prompt(`PA${n} — inspection fee (typical $3,650):`) || '3650') || 0;
+  const status = confirm(`PA${n} — Paid? (Cancel = Pending)`) ? 'Paid' : 'Pending';
+  const key = 'PA' + n;
+  PAYAPPS.push({ app: n, date, amt, loan, owner, insp, status, pdfKey: key });
+  PA_FILENAMES[key] = `PA${n} (user-added)`;
+  persistPayApps();
+  renderAll();
+  if (confirm(`PA${n} row added. Attach its PDF now?`)) attachPdfForKey(key);
+}
+
+// ═════════════════════════ INLINE EDITING ═════════════════════════
+// Each editable cell has data-editable="1" data-idx="{PA index}" data-field="{key}" data-type="text|number|status"
+// Click a cell → becomes an input → Enter/blur saves, Escape cancels.
+
+function editableCell(idx, field, formattedValue, klass, type='text') {
+  return `<td class="${klass} editable" data-idx="${idx}" data-field="${field}" data-type="${type}" onclick="startEdit(this)" title="Click to edit">${formattedValue}</td>`;
+}
+
+function startEdit(td) {
+  if (td.querySelector('input, select')) return; // Already editing
+  const idx = parseInt(td.dataset.idx);
+  const field = td.dataset.field;
+  const type = td.dataset.type;
+  const pa = PAYAPPS[idx];
+  const currentValue = pa[field];
+
+  let input;
+  if (field === 'status') {
+    input = document.createElement('select');
+    ['Paid', 'Pending'].forEach(opt => {
+      const o = document.createElement('option');
+      o.value = opt;
+      o.textContent = opt;
+      if (opt === currentValue) o.selected = true;
+      input.appendChild(o);
+    });
+  } else {
+    input = document.createElement('input');
+    input.type = type === 'number' ? 'number' : 'text';
+    if (type === 'number') input.step = 'any';
+    input.value = currentValue;
+  }
+  input.style.cssText = 'width:100%; padding:4px 6px; border:1.5px solid var(--blue-accent); border-radius:4px; font-family:var(--font); font-size:13px; background:#fff; box-sizing:border-box;';
+
+  let saved = false;
+  const save = () => {
+    if (saved) return;
+    saved = true;
+    let val = input.value;
+    if (type === 'number') {
+      val = parseFloat(val);
+      if (isNaN(val)) val = 0;
+    }
+    PAYAPPS[idx][field] = val;
+    persistPayApps();
+    renderAll();
+  };
+
+  const cancel = () => {
+    if (saved) return;
+    saved = true;
+    renderAll();
+  };
+
+  input.onblur = save;
+  input.onkeydown = (e) => {
+    if (e.key === 'Enter') { e.preventDefault(); input.blur(); }
+    else if (e.key === 'Escape') { e.preventDefault(); cancel(); }
+  };
+
+  td.innerHTML = '';
+  td.style.padding = '4px 6px';
+  td.appendChild(input);
+  input.focus();
+  if (input.select) input.select();
+}
+
+function renderPayApps() {
+  const tbody = document.getElementById('payapp-tbody');
+  let cumLoan = 0;
+  tbody.innerHTML = '';
+  PAYAPPS.forEach((pa, idx) => {
+    cumLoan += pa.loan;
+    const tr = document.createElement('tr');
+    // PA# cell (opens PDF, not edited here) + editable cells for the rest
+    const paCell     = paLinkCell(pa);
+    const dateCell   = editableCell(idx, 'date',   pa.date, '', 'text');
+    const amtCell    = editableCell(idx, 'amt',    f(pa.amt, 2), 'num', 'number');
+    const loanCell   = editableCell(idx, 'loan',   pa.loan > 0 ? f(pa.loan, 2) : '—', 'num ' + (pa.loan > 0 ? 'val-blue' : 'val-dim'), 'number');
+    const ownerCell  = editableCell(idx, 'owner',  pa.owner > 0 ? f(pa.owner, 2) : '—', 'num ' + (pa.owner > 0 ? 'val-green' : 'val-dim'), 'number');
+    const inspCell   = editableCell(idx, 'insp',   pa.insp > 0 ? f(pa.insp, 2) : '—', 'num ' + (pa.insp > 0 ? 'val-amber' : 'val-dim'), 'number');
+    const cumCell    = `<td class="num">${cumLoan > 0 ? f(cumLoan, 0) : '—'}</td>`;
+    const statusCell = editableCell(idx, 'status', statusBadge(pa.status), '', 'status');
+    // Delete row button
+    const delCell    = `<td style="width:24px;"><button onclick="deletePayApp(${idx})" title="Delete this row" style="border:none; background:transparent; color:var(--text-muted); cursor:pointer; padding:2px 4px; font-size:14px; line-height:1;">×</button></td>`;
+    tr.innerHTML = paCell + dateCell + amtCell + loanCell + ownerCell + inspCell + cumCell + statusCell + delCell;
+    tbody.appendChild(tr);
+  });
+
+  const totalAmt = PAYAPPS.reduce((s,p) => s + (parseFloat(p.amt) || 0), 0);
+  const totalLoan = PAYAPPS.reduce((s,p) => s + (parseFloat(p.loan) || 0), 0);
+  const totalOwner = PAYAPPS.reduce((s,p) => s + (parseFloat(p.owner) || 0), 0);
+  const totalInsp = PAYAPPS.reduce((s,p) => s + (parseFloat(p.insp) || 0), 0);
+  document.getElementById('payapp-total').innerHTML = `
+    <td colspan="2"><strong>Totals</strong></td>
+    <td class="num"><strong>${f(totalAmt, 2)}</strong></td>
+    <td class="num val-blue"><strong>${f(totalLoan, 2)}</strong></td>
+    <td class="num val-green"><strong>${f(totalOwner, 2)}</strong></td>
+    <td class="num val-amber"><strong>${f(totalInsp, 2)}</strong></td>
+    <td class="num"><strong>${f(totalLoan, 0)}</strong></td>
+    <td colspan="2"></td>`;
+}
+
+function deletePayApp(idx) {
+  const pa = PAYAPPS[idx];
+  if (!confirm(`Delete PA${pa.app}? This cannot be undone (but you can use "Reset all edits" to restore original data).`)) return;
+  PAYAPPS.splice(idx, 1);
+  persistPayApps();
+  renderAll();
+}
+
+// Generic editable-cell helper for the CO table (uses COS[] instead of PAYAPPS[])
+function editableCoCell(idx, field, formattedValue, klass, type='text') {
+  return `<td class="${klass} editable" data-source="COS" data-idx="${idx}" data-field="${field}" data-type="${type}" onclick="startCoEdit(this)" title="Click to edit">${formattedValue}</td>`;
+}
+
+function startCoEdit(td) {
+  if (td.querySelector('input, select')) return;
+  const idx = parseInt(td.dataset.idx);
+  const field = td.dataset.field;
+  const type = td.dataset.type;
+  const co = COS[idx];
+  const currentValue = co[field];
+
+  let input;
+  if (field === 'status') {
+    input = document.createElement('select');
+    ['Approved', 'Pending', 'Denied'].forEach(opt => {
+      const o = document.createElement('option');
+      o.value = opt; o.textContent = opt;
+      if (opt === currentValue) o.selected = true;
+      input.appendChild(o);
+    });
+  } else if (field === 'paid') {
+    input = document.createElement('select');
+    [['Yes', true], ['No', false]].forEach(([label, val]) => {
+      const o = document.createElement('option');
+      o.value = String(val); o.textContent = label;
+      if (val === currentValue) o.selected = true;
+      input.appendChild(o);
+    });
+  } else {
+    input = document.createElement('input');
+    input.type = type === 'number' ? 'number' : 'text';
+    if (type === 'number') input.step = 'any';
+    input.value = currentValue;
+  }
+  input.style.cssText = 'width:100%; padding:4px 6px; border:1.5px solid var(--blue-accent); border-radius:4px; font-family:var(--font); font-size:13px; background:#fff; box-sizing:border-box;';
+
+  let saved = false;
+  const save = () => {
+    if (saved) return; saved = true;
+    let val = input.value;
+    if (type === 'number') { val = parseFloat(val); if (isNaN(val)) val = 0; }
+    else if (field === 'paid') { val = (val === 'true'); }
+    COS[idx][field] = val;
+    persistCos();
+    renderAll();
+  };
+  const cancel = () => { if (saved) return; saved = true; renderAll(); };
+
+  input.onblur = save;
+  input.onkeydown = (e) => {
+    if (e.key === 'Enter')  { e.preventDefault(); input.blur(); }
+    if (e.key === 'Escape') { e.preventDefault(); cancel(); }
+  };
+
+  td.innerHTML = '';
+  td.style.padding = '4px 6px';
+  td.appendChild(input);
+  input.focus();
+  if (input.select) input.select();
+}
+
+function deleteCo(idx) {
+  const co = COS[idx];
+  if (!confirm(`Delete ${co.num}? Use "Reset edits" to restore original data.`)) return;
+  COS.splice(idx, 1);
+  persistCos();
+  renderAll();
+}
+
+function addNewCo() {
+  const num = prompt('New CR number (e.g. CR38):');
+  if (!num) return;
+  if (COS.find(c => c.num === num)) { alert(`${num} already exists`); return; }
+  const date = prompt(`${num} — submitted date (M/D/YYYY):`) || '—';
+  const desc = prompt(`${num} — description:`) || '';
+  const cost = parseFloat(prompt(`${num} — cost impact (use negative for deductive):`) || '0') || 0;
+  const days = parseInt(prompt(`${num} — schedule impact (days):`) || '0') || 0;
+  const status = prompt(`${num} — status (Approved / Pending / Denied):`, 'Pending') || 'Pending';
+  const pa = prompt(`${num} — approved in which PA? (leave blank if pending/denied):`) || '—';
+  const paid = status === 'Approved' ? confirm(`${num} — has this been paid yet? (OK = Yes, Cancel = No)`) : false;
+  COS.push({ num, status, date, desc, cost, days, pa, paid });
+  persistCos();
+  renderAll();
+}
+
+function coLinkCell(co) {
+  const b64 = getPdfB64(co.num);
+  const attached = !!b64;
+  const iconColor = attached ? '#16A34A' : '#9CA3AF';
+  const title = attached ? `Click: open ${co.num} PDF · Shift+click: replace` : `Click to attach PDF for ${co.num}`;
+  return `<td>
+    <a href="javascript:void(0)" onclick="handleCoClick(event, '${co.num}')" title="${title}"
+       style="text-decoration:none; color:var(--text-primary); font-weight:600; display:inline-flex; align-items:center; gap:6px;">
+      <span>${co.num}</span>
+      <svg width="12" height="12" viewBox="0 0 20 20" fill="none" stroke="${iconColor}" stroke-width="2" style="flex-shrink:0;">
+        <path d="M14 3h3v3M17 3l-8 8M8 4H4v12h12v-4" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </a></td>`;
+}
+
+function handleCoClick(e, key) {
+  e.preventDefault();
+  if (e.shiftKey) { attachPdfForKey(key); return; }
+  if (!getPdfB64(key)) {
+    if (confirm(`No PDF attached for ${key} yet. Attach one now?`)) attachPdfForKey(key);
+    return;
+  }
+  const url = getPdfBlobUrl(key);
+  if (url) window.open(url, '_blank', 'noopener,noreferrer');
+}
+
+// ═════════════════════════ INTEREST PAYMENTS LOG ═════════════════════════
+function editableIntCell(idx, field, formattedValue, klass, type='text') {
+  return `<td class="${klass} editable" data-idx="${idx}" data-field="${field}" data-type="${type}" onclick="startIntEdit(this)" title="Click to edit">${formattedValue}</td>`;
+}
+
+function startIntEdit(td) {
+  if (td.querySelector('input')) return;
+  const idx = parseInt(td.dataset.idx);
+  const field = td.dataset.field;
+  const type = td.dataset.type;
+  const payment = INTEREST_PAYMENTS[idx];
+  const currentValue = payment[field];
+  const input = document.createElement('input');
+  input.type = type === 'number' ? 'number' : 'text';
+  if (type === 'number') input.step = 'any';
+  input.value = currentValue;
+  input.style.cssText = 'width:100%; padding:4px 6px; border:1.5px solid var(--blue-accent); border-radius:4px; font-family:var(--font); font-size:12.5px; background:#fff; box-sizing:border-box;';
+
+  let saved = false;
+  const save = () => {
+    if (saved) return; saved = true;
+    let val = input.value;
+    if (type === 'number') { val = parseFloat(val); if (isNaN(val)) val = 0; }
+    INTEREST_PAYMENTS[idx][field] = val;
+    persistIntPayments();
+    renderAll();
+  };
+  const cancel = () => { if (saved) return; saved = true; renderAll(); };
+
+  input.onblur = save;
+  input.onkeydown = (e) => {
+    if (e.key === 'Enter')  { e.preventDefault(); input.blur(); }
+    if (e.key === 'Escape') { e.preventDefault(); cancel(); }
+  };
+  td.innerHTML = '';
+  td.style.padding = '4px 6px';
+  td.appendChild(input);
+  input.focus();
+  if (input.select) input.select();
+}
+
+function addInterestPayment() {
+  const date = prompt('Payment date (M/D/YYYY):') || '';
+  if (!date) return;
+  const amount = parseFloat(prompt('Amount ($):') || '0') || 0;
+  const note = prompt('Note (e.g. "August 2026 interest"):') || '';
+  INTEREST_PAYMENTS.push({ date, amount, note });
+  persistIntPayments();
+  renderAll();
+}
+
+function deleteInterestPayment(idx) {
+  if (!confirm(`Delete interest payment for ${INTEREST_PAYMENTS[idx].date}?`)) return;
+  INTEREST_PAYMENTS.splice(idx, 1);
+  persistIntPayments();
+  renderAll();
+}
+
+function renderIntPayments() {
+  const tbody = document.getElementById('int-payments-tbody');
+  if (!tbody) return;
+  tbody.innerHTML = '';
+  INTEREST_PAYMENTS.forEach((p, idx) => {
+    const tr = document.createElement('tr');
+    tr.innerHTML =
+      editableIntCell(idx, 'date',   p.date || '—', '', 'text') +
+      editableIntCell(idx, 'note',   p.note || '', '', 'text') +
+      editableIntCell(idx, 'amount', f(p.amount, 2), 'num val-amber', 'number') +
+      `<td style="width:24px;"><button onclick="deleteInterestPayment(${idx})" title="Delete" style="border:none; background:transparent; color:var(--text-muted); cursor:pointer; padding:2px 4px; font-size:14px; line-height:1;">×</button></td>`;
+    tbody.appendChild(tr);
+  });
+  const total = getIntPaid();
+  document.getElementById('int-payments-total').innerHTML = `
+    <td colspan="2"><strong>Total interest paid</strong></td>
+    <td class="num val-amber"><strong>${f(total, 2)}</strong></td>
+    <td></td>`;
+}
+
+function paidBadge(paid, status) {
+  if (status !== 'Approved') return '<span class="val-dim">—</span>';
+  return paid
+    ? '<span class="badge green">Paid</span>'
+    : '<span class="badge amber">Not Paid</span>';
+}
+
+function renderCOs() {
+  const tbody = document.getElementById('co-tbody');
+  tbody.innerHTML = '';
+  COS.forEach((co, idx) => {
+    const tr = document.createElement('tr');
+    const costClass = 'num ' + (co.cost > 0 ? 'val-blue' : co.cost < 0 ? 'val-green' : 'val-dim');
+    const daysClass = 'num ' + (co.days > 0 ? 'val-amber' : 'val-dim');
+    tr.innerHTML =
+      coLinkCell(co) +
+      editableCoCell(idx, 'date',   co.date || '—', '', 'text') +
+      editableCoCell(idx, 'desc',   co.desc || '', '', 'text') +
+      editableCoCell(idx, 'cost',   co.cost !== 0 ? f(co.cost, 2) : '—', costClass, 'number') +
+      editableCoCell(idx, 'days',   co.days > 0 ? co.days : '—', daysClass, 'number') +
+      editableCoCell(idx, 'pa',     co.pa && co.pa !== '—' ? `<span class="val-blue" style="font-weight:500">${co.pa}</span>` : '<span class="val-dim">—</span>', '', 'text') +
+      editableCoCell(idx, 'status', statusBadge(co.status), '', 'status') +
+      editableCoCell(idx, 'paid',   paidBadge(co.paid, co.status), '', 'paid') +
+      `<td style="width:24px;"><button onclick="deleteCo(${idx})" title="Delete this CO" style="border:none; background:transparent; color:var(--text-muted); cursor:pointer; padding:2px 4px; font-size:14px; line-height:1;">×</button></td>`;
+    tbody.appendChild(tr);
+  });
+
+  // Totals footer — split approved into Paid vs Not Paid
+  const tfoot = document.getElementById('co-tfoot');
+  const appPaid   = getApprovedPaid();
+  const appUnpaid = getApprovedUnpaid();
+  const app = appPaid + appUnpaid;
+  const pen = getPendingCos();
+  const den = getDeniedCos();
+  const net = app + pen;
+  tfoot.innerHTML = `
+    <tr class="total-row"><td colspan="3"><strong>Approved &amp; Paid</strong></td><td class="num val-green"><strong>${f(appPaid, 2)}</strong></td><td colspan="5"></td></tr>
+    <tr class="total-row"><td colspan="3"><strong>Approved &amp; Not Yet Paid</strong></td><td class="num val-amber"><strong>${f(appUnpaid, 2)}</strong></td><td colspan="5"></td></tr>
+    <tr class="total-row"><td colspan="3"><strong>Approved subtotal</strong></td><td class="num"><strong>${f(app, 2)}</strong></td><td colspan="5"></td></tr>
+    <tr class="total-row"><td colspan="3"><strong>Pending subtotal</strong></td><td class="num val-amber"><strong>${f(pen, 2)}</strong></td><td colspan="5"></td></tr>
+    <tr class="total-row"><td colspan="3"><strong>Denied subtotal</strong></td><td class="num val-red"><strong>${f(den, 2)}</strong></td><td colspan="5"></td></tr>
+    <tr class="total-row" style="border-top:2px solid var(--border-light)"><td colspan="3"><strong>Approved + Pending (potential total)</strong></td><td class="num" style="font-weight:700"><strong>${f(net, 2)}</strong></td><td colspan="5"></td></tr>
+  `;
+}
+
+// ═════════════════════════ CHARTS ═════════════════════════
+Chart.defaults.font.family = "'Inter', system-ui, sans-serif";
+Chart.defaults.font.size = 11;
+Chart.defaults.color = '#6B7280';
+
+// ═════════════════════════ NEW: LOAN RUNWAY CHART ═════════════════════════
+// Line chart showing historical cumulative loan balance + linear projection to end of construction.
+// Highlights the $25M ceiling so the "will we bust the cap?" question is answered visually.
+function renderRunwayChart() {
+  const ctx = document.getElementById('runwayChart');
+  if (!ctx) return;
+
+  // Build historical points from pay apps with loan draws (chronological order)
+  const drawPas = PAYAPPS.filter(p => (parseFloat(p.loan) || 0) > 0);
+  const points = [];
+  let cum = 0;
+  // Seed with start point at first draw date, balance 0
+  if (drawPas.length > 0) {
+    points.push({ label: 'Start (May 2026)', value: 0 });
+    drawPas.forEach(p => {
+      cum += parseFloat(p.loan) || 0;
+      points.push({ label: `PA${p.app} · ${p.date}`, value: cum });
+    });
+  }
+
+  // Historical drawn total
+  const drawnSoFar = cum;
+  // Projection: remaining $19.7M of contract billed over ~9 months (Aug 2026 → May 2027)
+  // Assumes owner cash phase is done, all future draws hit the loan
+  const contractRemaining = (CONTRACT_BASE + getApprovedCos()) - PAYAPPS.reduce((s,p) => s + (parseFloat(p.amt) || 0), 0);
+  const approvedUnpaid = getApprovedUnpaid();
+  const projectedRemainingDraw = Math.max(0, contractRemaining + approvedUnpaid);
+  const projMonths = 9; // through May 2027
+  const monthlyDraw = projectedRemainingDraw / projMonths;
+
+  // Add projection points month by month
+  const projPoints = [];
+  const startCum = drawnSoFar;
+  const monthLabels = ['Sep 2026','Oct 2026','Nov 2026','Dec 2026','Jan 2027','Feb 2027','Mar 2027','Apr 2027','May 2027'];
+  monthLabels.forEach((label, i) => {
+    projPoints.push({ label, value: Math.min(LOAN_MAX, startCum + monthlyDraw * (i + 1)) });
+  });
+
+  const allLabels = [...points.map(p => p.label), ...projPoints.map(p => p.label)];
+  const historical = [...points.map(p => p.value), ...projPoints.map(_ => null)];
+  const projected  = [...points.map(_ => null), ...projPoints.map(p => p.value)];
+  // Connect historical → projection with a bridging null-fill
+  if (points.length > 0) {
+    projected[points.length - 1] = points[points.length - 1].value;
+  }
+
+  // Horizontal $25M ceiling as a full dataset of the same value
+  const ceiling = allLabels.map(_ => LOAN_MAX);
+
+  if (CHARTS.runway) CHARTS.runway.destroy();
+  CHARTS.runway = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: allLabels,
+      datasets: [
+        {
+          label: '$25M loan ceiling',
+          data: ceiling,
+          borderColor: '#DC2626',
+          borderDash: [8, 4],
+          borderWidth: 2,
+          fill: false,
+          pointRadius: 0,
+          pointHoverRadius: 0,
+          tension: 0,
+        },
+        {
+          label: 'Actual drawn',
+          data: historical,
+          borderColor: '#2563EB',
+          backgroundColor: 'rgba(37,99,235,0.10)',
+          borderWidth: 2.5,
+          fill: true,
+          tension: 0.25,
+          pointRadius: 4,
+          pointHoverRadius: 6,
+          pointBackgroundColor: '#2563EB',
+        },
+        {
+          label: 'Projected (linear extrapolation)',
+          data: projected,
+          borderColor: '#D97706',
+          borderDash: [6, 4],
+          borderWidth: 2,
+          fill: false,
+          tension: 0.25,
+          pointRadius: 3,
+          pointHoverRadius: 5,
+          pointBackgroundColor: '#D97706',
+        },
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { position: 'bottom', labels: { boxWidth: 12, padding: 12, font: { size: 10 } } },
+        tooltip: {
+          callbacks: {
+            label: (ctx) => ctx.raw !== null ? `${ctx.dataset.label}: ${f(ctx.raw, 0)}` : null,
+          }
+        }
+      },
+      scales: {
+        x: { grid: { display: false }, ticks: { font: { size: 9 }, maxRotation: 45, minRotation: 45 } },
+        y: {
+          suggestedMax: LOAN_MAX * 1.05,
+          ticks: { callback: v => fk(v) },
+          grid: { color: '#F3F4F6' }
+        }
+      }
+    }
+  });
+
+  // Update subtitle with the runway calculation
+  const runwaySub = document.getElementById('runway-sub');
+  if (runwaySub) {
+    const endBalance = startCum + monthlyDraw * projMonths;
+    const overrun = endBalance - LOAN_MAX;
+    if (overrun > 0) {
+      runwaySub.innerHTML = `<span style="color:var(--red); font-weight:600;">Projected to exceed $25M cap by ${f(overrun, 0)} at current pace</span> · ${f(monthlyDraw, 0)}/mo × 9 mo`;
+    } else {
+      runwaySub.innerHTML = `<span style="color:var(--green); font-weight:600;">Projected to land ${f(LOAN_MAX - endBalance, 0)} under cap</span> · ${f(monthlyDraw, 0)}/mo × 9 mo`;
+    }
+  }
+}
+
+// ═════════════════════════ NEW: PROJECT COVERAGE CHART ═════════════════════════
+// Two stacked horizontal bars — Money Owed vs Money Available. Instantly shows any shortfall.
+function renderCoverageChart() {
+  const ctx = document.getElementById('coverageChart');
+  if (!ctx) return;
+
+  const approvedCos = getApprovedCos();
+  const pendingCos  = getPendingCos();
+  const contractTotal = CONTRACT_BASE + approvedCos;
+  const drawn = getTotalDrawn();
+  const ownerCashSpent = getTotalOwner();
+  const intPaid = getIntPaid();
+  const inspFees = getTotalInsp();
+  const totalBilled = PAYAPPS.reduce((s,p) => s + (parseFloat(p.amt) || 0), 0);
+
+  const projInterestRemaining = 822000;   // through May 2027 at 6.5%
+  const projInspRemaining = 30000;
+  const retainageAtCompletion = 3040000;
+
+  // ── Money OWED (already spent + still to spend) ──
+  const owedAlreadyPaid = totalBilled + intPaid + inspFees;
+  const contractRemainingToBill = Math.max(0, contractTotal - totalBilled);
+  // For coverage view we include retainage release explicitly since that's a real cash payment at end
+  // (though it's already counted inside contractRemainingToBill as pending retention)
+
+  // ── Money AVAILABLE (loan remaining + owner cash contributed + committed/needed) ──
+  const loanRemaining = LOAN_MAX - drawn;
+
+  // Segments for "Owed" bar
+  const owedSegments = [
+    { label: 'Already paid (construction)', value: totalBilled, color: '#16A34A' },
+    { label: 'Contract remaining to bill', value: contractRemainingToBill, color: '#2563EB' },
+    { label: 'Projected remaining interest', value: projInterestRemaining, color: '#D97706' },
+    { label: 'Projected remaining inspections', value: projInspRemaining, color: '#F59E0B' },
+    { label: 'Pending COs (if approved)', value: pendingCos, color: '#F87171' },
+  ];
+  // Segments for "Available" bar
+  const availSegments = [
+    { label: 'Loan drawn (already used)', value: drawn, color: '#93C5FD' },
+    { label: 'Loan remaining ($25M cap)', value: loanRemaining, color: '#2563EB' },
+    { label: 'Owner cash contributed', value: ownerCashSpent + intPaid + inspFees, color: '#16A34A' },
+  ];
+
+  const owedTotal = owedSegments.reduce((s,x) => s + x.value, 0);
+  const availTotal = availSegments.reduce((s,x) => s + x.value, 0);
+  const shortfall = Math.max(0, owedTotal - availTotal);
+  if (shortfall > 0) {
+    availSegments.push({ label: 'Additional owner cash needed', value: shortfall, color: '#DC2626' });
+  }
+
+  // Build Chart.js stacked horizontal bar
+  const labels = ['Total Owed', 'Sources Available'];
+  const allSegKeys = [...new Set([...owedSegments, ...availSegments].map(s => s.label))];
+  const datasets = [];
+  const maxSegs = Math.max(owedSegments.length, availSegments.length);
+  for (let i = 0; i < maxSegs; i++) {
+    const oSeg = owedSegments[i];
+    const aSeg = availSegments[i];
+    datasets.push({
+      label: oSeg ? oSeg.label : (aSeg ? aSeg.label : ''),
+      data: [oSeg ? oSeg.value : 0, 0],
+      backgroundColor: oSeg ? oSeg.color : '#E5E7EB',
+      stack: 'owed',
+      borderRadius: 4,
+    });
+    datasets.push({
+      label: aSeg ? aSeg.label : (oSeg ? oSeg.label : ''),
+      data: [0, aSeg ? aSeg.value : 0],
+      backgroundColor: aSeg ? aSeg.color : '#E5E7EB',
+      stack: 'avail',
+      borderRadius: 4,
+    });
+  }
+
+  if (CHARTS.coverage) CHARTS.coverage.destroy();
+  CHARTS.coverage = new Chart(ctx, {
+    type: 'bar',
+    data: { labels, datasets },
+    options: {
+      indexAxis: 'y',
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: (ctx) => `${ctx.dataset.label}: ${f(ctx.raw, 0)}`
+          }
+        }
+      },
+      scales: {
+        x: { stacked: true, ticks: { callback: v => fk(v) }, grid: { color: '#F3F4F6' } },
+        y: { stacked: true, grid: { display: false }, ticks: { font: { size: 11, weight: 600 } } }
+      }
+    }
+  });
+
+  const coverageSub = document.getElementById('coverage-sub');
+  if (coverageSub) {
+    if (shortfall > 0) {
+      coverageSub.innerHTML = `<span style="color:var(--red); font-weight:600;">Owner cash shortfall: ${f(shortfall, 0)}</span> · Total owed ${f(owedTotal, 0)} · Sources ${f(availTotal - shortfall, 0)}`;
+    } else {
+      coverageSub.innerHTML = `<span style="color:var(--green); font-weight:600;">Fully funded</span> · Total owed ${f(owedTotal, 0)} · Sources ${f(availTotal, 0)}`;
+    }
+  }
+}
+
+function renderDrawChart() {
+  const ctx = document.getElementById('drawChart');
+  CHARTS.draw = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: PAYAPPS.map(p => `PA${p.app}`),
+      datasets: [
+        {
+          label: 'Owner Cash',
+          data: PAYAPPS.map(p => p.owner),
+          backgroundColor: '#16A34A',
+          borderRadius: 4,
+          stack: 'stack1',
+        },
+        {
+          label: 'Loan Draw',
+          data: PAYAPPS.map(p => p.loan),
+          backgroundColor: '#2563EB',
+          borderRadius: 4,
+          stack: 'stack1',
+        },
+        {
+          label: 'Inspection Fee',
+          data: PAYAPPS.map(p => p.insp),
+          backgroundColor: '#D97706',
+          borderRadius: 4,
+          stack: 'stack1',
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { position: 'bottom', labels: { boxWidth: 12, padding: 12 } },
+        tooltip: {
+          callbacks: {
+            label: (ctx) => `${ctx.dataset.label}: ${f(ctx.raw, 2)}`
+          }
+        }
+      },
+      scales: {
+        x: { grid: { display: false }, stacked: true },
+        y: { stacked: true, ticks: { callback: v => fk(v) }, grid: { color: '#F3F4F6' } }
+      }
+    }
+  });
+}
+
+function renderFundingChart() {
+  const ctx = document.getElementById('fundingChart');
+  CHARTS.funding = new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels: ['Owner Cash', 'Loan Draws', 'Inspection Fees'],
+      datasets: [{
+        data: [getTotalOwner(), getTotalDrawn(), getTotalInsp()],
+        backgroundColor: ['#16A34A', '#2563EB', '#D97706'],
+        borderWidth: 2,
+        borderColor: '#FFFFFF'
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      cutout: '65%',
+      plugins: {
+        legend: { position: 'bottom', labels: { boxWidth: 12, padding: 12 } },
+        tooltip: {
+          callbacks: {
+            label: (ctx) => `${ctx.label}: ${f(ctx.raw, 2)}`
+          }
+        }
+      }
+    }
+  });
+}
+
+function renderInterestChart() {
+  // Build monthly cumulative interest projection
+  // Actuals: Interest-only period started May 2026 (first draw May 11)
+  // Actual paid: $42,247 through ~Aug 2026 (assume through end of Jul 2026 = ~3 months post first draw)
+  // Projection: remaining $19.23M drawn linearly Aug 2026 → May 2027 (10 months)
+  // Rate: 5.5% (base case)
+
+  const months = [
+    'May-26','Jun-26','Jul-26','Aug-26','Sep-26','Oct-26','Nov-26','Dec-26',
+    'Jan-27','Feb-27','Mar-27','Apr-27','May-27'
+  ];
+
+  // Cumulative loan balance at end of each month (approximation from pay app dates)
+  // Actual through Jul (PA14): PA11 May=1.583M, PA12 Jun=1.243M+PA13 Jun=0.091M=1.334M, PA14 Jul=1.559M
+  // Then PA15 pending in Aug: 1.298M → cumul $5.773M
+  // Then linear from $5.773M to $25M over 9 months (Aug 2026 → May 2027)
+  const balances = [
+    1_582_764,   // end May
+    2_916_636,   // end Jun
+    4_475_221,   // end Jul (after PA14)
+    5_773_256,   // end Aug (after PA15)
+    7_909_594,   // Sep — start linear
+    10_045_931,
+    12_182_269,
+    14_318_606,
+    16_454_944,
+    18_591_281,
+    20_727_619,
+    22_863_956,
+    25_000_000,  // May 27
+  ];
+
+  // Compute cumulative interest at 6.50% (current WSJP-0.25%) with sensitivities
+  const RATE = 0.065;
+  const cumInterest = [];
+  const cumInterestFloor = [];
+  const cumInterestHigh = [];
+  let cum65 = 0, cumFloor = 0, cumHigh = 0;
+  let prev = 0;
+  balances.forEach((b, i) => {
+    const avg = (prev + b) / 2;
+    cum65 += avg * RATE * (30/365);
+    cumFloor += avg * 0.05 * (30/365);
+    cumHigh += avg * 0.075 * (30/365);
+    cumInterest.push(cum65);
+    cumInterestFloor.push(cumFloor);
+    cumInterestHigh.push(cumHigh);
+    prev = b;
+  });
+
+  // Actual paid points — interest paid through July 31 (index 2) at $42,247
+  const actualPaid = [5637, 20385, 42571, null, null, null, null, null, null, null, null, null, null];
+
+  new Chart(document.getElementById('interestChart'), {
+    type: 'line',
+    data: {
+      labels: months,
+      datasets: [
+        {
+          label: 'Projected (6.50% current)',
+          data: cumInterest,
+          borderColor: '#D97706',
+          backgroundColor: 'rgba(217,119,6,0.08)',
+          fill: true,
+          tension: 0.3,
+          pointRadius: 3,
+          pointHoverRadius: 5,
+          borderWidth: 2,
+        },
+        {
+          label: 'Floor case (5.0% — requires WSJP ≤ 5.25%)',
+          data: cumInterestFloor,
+          borderColor: '#16A34A',
+          borderDash: [4,4],
+          fill: false,
+          tension: 0.3,
+          pointRadius: 0,
+          borderWidth: 1.5,
+        },
+        {
+          label: 'High case (7.50%)',
+          data: cumInterestHigh,
+          borderColor: '#DC2626',
+          borderDash: [4,4],
+          fill: false,
+          tension: 0.3,
+          pointRadius: 0,
+          borderWidth: 1.5,
+        },
+        {
+          label: 'Actual paid',
+          data: actualPaid,
+          borderColor: '#2563EB',
+          backgroundColor: '#2563EB',
+          fill: false,
+          pointRadius: 5,
+          pointHoverRadius: 7,
+          showLine: false,
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { position: 'bottom', labels: { boxWidth: 12, padding: 12, font: { size: 10 } } },
+        tooltip: {
+          callbacks: {
+            label: (ctx) => `${ctx.dataset.label}: ${ctx.raw !== null ? f(ctx.raw, 0) : '—'}`
+          }
+        }
+      },
+      scales: {
+        x: { grid: { display: false } },
+        y: { ticks: { callback: v => fk(v) }, grid: { color: '#F3F4F6' } }
+      }
+    }
+  });
+}
+
+function renderWaterfall() {
+  const approvedCos = getApprovedCos();
+  const pendingCos  = getPendingCos();
+  const deniedCos   = getDeniedCos();
+  const currentTotal = CONTRACT_BASE + approvedCos;
+  const withPending  = currentTotal + pendingCos;
+  const worst        = withPending + deniedCos;
+
+  const labels = ['Original Contract', '+ Approved COs', '= Current Total', '+ Pending', '+ Denied Reopened', 'Worst Case'];
+  // Floating bars — each entry is [start, end] so deltas visually float at the correct position
+  const bars = [
+    [0,             CONTRACT_BASE],
+    [CONTRACT_BASE, currentTotal],
+    [0,             currentTotal],
+    [currentTotal,  withPending],
+    [withPending,   worst],
+    [0,             worst],
+  ];
+  const colors = ['#111827', '#16A34A', '#2563EB', '#D97706', '#DC2626', '#7C2D12'];
+
+  CHARTS.waterfall = new Chart(document.getElementById('waterfallChart'), {
+    type: 'bar',
+    data: {
+      labels: labels,
+      datasets: [{
+        data: bars,
+        backgroundColor: colors,
+        borderRadius: 6,
+        borderSkipped: false,
+        // Ensure minimum visible height for the delta bars so they're clickable
+        minBarLength: 8,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            title: (items) => items[0].label,
+            label: (ctx) => {
+              const [start, end] = ctx.raw;
+              const delta = end - start;
+              if (start === 0) return `Total: ${f(end, 0)}`;
+              return `+${f(delta, 0)} (${f(start, 0)} → ${f(end, 0)})`;
+            }
+          }
+        }
+      },
+      scales: {
+        x: { grid: { display: false }, ticks: { font: { size: 10 } } },
+        y: {
+          ticks: { callback: v => fk(v) },
+          grid: { color: '#F3F4F6' },
+          // Zoom the y-axis so the deltas are visible: start ~$28M so the $30M base isn't 90% of the chart
+          suggestedMin: CONTRACT_BASE * 0.93,
+          suggestedMax: worst * 1.02
+        }
+      }
+    }
+  });
+}
+
+// ═════════════════════════ LIVE KPIs & CHART UPDATE ═════════════════════════
+// Chart instances stored globally so edits can update them without destroying/recreating.
+const CHARTS = {};
+
+function syncAllTotals() {
+  const drawn = getTotalDrawn();
+  const ownerCash = getTotalOwner();
+  const totalBilled = getTotalBilled();
+  const approvedCos = getApprovedCos();
+  const pendingCos = getPendingCos();
+  const deniedCos = getDeniedCos();
+  const contractTotal = CONTRACT_BASE + approvedCos;
+  const pctBilled = contractTotal > 0 ? (totalBilled / contractTotal * 100).toFixed(1) : '0.0';
+
+  // ── DYNAMIC HEADER SUBTITLE ──
+  const headerSub = document.getElementById('header-sub');
+  if (headerSub && PAYAPPS.length > 0) {
+    const first = PAYAPPS[0];
+    const last = PAYAPPS[PAYAPPS.length - 1];
+    const statusLabel = last.status === 'Pending' ? `PA${last.app} pending` : `paid through PA${last.app}`;
+    headerSub.textContent = `$25M WestStar construction loan · AMD Capital · ${PAYAPPS.length} pay apps tracked (PA${first.app} through ${statusLabel})`;
+  }
+
+  // ── PROJECTED INTEREST — recalculated from live loan balance ──
+  const intPaidToDate = getIntPaid();
+  const projFloor   = projectRemainingInterest(PROJ_SETTINGS.rateFloor);
+  const projCurrent = projectRemainingInterest(PROJ_SETTINGS.rateCurrent);
+  const projHigh    = projectRemainingInterest(PROJ_SETTINGS.rateHigh);
+  const totalIntAt65 = intPaidToDate + projCurrent;
+  // Populate the interest scenarios card
+  const intPaidEl    = document.querySelector('[data-int="paid"]');
+  const intFloorEl   = document.querySelector('[data-int="floor"]');
+  const intCurrentEl = document.querySelector('[data-int="current"]');
+  const intHighEl    = document.querySelector('[data-int="high"]');
+  const intTotalEl   = document.querySelector('[data-int="total"]');
+  if (intPaidEl)    intPaidEl.textContent    = f(intPaidToDate, 0);
+  if (intFloorEl)   intFloorEl.textContent   = '~' + f(projFloor, 0);
+  if (intCurrentEl) intCurrentEl.textContent = '~' + f(projCurrent, 0);
+  if (intHighEl)    intHighEl.textContent    = '~' + f(projHigh, 0);
+  if (intTotalEl)   intTotalEl.textContent   = '~' + f(totalIntAt65, 0);
+  const intScenariosSub = document.getElementById('int-scenarios-sub');
+  if (intScenariosSub) {
+    const loanRem = LOAN_MAX - drawn;
+    intScenariosSub.textContent = `Assumes remaining ${f(loanRem, 0)} drawn linearly through ${PROJ_SETTINGS.ioEndLabel} IO period end`;
+  }
+  // Top KPI
+  const kpiIntProj = document.getElementById('kpi-int-proj');
+  if (kpiIntProj) kpiIntProj.textContent = '~' + f(totalIntAt65, 0);
+
+  // ── PROJECTED INSPECTION FEES ──
+  const projInsp = projectRemainingInspections();
+
+  // Headline KPIs
+  document.getElementById('kpi-drawn').textContent = f(drawn, 0);
+  document.getElementById('kpi-drawn-pct').textContent = pct(drawn / LOAN_MAX);
+  document.getElementById('kpi-avail').textContent = f(LOAN_MAX - drawn, 0);
+  const inspFees = getTotalInsp();
+  const intPaid = getIntPaid();
+  document.getElementById('kpi-owner').textContent = f(ownerCash + intPaid + inspFees, 0);
+  const kpiOwnerSub = document.getElementById('kpi-owner-sub');
+  if (kpiOwnerSub) kpiOwnerSub.textContent = `Incl. ${f(intPaid, 0)} interest + ${f(inspFees, 0)} inspection fees`;
+  document.getElementById('kpi-cost').textContent = f(contractTotal, 0);
+  // Cost-of-loan section totals
+  const intPaidTotal = document.getElementById('int-paid-total');
+  if (intPaidTotal) intPaidTotal.textContent = f(intPaid, 0);
+  const intPaidSub = document.getElementById('int-paid-sub');
+  if (intPaidSub) intPaidSub.textContent = `Sum of ${INTEREST_PAYMENTS.length} monthly payment${INTEREST_PAYMENTS.length === 1 ? '' : 's'} logged below`;
+  const inspFeesTotal = document.getElementById('insp-fees-total');
+  if (inspFeesTotal) inspFeesTotal.textContent = f(inspFees, 0);
+  const inspFeesSub = document.getElementById('insp-fees-sub');
+  const inspCount = PAYAPPS.filter(p => (parseFloat(p.insp) || 0) > 0).length;
+  if (inspFeesSub) inspFeesSub.textContent = `${inspCount} inspection${inspCount === 1 ? '' : 's'} · from the pay app ledger's Inspection Fee column`;
+  const carryingBadge = document.getElementById('carrying-badge');
+  if (carryingBadge) carryingBadge.textContent = `Total carrying cost: ${f(intPaid + inspFees, 0)}`;
+  const kpiCoSub = document.getElementById('kpi-co-sub');
+  if (kpiCoSub) kpiCoSub.textContent = `+${f(approvedCos, 0)} approved COs`;
+  document.getElementById('cap-used-txt').textContent = f(drawn, 0) + ' used';
+  document.getElementById('cap-rem-txt').textContent = f(LOAN_MAX - drawn, 0) + ' remaining';
+  // Defer the width change so the transition actually fires (browser needs to paint 0% first)
+  requestAnimationFrame(() => {
+    const el = document.getElementById('cap-fill');
+    if (el) el.style.width = pct(drawn / LOAN_MAX);
+  });
+  const capPctDrawn = document.getElementById('cap-pct-drawn');
+  const capPctAvail = document.getElementById('cap-pct-avail');
+  if (capPctDrawn) capPctDrawn.textContent = pct(drawn / LOAN_MAX) + ' drawn';
+  if (capPctAvail) capPctAvail.textContent = pct((LOAN_MAX - drawn) / LOAN_MAX) + ' available';
+
+  // Badges
+  const paBadge = document.getElementById('pa-ledger-badge');
+  if (paBadge) paBadge.textContent = `${fk(totalBilled)} billed · ${pctBilled}% of contract`;
+  const coApp = document.getElementById('co-badge-approved');
+  if (coApp) coApp.textContent = `${fk(approvedCos)} approved`;
+  const coPen = document.getElementById('co-badge-pending');
+  if (coPen) coPen.textContent = `${fk(pendingCos)} pending`;
+  const coSub = document.getElementById('co-ledger-subtitle');
+  if (coSub) {
+    const paid = getApprovedPaid();
+    const unpaid = getApprovedUnpaid();
+    coSub.textContent = `Approved & Paid: ${f(paid,0)} · Approved & Not Paid: ${f(unpaid,0)} · Pending: ${f(pendingCos,0)} · Denied: ${f(deniedCos,0)}`;
+  }
+
+  // Scenario cards
+  const s1 = document.getElementById('scenario-approved');
+  const s2 = document.getElementById('scenario-pending');
+  const s3 = document.getElementById('scenario-denied');
+  if (s1) {
+    const gap = contractTotal - LOAN_MAX;
+    s1.querySelector('.stat').textContent = f(contractTotal, 0);
+    s1.querySelector('.detail').innerHTML = `Original ${f(CONTRACT_BASE,0)} + <strong>${f(approvedCos,0)} approved</strong>. Owner cash shortfall vs. loan: <strong>${f(gap,0)}</strong>.`;
+  }
+  if (s2) {
+    const withPending = contractTotal + pendingCos;
+    const gap = withPending - LOAN_MAX;
+    const pendingCount = COS.filter(c => c.status === 'Pending').length;
+    s2.querySelector('.stat').textContent = f(withPending, 0);
+    s2.querySelector('.detail').innerHTML = `Adds <strong>${f(pendingCos,0)} pending</strong> across ${pendingCount} CR${pendingCount === 1 ? '' : 's'}. Owner cash shortfall: <strong>${f(gap,0)}</strong>.`;
+  }
+  if (s3) {
+    const worst = contractTotal + pendingCos + deniedCos;
+    const gap = worst - LOAN_MAX;
+    s3.querySelector('.stat').textContent = f(worst, 0);
+    s3.querySelector('.detail').innerHTML = `All pending + denied claims (${f(deniedCos,0)}) reopened. Owner cash shortfall: <strong>${f(gap,0)}</strong>.`;
+  }
+
+  // Funding gap
+  const fg = document.getElementById('funding-gap-list');
+  if (fg) {
+    const gapNow = contractTotal - LOAN_MAX;
+    const stillNeeded = Math.max(0, gapNow - ownerCash);
+    const origEl = fg.querySelector('[data-fg="original"]');
+    if (origEl) origEl.textContent = f(CONTRACT_BASE, 0);
+    const appEl = fg.querySelector('[data-fg="approvedcos"]');
+    if (appEl) appEl.textContent = '+ ' + f(approvedCos, 0);
+    fg.querySelector('[data-fg="contract"]').textContent = f(contractTotal, 0);
+    fg.querySelector('[data-fg="needed"]').textContent = f(gapNow, 0);
+    fg.querySelector('[data-fg="paid"]').textContent = '(' + f(ownerCash, 0) + ')';
+    fg.querySelector('[data-fg="still"]').textContent = f(stillNeeded, 0);
+    // Update projected interest + inspection in the funding gap panel with LIVE values
+    const projIntEl = document.querySelector('[data-fg="proj-int"]');
+    if (projIntEl) {
+      projIntEl.textContent = '~' + f(projCurrent, 0);
+      const projIntRow = projIntEl.closest('.kv-row');
+      if (projIntRow) {
+        projIntRow.querySelector('.kv-label').textContent = `Projected remaining interest at ${(PROJ_SETTINGS.rateCurrent * 100).toFixed(2)}% (through ${PROJ_SETTINGS.ioEndLabel} — full 18-mo IO period)`;
+      }
+    }
+    const projInspEl = document.querySelector('[data-fg="proj-insp"]');
+    if (projInspEl) {
+      projInspEl.textContent = '~' + f(projInsp, 0);
+      const projInspRow = projInspEl.closest('.kv-row');
+      if (projInspRow) {
+        projInspRow.querySelector('.kv-label').textContent = `Projected remaining inspection fees (${PROJ_SETTINGS.openingMonthsRemaining} pay apps × ${f(PROJ_SETTINGS.inspFeePerPa, 0)} to ${PROJ_SETTINGS.openingLabel} opening)`;
+      }
+    }
+    // Grand total = still owed to STSW + projected interest + projected inspections
+    const grandTotalEl = document.querySelector('[data-fg="grandtotal"]');
+    if (grandTotalEl) {
+      grandTotalEl.textContent = '~' + f(stillNeeded + projCurrent + projInsp, 0);
+    }
+  }
+}
+
+function updateChartsFromPayApps() {
+  if (CHARTS.draw) {
+    CHARTS.draw.data.labels = PAYAPPS.map(p => `PA${p.app}`);
+    CHARTS.draw.data.datasets[0].data = PAYAPPS.map(p => parseFloat(p.owner) || 0);
+    CHARTS.draw.data.datasets[1].data = PAYAPPS.map(p => parseFloat(p.loan)  || 0);
+    CHARTS.draw.data.datasets[2].data = PAYAPPS.map(p => parseFloat(p.insp)  || 0);
+    CHARTS.draw.update();
+  }
+  if (CHARTS.funding) {
+    CHARTS.funding.data.datasets[0].data = [getTotalOwner(), getTotalDrawn(), getTotalInsp()];
+    CHARTS.funding.update();
+  }
+  if (CHARTS.waterfall) {
+    const approvedCos = getApprovedCos();
+    const pendingCos  = getPendingCos();
+    const deniedCos   = getDeniedCos();
+    const currentTotal = CONTRACT_BASE + approvedCos;
+    const withPending  = currentTotal + pendingCos;
+    const worst        = withPending + deniedCos;
+    CHARTS.waterfall.data.datasets[0].data = [
+      [0,             CONTRACT_BASE],
+      [CONTRACT_BASE, currentTotal],
+      [0,             currentTotal],
+      [currentTotal,  withPending],
+      [withPending,   worst],
+      [0,             worst],
+    ];
+    CHARTS.waterfall.options.scales.y.suggestedMin = CONTRACT_BASE * 0.93;
+    CHARTS.waterfall.options.scales.y.suggestedMax = worst * 1.02;
+    CHARTS.waterfall.update();
+  }
+}
+
+// The one function every write path calls to sync the entire UI to the current state.
+function renderAll() {
+  renderPayApps();
+  renderCOs();
+  renderIntPayments();
+  syncAllTotals();
+  updateChartsFromPayApps();
+  renderRunwayChart();    // Full rebuild since the data shape changes with edits
+  renderCoverageChart();
+}
+
+// ═════════════════════════ INIT ═════════════════════════
+async function init() {
+  // Try to hydrate all state from Supabase
+  updateSyncStatus('saving');
+  const remote = await sbLoadState();
+  if (remote) {
+    if (Array.isArray(remote.payapps) && remote.payapps.length > 0) PAYAPPS = remote.payapps;
+    if (Array.isArray(remote.cos)     && remote.cos.length > 0)     COS = remote.cos.map(c => ({ paid: false, ...c }));
+    if (Array.isArray(remote.interestPayments)) INTEREST_PAYMENTS = remote.interestPayments;
+    if (remote.userPdfs)     USER_PDFS = remote.userPdfs;
+    if (remote.projSettings) PROJ_SETTINGS = { ...PROJ_SETTINGS, ...remote.projSettings };
+    updateSyncStatus('synced');
+  } else {
+    // Fallback to any cached localStorage state (from previous local-only version)
+    try {
+      const cached = JSON.parse(localStorage.getItem(STATE_KEY) || 'null');
+      if (cached) {
+        if (Array.isArray(cached.payapps)) PAYAPPS = cached.payapps;
+        if (Array.isArray(cached.cos))     COS = cached.cos.map(c => ({ paid: false, ...c }));
+        if (Array.isArray(cached.interestPayments)) INTEREST_PAYMENTS = cached.interestPayments;
+        if (cached.userPdfs) USER_PDFS = cached.userPdfs;
+        if (cached.projSettings) PROJ_SETTINGS = { ...PROJ_SETTINGS, ...cached.projSettings };
+      }
+    } catch {}
+    updateSyncStatus('offline');
+  }
+
+  renderPayApps();
+  renderCOs();
+  renderIntPayments();
+  renderRunwayChart();
+  renderCoverageChart();
+  renderInterestChart();
+  renderWaterfall();
+  syncAllTotals();
+  updateChartsFromPayApps();
+}
+
+document.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>
