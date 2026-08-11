@@ -294,23 +294,12 @@
     </div>
   </div>
 
-  <!-- ═══════════ LOAN RUNWAY + PROJECT COVERAGE ═══════════ -->
-  <div class="grid-2">
-    <div class="card">
-      <div class="section-title">Loan balance trajectory — will $25M cover us?</div>
-      <div class="section-sub" id="runway-sub">Historical draws + projection to end of construction (May 2027) vs. $25M ceiling</div>
-      <div class="chart-wrap tall"><canvas id="runwayChart"></canvas></div>
-    </div>
-    <div class="card">
-      <div class="section-title">Total project cost coverage — where's the shortfall?</div>
-      <div class="section-sub" id="coverage-sub">Everything owed vs. everything we have to pay it with</div>
-      <div class="chart-wrap tall"><canvas id="coverageChart"></canvas></div>
-    </div>
-  </div>
-  <!-- Legacy charts hidden — kept so any old JS references don't break -->
+  <!-- Legacy chart canvases kept hidden so JS references don't break -->
   <div style="display:none;">
     <canvas id="drawChart"></canvas>
     <canvas id="fundingChart"></canvas>
+    <canvas id="runwayChart"></canvas>
+    <canvas id="coverageChart"></canvas>
   </div>
 
   <!-- ═══════════ PAY APP TABLE ═══════════ -->
@@ -487,19 +476,26 @@ const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJ
 const STATE_KEY = 'plano_loan_state';
 
 // Unified save/load via kv_store table. Everything gets serialized to a single JSON blob.
+// Returns { status: 'found'|'empty'|'error', data: object|null }
 async function sbLoadState() {
   try {
     const res = await fetch(`${SB_URL}/rest/v1/kv_store?key=eq.${STATE_KEY}&select=value`, {
       headers: { 'apikey': SB_KEY, 'Authorization': `Bearer ${SB_KEY}` }
     });
-    if (!res.ok) return null;
+    if (!res.ok) {
+      console.warn(`Supabase load HTTP ${res.status}:`, await res.text());
+      return { status: 'error', data: null };
+    }
     const rows = await res.json();
     if (rows.length > 0) {
       const raw = rows[0].value;
-      return typeof raw === 'string' ? JSON.parse(raw) : raw;
+      return { status: 'found', data: typeof raw === 'string' ? JSON.parse(raw) : raw };
     }
-    return null;
-  } catch (err) { console.warn('Supabase load failed:', err); return null; }
+    return { status: 'empty', data: null };  // Connected — just no saved state yet
+  } catch (err) {
+    console.warn('Supabase load failed:', err);
+    return { status: 'error', data: null };
+  }
 }
 
 async function sbSaveState(state) {
@@ -2006,18 +2002,39 @@ function renderAll() {
 
 // ═════════════════════════ INIT ═════════════════════════
 async function init() {
-  // Try to hydrate all state from Supabase
   updateSyncStatus('saving');
-  const remote = await sbLoadState();
-  if (remote) {
+  const result = await sbLoadState();
+
+  if (result.status === 'found') {
+    // Existing state in Supabase — hydrate from it
+    const remote = result.data;
     if (Array.isArray(remote.payapps) && remote.payapps.length > 0) PAYAPPS = remote.payapps;
     if (Array.isArray(remote.cos)     && remote.cos.length > 0)     COS = remote.cos.map(c => ({ paid: false, ...c }));
     if (Array.isArray(remote.interestPayments)) INTEREST_PAYMENTS = remote.interestPayments;
     if (remote.userPdfs)     USER_PDFS = remote.userPdfs;
     if (remote.projSettings) PROJ_SETTINGS = { ...PROJ_SETTINGS, ...remote.projSettings };
     updateSyncStatus('synced');
+  } else if (result.status === 'empty') {
+    // Connected to Supabase but no saved state yet — hydrate from localStorage if we have it,
+    // then push current state up to establish the initial row.
+    try {
+      const cached = JSON.parse(localStorage.getItem(STATE_KEY) || 'null');
+      if (cached) {
+        if (Array.isArray(cached.payapps)) PAYAPPS = cached.payapps;
+        if (Array.isArray(cached.cos))     COS = cached.cos.map(c => ({ paid: false, ...c }));
+        if (Array.isArray(cached.interestPayments)) INTEREST_PAYMENTS = cached.interestPayments;
+        if (cached.userPdfs) USER_PDFS = cached.userPdfs;
+        if (cached.projSettings) PROJ_SETTINGS = { ...PROJ_SETTINGS, ...cached.projSettings };
+      }
+    } catch {}
+    // Immediate save to seed the row and confirm write access
+    const ok = await sbSaveState({
+      payapps: PAYAPPS, cos: COS, interestPayments: INTEREST_PAYMENTS,
+      userPdfs: USER_PDFS, projSettings: PROJ_SETTINGS
+    });
+    updateSyncStatus(ok ? 'synced' : 'error');
   } else {
-    // Fallback to any cached localStorage state (from previous local-only version)
+    // Supabase unreachable or table permission error — fall back to localStorage
     try {
       const cached = JSON.parse(localStorage.getItem(STATE_KEY) || 'null');
       if (cached) {
