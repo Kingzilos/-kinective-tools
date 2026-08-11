@@ -176,8 +176,6 @@
     </div>
     <div class="header-meta">
       <span class="badge gray">AMD Capital LLC</span>
-      <span class="badge blue">Through PA15 · Jul 10, 2026</span>
-      <span class="badge amber">PA15 Pending</span>
     </div>
   </div>
 </div>
@@ -188,7 +186,6 @@
   <div class="row-head">
     <div>
       <div class="section-title">Where we stand today</div>
-      <div class="section-sub" id="header-sub">$25M WestStar construction loan · AMD Capital · 15 pay apps processed (PA5 through PA15 pending)</div>
     </div>
     <div style="display:flex; align-items:center; gap:12px;">
       <span id="sync-indicator" style="display:flex; align-items:center; gap:6px; font-size:11px; color:var(--text-secondary);" title="Supabase sync status">
@@ -470,36 +467,47 @@
 </div>
 
 <script>
-// ═════════════════════════ SUPABASE PERSISTENCE ═════════════════════════
+// ═════════════════════════ SUPABASE PERSISTENCE (v2 — section-scoped) ═════════════════════════
 const SB_URL = 'https://jbqvtnukspnlpxgosmhp.supabase.co';
 const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpicXZ0bnVrc3BubHB4Z29zbWhwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyNzU0NjcsImV4cCI6MjA4ODg1MTQ2N30.0EvUKNrSbH2UkQPEkTWXKS8PGNVr4G0dvWoJp9HBROs';
-const STATE_KEY = 'plano_loan_state';
 
-// Unified save/load via kv_store table. Everything gets serialized to a single JSON blob.
-// Returns { status: 'found'|'empty'|'error', data: object|null }
-async function sbLoadState() {
+// Each section is its own kv_store row — small, independent, and only writes when THAT section changes.
+// PDFs are stored as separate rows keyed 'pdf_<key>' so they NEVER go up in a state save.
+const SB_KEYS = {
+  payapps:  'plano_payapps_v2',
+  cos:      'plano_cos_v2',
+  intPays:  'plano_int_payments_v2',
+  settings: 'plano_proj_settings_v2',
+};
+const PDF_KEY_PREFIX = 'plano_pdf_';
+
+let LAST_SB_ERROR = null;
+
+// Generic kv_store read
+async function sbRead(key) {
   try {
-    const res = await fetch(`${SB_URL}/rest/v1/kv_store?key=eq.${STATE_KEY}&select=value`, {
+    const res = await fetch(`${SB_URL}/rest/v1/kv_store?key=eq.${key}&select=value`, {
       headers: { 'apikey': SB_KEY, 'Authorization': `Bearer ${SB_KEY}` }
     });
     if (!res.ok) {
-      console.warn(`Supabase load HTTP ${res.status}:`, await res.text());
+      const body = await res.text();
+      LAST_SB_ERROR = `HTTP ${res.status}: ${body.slice(0,200)}`;
+      console.error(`[sbRead ${key}]`, LAST_SB_ERROR);
       return { status: 'error', data: null };
     }
     const rows = await res.json();
-    if (rows.length > 0) {
-      const raw = rows[0].value;
-      return { status: 'found', data: typeof raw === 'string' ? JSON.parse(raw) : raw };
-    }
-    return { status: 'empty', data: null };  // Connected — just no saved state yet
+    if (rows.length === 0) return { status: 'empty', data: null };
+    const raw = rows[0].value;
+    return { status: 'found', data: typeof raw === 'string' ? JSON.parse(raw) : raw };
   } catch (err) {
-    console.warn('Supabase load failed:', err);
+    LAST_SB_ERROR = err.message || String(err);
+    console.error(`[sbRead ${key}]`, LAST_SB_ERROR);
     return { status: 'error', data: null };
   }
 }
 
-async function sbSaveState(state) {
-  updateSyncStatus('saving');
+// Generic kv_store upsert
+async function sbWrite(key, value) {
   try {
     const res = await fetch(`${SB_URL}/rest/v1/kv_store`, {
       method: 'POST',
@@ -508,43 +516,107 @@ async function sbSaveState(state) {
         'Content-Type': 'application/json',
         'Prefer': 'resolution=merge-duplicates'
       },
-      body: JSON.stringify({ key: STATE_KEY, value: JSON.stringify(state) })
+      body: JSON.stringify({ key, value: JSON.stringify(value) })
     });
-    updateSyncStatus(res.ok ? 'synced' : 'error');
-    return res.ok;
-  } catch (err) { console.warn('Supabase save failed:', err); updateSyncStatus('error'); return false; }
+    if (!res.ok) {
+      const body = await res.text();
+      LAST_SB_ERROR = `HTTP ${res.status}: ${body.slice(0,200)}`;
+      console.error(`[sbWrite ${key}]`, LAST_SB_ERROR);
+      return false;
+    }
+    return true;
+  } catch (err) {
+    LAST_SB_ERROR = err.message || String(err);
+    console.error(`[sbWrite ${key}]`, LAST_SB_ERROR);
+    return false;
+  }
 }
 
-// Debounced save so we don't hammer Supabase on every keystroke
-let _saveTimer = null;
-function saveAll() {
-  const state = {
-    payapps: PAYAPPS,
-    cos: COS,
-    interestPayments: INTEREST_PAYMENTS,
-    userPdfs: USER_PDFS,
-    projSettings: PROJ_SETTINGS,
+// Generic kv_store delete (used for PDF removal)
+async function sbDelete(key) {
+  try {
+    await fetch(`${SB_URL}/rest/v1/kv_store?key=eq.${key}`, {
+      method: 'DELETE',
+      headers: { 'apikey': SB_KEY, 'Authorization': `Bearer ${SB_KEY}` }
+    });
+    return true;
+  } catch (err) {
+    console.warn(`[sbDelete ${key}]`, err);
+    return false;
+  }
+}
+
+// Per-section debounced savers — each only writes ITS section, not everything.
+function makeDebouncedSaver(key, getPayload) {
+  let timer = null;
+  return function schedule() {
+    updateSyncStatus('saving');
+    clearTimeout(timer);
+    timer = setTimeout(async () => {
+      const payload = getPayload();
+      const ok = await sbWrite(key, payload);
+      // Also cache locally for fast reload / offline resilience
+      try { localStorage.setItem(key, JSON.stringify(payload)); } catch {}
+      updateSyncStatus(ok ? 'synced' : 'error');
+    }, 3000);
   };
-  // Immediate localStorage cache
-  try { localStorage.setItem(STATE_KEY, JSON.stringify(state)); } catch {}
-  // Debounced Supabase save
-  clearTimeout(_saveTimer);
-  _saveTimer = setTimeout(() => sbSaveState(state), 800);
+}
+
+const _savePayApps  = makeDebouncedSaver(SB_KEYS.payapps,  () => PAYAPPS);
+const _saveCos      = makeDebouncedSaver(SB_KEYS.cos,      () => COS);
+const _saveIntPays  = makeDebouncedSaver(SB_KEYS.intPays,  () => INTEREST_PAYMENTS);
+const _saveSettings = makeDebouncedSaver(SB_KEYS.settings, () => PROJ_SETTINGS);
+
+// ── PDF storage: one kv_store row per PDF, keyed 'plano_pdf_<PA#|CR#>' ──
+// PDFs are ONLY written when a user attaches/replaces one. State saves never touch them.
+const _pdfMetaCache = new Map();  // key → { hasRemote: bool }
+
+async function sbSavePdf(key, base64) {
+  const sbKey = PDF_KEY_PREFIX + key;
+  updateSyncStatus('saving');
+  const ok = await sbWrite(sbKey, base64);
+  _pdfMetaCache.set(key, { hasRemote: ok });
+  updateSyncStatus(ok ? 'synced' : 'error');
+  return ok;
+}
+
+async function sbLoadPdf(key) {
+  const sbKey = PDF_KEY_PREFIX + key;
+  const result = await sbRead(sbKey);
+  if (result.status === 'found') return result.data;
+  return null;
+}
+
+async function sbListPdfKeys() {
+  try {
+    const res = await fetch(`${SB_URL}/rest/v1/kv_store?key=like.${PDF_KEY_PREFIX}*&select=key`, {
+      headers: { 'apikey': SB_KEY, 'Authorization': `Bearer ${SB_KEY}` }
+    });
+    if (!res.ok) return [];
+    const rows = await res.json();
+    return rows.map(r => r.key.substring(PDF_KEY_PREFIX.length));
+  } catch { return []; }
 }
 
 function updateSyncStatus(state) {
   const dot = document.getElementById('sync-dot');
   const label = document.getElementById('sync-label');
+  const indicator = document.getElementById('sync-indicator');
   if (!dot) return;
   const map = {
     synced:  ['#22C55E', 'Synced'],
     saving:  ['#F59E0B', 'Saving...'],
-    error:   ['#EF4444', 'Sync error'],
+    error:   ['#EF4444', 'Sync error — click for detail'],
     offline: ['#D1D5DB', 'Local only']
   };
   const [color, text] = map[state] || map.offline;
   dot.style.background = color;
   label.textContent = text;
+  if (indicator) {
+    indicator.title = LAST_SB_ERROR ? `Last Supabase error:\n${LAST_SB_ERROR}` : 'Supabase sync status';
+    indicator.style.cursor = state === 'error' ? 'pointer' : 'default';
+    indicator.onclick = state === 'error' ? () => alert(`Supabase error:\n\n${LAST_SB_ERROR}\n\nOpen the browser dev console (F12) for full details.`) : null;
+  }
 }
 
 // ═════════════════════════ DATA ═════════════════════════
@@ -570,7 +642,7 @@ try {
   if (saved) PROJ_SETTINGS = { ...PROJ_SETTINGS, ...saved };
 } catch {}
 
-function persistProjSettings() { saveAll(); }
+function persistProjSettings() { _saveSettings(); }
 
 function editProjSettings() {
   const openingMonths = prompt(`Months from today until anticipated OPENING (currently ${PROJ_SETTINGS.openingMonthsRemaining} = ${PROJ_SETTINGS.openingLabel}):`, PROJ_SETTINGS.openingMonthsRemaining);
@@ -610,7 +682,7 @@ let INTEREST_PAYMENTS = BASE_INTEREST_PAYMENTS.map(p => ({ ...p }));
   } catch (err) { console.warn('Could not load interest payments:', err); }
 })();
 
-function persistIntPayments() { saveAll(); }
+function persistIntPayments() { _saveIntPays(); }
 
 function getIntPaid() { return INTEREST_PAYMENTS.reduce((s,p) => s + (parseFloat(p.amount) || 0), 0); }
 
@@ -651,7 +723,7 @@ let PAYAPPS = BASE_PAYAPPS.map(pa => ({ ...pa }));
   }
 })();
 
-function persistPayApps() { saveAll(); }
+function persistPayApps() { _savePayApps(); }
 
 function resetAllPayAppEdits() {
   if (!confirm('Reset all pay app data (dates, amounts, statuses) back to the original numbers?\n\nThis does NOT remove attached PDFs.')) return;
@@ -667,6 +739,10 @@ const EMBEDDED_PDFS = {}; // populated by embed_pdfs.py
 let USER_PDFS = JSON.parse(localStorage.getItem('plano_pa_user_pdfs') || '{}');
 
 function getPdfB64(key) { return USER_PDFS[key] || EMBEDDED_PDFS[key] || null; }
+// UI check — does a PDF exist for this key in ANY location (local cache or Supabase)?
+function hasPdf(key) {
+  return !!USER_PDFS[key] || !!EMBEDDED_PDFS[key] || !!(_pdfMetaCache.get(key)?.hasRemote);
+}
 
 const _blobUrlCache = {};
 function getPdfBlobUrl(key) {
@@ -765,7 +841,7 @@ let COS = BASE_COS.map(c => ({ paid: false, ...c }));
   } catch (err) { console.warn('Could not load saved CO data:', err); }
 })();
 
-function persistCos() { saveAll(); }
+function persistCos() { _saveCos(); }
 
 function resetAllCoEdits() {
   if (!confirm('Reset all change order data back to original numbers?')) return;
@@ -825,10 +901,9 @@ const statusBadge = s => {
 
 // ═════════════════════════ TABLES ═════════════════════════
 function paLinkCell(pa) {
-  const b64 = getPdfB64(pa.pdfKey);
-  const attached = !!b64;
+  const attached = hasPdf(pa.pdfKey);
   const iconColor = attached ? '#16A34A' : '#9CA3AF';
-  const source = USER_PDFS[pa.pdfKey] ? ' (uploaded)' : '';
+  const source = USER_PDFS[pa.pdfKey] ? ' (cached)' : (_pdfMetaCache.get(pa.pdfKey)?.hasRemote ? ' (Supabase)' : '');
   const title = attached
     ? `Click: open PDF · Shift+click: replace${source}`
     : `Click to attach PDF for PA${pa.app}`;
@@ -846,35 +921,47 @@ function paLinkCell(pa) {
     </td>`;
 }
 
-function handlePaClick(e, key) {
+async function handlePaClick(e, key) {
   e.preventDefault();
   if (e.shiftKey) { attachPdfForKey(key); return; }
-  if (!getPdfB64(key)) {
-    if (confirm(`No PDF attached for ${key} yet. Attach one now?`)) attachPdfForKey(key);
-    return;
+  // Check local cache first; if not there, try Supabase
+  if (!USER_PDFS[key] && !EMBEDDED_PDFS[key]) {
+    // Try lazy-load from Supabase
+    updateSyncStatus('saving');
+    const remote = await sbLoadPdf(key);
+    updateSyncStatus(remote !== null ? 'synced' : 'synced');  // don't flag error, PDF just doesn't exist
+    if (remote) {
+      USER_PDFS[key] = remote;
+      try { localStorage.setItem('plano_pa_user_pdfs', JSON.stringify(USER_PDFS)); } catch {}
+    } else {
+      if (confirm(`No PDF attached for ${key} yet. Attach one now?`)) attachPdfForKey(key);
+      return;
+    }
   }
   const url = getPdfBlobUrl(key);
   if (url) window.open(url, '_blank', 'noopener,noreferrer');
 }
 
-function attachPdfForKey(key) {
+async function attachPdfForKey(key) {
   const input = document.createElement('input');
   input.type = 'file';
   input.accept = 'application/pdf,.pdf';
-  input.onchange = () => {
+  input.onchange = async () => {
     const file = input.files[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = () => {
+    reader.onload = async () => {
       const b64 = reader.result.split(',')[1];
-      USER_PDFS[key] = b64;
-      try {
-        saveAll();
-      } catch (err) {
-        alert(`Storage error: ${err.message}\n\nThe PDF may be too large for browser localStorage. Try a smaller file.`);
-        delete USER_PDFS[key];
+      // 1) Save to Supabase in its OWN row (not part of main state)
+      const ok = await sbSavePdf(key, b64);
+      if (!ok) {
+        alert(`Failed to save PDF to Supabase.\n\nError: ${LAST_SB_ERROR}\n\nCheck the browser console for details.`);
         return;
       }
+      // 2) Also cache locally for instant subsequent opens
+      USER_PDFS[key] = b64;
+      try { localStorage.setItem('plano_pa_user_pdfs', JSON.stringify(USER_PDFS)); } catch {}
+      // 3) Invalidate blob cache and re-render UI so the paperclip icon goes green
       if (_blobUrlCache[key]) { URL.revokeObjectURL(_blobUrlCache[key]); delete _blobUrlCache[key]; }
       renderPayApps();
       renderCOs();
@@ -893,15 +980,14 @@ function bulkAttachPdfs() {
   input.onchange = async () => {
     const files = Array.from(input.files);
     if (!files.length) return;
-    let attached = 0, skipped = 0;
+    updateSyncStatus('saving');
+    let attached = 0, skipped = 0, failed = 0;
     for (const file of files) {
       const name = file.name.toUpperCase();
       let key = null;
-      // Match pay app keys (longer first so PA1 doesn't grab PA10)
       for (const k of ['PA15','PA14','PA13','PA12','PA11','PA10','PA9','PA8','PA7','PA6','PA5','PA4','PA3','PA2','PA1']) {
         if (new RegExp('\\b' + k + '\\b').test(name)) { key = k; break; }
       }
-      // Fall back to change order keys (CR37 → CR1). Match CR followed by 1-2 digits, optionally with zero-padding.
       if (!key) {
         const m = name.match(/\bCR[_\s]?0*(\d{1,2})\b/);
         if (m) key = 'CR' + m[1].padStart(2, '0');
@@ -912,15 +998,21 @@ function bulkAttachPdfs() {
         r.onload = () => res(r.result.split(',')[1]);
         r.readAsDataURL(file);
       });
+      // Upload each PDF to its OWN Supabase row — sequentially so we don't hammer the DB
+      const ok = await sbSavePdf(key, b64);
+      if (!ok) { failed++; continue; }
       USER_PDFS[key] = b64;
       if (_blobUrlCache[key]) { URL.revokeObjectURL(_blobUrlCache[key]); delete _blobUrlCache[key]; }
       attached++;
     }
-    try { saveAll(); }
-    catch (err) { alert('Storage quota exceeded. Some attachments may not have saved.'); }
+    try { localStorage.setItem('plano_pa_user_pdfs', JSON.stringify(USER_PDFS)); } catch {}
+    updateSyncStatus(failed === 0 ? 'synced' : 'error');
     renderPayApps();
     renderCOs();
-    alert(`Attached ${attached} PDF${attached === 1 ? '' : 's'}${skipped ? ` · ${skipped} could not be matched to a PA or CR number` : ''}.`);
+    let msg = `Attached ${attached} PDF${attached === 1 ? '' : 's'}`;
+    if (skipped) msg += ` · ${skipped} couldn't match a PA/CR number`;
+    if (failed)  msg += ` · ${failed} failed to save to Supabase`;
+    alert(msg);
   };
   input.click();
 }
@@ -1144,8 +1236,7 @@ function addNewCo() {
 }
 
 function coLinkCell(co) {
-  const b64 = getPdfB64(co.num);
-  const attached = !!b64;
+  const attached = hasPdf(co.num);
   const iconColor = attached ? '#16A34A' : '#9CA3AF';
   const title = attached ? `Click: open ${co.num} PDF · Shift+click: replace` : `Click to attach PDF for ${co.num}`;
   return `<td>
@@ -1158,12 +1249,20 @@ function coLinkCell(co) {
     </a></td>`;
 }
 
-function handleCoClick(e, key) {
+async function handleCoClick(e, key) {
   e.preventDefault();
   if (e.shiftKey) { attachPdfForKey(key); return; }
-  if (!getPdfB64(key)) {
-    if (confirm(`No PDF attached for ${key} yet. Attach one now?`)) attachPdfForKey(key);
-    return;
+  if (!USER_PDFS[key] && !EMBEDDED_PDFS[key]) {
+    updateSyncStatus('saving');
+    const remote = await sbLoadPdf(key);
+    updateSyncStatus('synced');
+    if (remote) {
+      USER_PDFS[key] = remote;
+      try { localStorage.setItem('plano_pa_user_pdfs', JSON.stringify(USER_PDFS)); } catch {}
+    } else {
+      if (confirm(`No PDF attached for ${key} yet. Attach one now?`)) attachPdfForKey(key);
+      return;
+    }
   }
   const url = getPdfBlobUrl(key);
   if (url) window.open(url, '_blank', 'noopener,noreferrer');
@@ -1807,14 +1906,7 @@ function syncAllTotals() {
   const contractTotal = CONTRACT_BASE + approvedCos;
   const pctBilled = contractTotal > 0 ? (totalBilled / contractTotal * 100).toFixed(1) : '0.0';
 
-  // ── DYNAMIC HEADER SUBTITLE ──
-  const headerSub = document.getElementById('header-sub');
-  if (headerSub && PAYAPPS.length > 0) {
-    const first = PAYAPPS[0];
-    const last = PAYAPPS[PAYAPPS.length - 1];
-    const statusLabel = last.status === 'Pending' ? `PA${last.app} pending` : `paid through PA${last.app}`;
-    headerSub.textContent = `$25M WestStar construction loan · AMD Capital · ${PAYAPPS.length} pay apps tracked (PA${first.app} through ${statusLabel})`;
-  }
+  // Header subtitle removed — all dynamic info is shown in KPIs, badges, and the pay app ledger.
 
   // ── PROJECTED INTEREST — recalculated from live loan balance ──
   const intPaidToDate = getIntPaid();
@@ -2003,50 +2095,54 @@ function renderAll() {
 // ═════════════════════════ INIT ═════════════════════════
 async function init() {
   updateSyncStatus('saving');
-  const result = await sbLoadState();
 
-  if (result.status === 'found') {
-    // Existing state in Supabase — hydrate from it
-    const remote = result.data;
-    if (Array.isArray(remote.payapps) && remote.payapps.length > 0) PAYAPPS = remote.payapps;
-    if (Array.isArray(remote.cos)     && remote.cos.length > 0)     COS = remote.cos.map(c => ({ paid: false, ...c }));
-    if (Array.isArray(remote.interestPayments)) INTEREST_PAYMENTS = remote.interestPayments;
-    if (remote.userPdfs)     USER_PDFS = remote.userPdfs;
-    if (remote.projSettings) PROJ_SETTINGS = { ...PROJ_SETTINGS, ...remote.projSettings };
-    updateSyncStatus('synced');
-  } else if (result.status === 'empty') {
-    // Connected to Supabase but no saved state yet — hydrate from localStorage if we have it,
-    // then push current state up to establish the initial row.
-    try {
-      const cached = JSON.parse(localStorage.getItem(STATE_KEY) || 'null');
-      if (cached) {
-        if (Array.isArray(cached.payapps)) PAYAPPS = cached.payapps;
-        if (Array.isArray(cached.cos))     COS = cached.cos.map(c => ({ paid: false, ...c }));
-        if (Array.isArray(cached.interestPayments)) INTEREST_PAYMENTS = cached.interestPayments;
-        if (cached.userPdfs) USER_PDFS = cached.userPdfs;
-        if (cached.projSettings) PROJ_SETTINGS = { ...PROJ_SETTINGS, ...cached.projSettings };
-      }
-    } catch {}
-    // Immediate save to seed the row and confirm write access
-    const ok = await sbSaveState({
-      payapps: PAYAPPS, cos: COS, interestPayments: INTEREST_PAYMENTS,
-      userPdfs: USER_PDFS, projSettings: PROJ_SETTINGS
-    });
-    updateSyncStatus(ok ? 'synced' : 'error');
-  } else {
-    // Supabase unreachable or table permission error — fall back to localStorage
-    try {
-      const cached = JSON.parse(localStorage.getItem(STATE_KEY) || 'null');
-      if (cached) {
-        if (Array.isArray(cached.payapps)) PAYAPPS = cached.payapps;
-        if (Array.isArray(cached.cos))     COS = cached.cos.map(c => ({ paid: false, ...c }));
-        if (Array.isArray(cached.interestPayments)) INTEREST_PAYMENTS = cached.interestPayments;
-        if (cached.userPdfs) USER_PDFS = cached.userPdfs;
-        if (cached.projSettings) PROJ_SETTINGS = { ...PROJ_SETTINGS, ...cached.projSettings };
-      }
-    } catch {}
-    updateSyncStatus('offline');
+  // Load all four sections in parallel — small, independent rows
+  const [payappsRes, cosRes, intPaysRes, settingsRes, remotePdfKeys] = await Promise.all([
+    sbRead(SB_KEYS.payapps),
+    sbRead(SB_KEYS.cos),
+    sbRead(SB_KEYS.intPays),
+    sbRead(SB_KEYS.settings),
+    sbListPdfKeys(),
+  ]);
+
+  const anyError = [payappsRes, cosRes, intPaysRes, settingsRes].some(r => r.status === 'error');
+
+  // Hydrate PAYAPPS
+  if (payappsRes.status === 'found' && Array.isArray(payappsRes.data) && payappsRes.data.length > 0) {
+    PAYAPPS = payappsRes.data;
+  } else if (payappsRes.status === 'empty') {
+    // Seed the row so first save doesn't fail
+    await sbWrite(SB_KEYS.payapps, PAYAPPS);
   }
+
+  // Hydrate COS
+  if (cosRes.status === 'found' && Array.isArray(cosRes.data) && cosRes.data.length > 0) {
+    COS = cosRes.data.map(c => ({ paid: false, ...c }));
+  } else if (cosRes.status === 'empty') {
+    await sbWrite(SB_KEYS.cos, COS);
+  }
+
+  // Hydrate INTEREST_PAYMENTS
+  if (intPaysRes.status === 'found' && Array.isArray(intPaysRes.data)) {
+    INTEREST_PAYMENTS = intPaysRes.data;
+  } else if (intPaysRes.status === 'empty') {
+    await sbWrite(SB_KEYS.intPays, INTEREST_PAYMENTS);
+  }
+
+  // Hydrate PROJ_SETTINGS
+  if (settingsRes.status === 'found' && settingsRes.data) {
+    PROJ_SETTINGS = { ...PROJ_SETTINGS, ...settingsRes.data };
+  } else if (settingsRes.status === 'empty') {
+    await sbWrite(SB_KEYS.settings, PROJ_SETTINGS);
+  }
+
+  // Populate PDF availability cache from Supabase — tells the UI which keys have attachments,
+  // WITHOUT actually downloading the PDFs (that happens on click).
+  if (Array.isArray(remotePdfKeys)) {
+    remotePdfKeys.forEach(k => _pdfMetaCache.set(k, { hasRemote: true }));
+  }
+
+  updateSyncStatus(anyError ? 'error' : 'synced');
 
   renderPayApps();
   renderCOs();
