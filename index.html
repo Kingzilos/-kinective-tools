@@ -21,9 +21,10 @@
   .hero h1 { font-size: clamp(2.4rem, 5vw, 3.6rem); font-weight: 600; letter-spacing: -0.03em; line-height: 1.08; color: var(--ink); margin-bottom: 16px; }
   .hero p { font-size: 1.05rem; font-weight: 400; color: var(--secondary); line-height: 1.6; max-width: 520px; margin: 0 auto; }
   .tools { max-width: 980px; margin: 0 auto; padding: 0 24px 80px; display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
-  @media (max-width: 640px) { .tools { grid-template-columns: 1fr; } }
-  .card { background: var(--surface); border-radius: 18px; padding: 36px 32px; text-decoration: none; color: inherit; display: flex; flex-direction: column; gap: 10px; border: 1px solid transparent; transition: box-shadow 0.25s ease, transform 0.25s ease, border-color 0.25s ease; }
+  @media (max-width: 640px) { .tools { grid-template-columns: 1fr; } nav { padding: 0 20px; } }
+  .card { background: var(--surface); border-radius: 18px; padding: 36px 32px; text-decoration: none; color: inherit; display: flex; flex-direction: column; gap: 10px; border: 1px solid transparent; transition: box-shadow 0.25s ease, transform 0.25s ease, border-color 0.25s ease; position: relative; }
   .card:hover { box-shadow: 0 8px 32px rgba(0,0,0,0.08); transform: translateY(-2px); border-color: var(--border); }
+  .card-header { display: flex; align-items: flex-start; justify-content: space-between; }
   .card-icon { width: 40px; height: 40px; border-radius: 10px; background: var(--bg); display: flex; align-items: center; justify-content: center; margin-bottom: 6px; }
   .card-icon svg { width: 18px; height: 18px; stroke: var(--blue); fill: none; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
   .card-label { font-size: 0.68rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--tertiary); }
@@ -32,15 +33,20 @@
   .card-link { font-size: 0.83rem; font-weight: 500; color: var(--blue); display: flex; align-items: center; gap: 4px; margin-top: 6px; }
   .card-link svg { width: 13px; height: 13px; stroke: var(--blue); fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; transition: transform 0.2s ease; }
   .card:hover .card-link svg { transform: translateX(3px); }
-  .divider { max-width: 980px; margin: 0 auto 48px; padding: 0 24px; height: 1px; background: var(--border); }
-  .config { max-width: 980px; margin: 0 auto; padding: 0 24px 80px; }
-  .config-card { background: var(--surface); border-radius: 18px; padding: 36px 32px; border: 1px solid var(--border); }
-  .config-row { display: flex; gap: 10px; flex-wrap: wrap; }
-  .config-row input { flex: 1; min-width: 200px; padding: 9px 14px; background: var(--bg); border: 1px solid var(--border); border-radius: 10px; font-family: inherit; font-size: 0.83rem; color: var(--ink); outline: none; transition: border-color 0.2s; }
-  .config-row input:focus { border-color: var(--blue); background: #fff; }
-  .config-row input::placeholder { color: var(--tertiary); }
-  .btn { padding: 9px 20px; background: var(--blue); color: #fff; border: none; border-radius: 10px; font-family: inherit; font-size: 0.83rem; font-weight: 500; cursor: pointer; transition: background 0.2s; }
-  .btn:hover { background: var(--blue-hover); }
+  .remove-btn { background: none; border: none; cursor: pointer; padding: 4px; border-radius: 6px; color: var(--tertiary); font-size: 16px; line-height: 1; transition: color 0.15s, opacity 0.15s; opacity: 0; }
+  .card:hover .remove-btn { opacity: 1; }
+  .remove-btn:hover { color: #ff3b30 !important; }
+  .restore-bar { max-width: 980px; margin: -48px auto 48px; padding: 0 24px; text-align: center; }
+  .restore-link { font-size: 0.82rem; color: var(--secondary); cursor: pointer; text-decoration: none; transition: color 0.15s; }
+  .restore-link:hover { color: var(--blue); }
+  .restore-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.3); backdrop-filter: blur(4px); z-index: 200; align-items: center; justify-content: center; }
+  .restore-modal-inner { background: #fff; border-radius: 18px; padding: 32px; width: 100%; max-width: 420px; margin: 24px; box-shadow: 0 24px 64px rgba(0,0,0,0.12); }
+  .restore-item { display: flex; align-items: center; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--border); }
+  .restore-item:last-child { border-bottom: none; }
+  .restore-item-name { font-size: 0.88rem; font-weight: 500; color: var(--ink); }
+  .restore-item-label { font-size: 0.72rem; color: var(--tertiary); margin-top: 2px; }
+  .restore-btn { padding: 5px 14px; background: var(--blue); color: #fff; border: none; border-radius: 8px; font-family: inherit; font-size: 0.78rem; font-weight: 500; cursor: pointer; }
+  .restore-btn:hover { background: var(--blue-hover); }
   footer { border-top: 1px solid var(--border); padding: 24px 48px; display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--tertiary); }
 </style>
 </head>
@@ -57,75 +63,14 @@
   <p>All your automation tools in one place. Access from any device, anywhere.</p>
 </div>
 
-<div class="tools">
+<div class="tools" id="tools-grid">
+  <!-- All cards rendered by JS -->
+</div>
 
-  <a class="card" href="https://kingzilos.github.io/-kinective-tools/Revenue%20by%20Profit%20Center.html">
-    <div class="card-icon"><svg viewBox="0 0 24 24"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg></div>
-    <div class="card-label">Revenue</div>
-    <h2>Revenue by Profit Center</h2>
-    <p>Dues revenue, membership trends, and billing variance tracking across all locations.</p>
-    <div class="card-link">Open <svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></div>
+<div class="restore-bar" id="restore-bar" style="display:none;">
+  <a class="restore-link" onclick="openRestoreModal()">
+    <span id="restore-count"></span> hidden tool(s) — restore
   </a>
-
-  <a class="card" href="https://kingzilos.github.io/-kinective-tools/ABC%20Recon.html">
-    <div class="card-icon"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></div>
-    <div class="card-label">Billing</div>
-    <h2>ABC Reconciliation</h2>
-    <p>Identify invoice reversals, cycling issues, and manual refund discrepancies in the ABC billing system.</p>
-    <div class="card-link">Open <svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></div>
-  </a>
-
-  <a class="card" href="https://kingzilos.github.io/-kinective-tools/Bank%20Recon.html">
-    <div class="card-icon"><svg viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg></div>
-    <div class="card-label">Banking</div>
-    <h2>Bank Reconciliation</h2>
-    <p>Reconcile WestStar and Wells Fargo accounts. Flags unmatched entries and outstanding transactions.</p>
-    <div class="card-link">Open <svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></div>
-  </a>
-
-  <a class="card" href="https://kingzilos.github.io/-kinective-tools/Cashflow.html">
-    <div class="card-icon"><svg viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div>
-    <div class="card-label">Cash Flow</div>
-    <h2>Weekly Cash Flow</h2>
-    <p>Week-by-week cash position, inflows, outflows, and running balance across the business.</p>
-    <div class="card-link">Open <svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></div>
-  </a>
-
-  <a class="card" href="https://kingzilos.github.io/-kinective-tools/CAPEX.html">
-    <div class="card-icon"><svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></div>
-    <div class="card-label">Capital</div>
-    <h2>CapEx 2026</h2>
-    <p>Capital expenditure tracking for El Paso and Plano development. Asset classifications, project spend, and depreciation schedules.</p>
-    <div class="card-link">Open <svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></div>
-  </a>
-
-  <a class="card" href="https://kingzilos.github.io/-kinective-tools/Budget.html">
-    <div class="card-icon"><svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/><line x1="6" y1="8" x2="6" y2="13"/><line x1="10" y1="10" x2="10" y2="13"/><line x1="14" y1="7" x2="14" y2="13"/><line x1="18" y1="9" x2="18" y2="13"/></svg></div>
-    <div class="card-label">Budget</div>
-    <h2>Consolidated Budget 2026</h2>
-    <p>Live EP + Plano + AMD budget vs. actuals. Monthly, YTD, and full-year variance — updates every minute.</p>
-    <div class="card-link">Open <svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></div>
-  </a>
-
-  <a class="card" href="https://kingzilos.github.io/-kinective-tools/kinective_plano_payapp_tracker.html">
-    <div class="card-icon"><svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><line x1="9" y1="22" x2="9" y2="12"/><line x1="15" y1="22" x2="15" y2="12"/><line x1="3" y1="12" x2="21" y2="12"/></svg></div>
-    <div class="card-label">Plano · Construction</div>
-    <h2>Pay App Tracker</h2>
-    <p>Structure Tone Southwest pay applications, retainage held, change orders, and balance to finish for the Plano build.</p>
-    <div class="card-link">Open <svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></div>
-  </a>
-
-  <!-- dynamic cards injected here -->
-  <div id="custom-cards-container" style="display:contents;"></div>
-
-  <!-- Add Tool card -->
-  <div class="card add-card" onclick="openAddModal()" style="cursor:pointer;border:1.5px dashed var(--border);background:transparent;align-items:center;justify-content:center;min-height:180px;gap:8px;text-align:center;">
-    <div style="width:36px;height:36px;border-radius:50%;background:var(--bg);display:flex;align-items:center;justify-content:center;">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-    </div>
-    <span style="font-size:0.83rem;font-weight:500;color:var(--blue);">Add Tool</span>
-  </div>
-
 </div>
 
 <!-- ADD TOOL MODAL -->
@@ -158,10 +103,16 @@
   </div>
 </div>
 
-<div class="divider"></div>
-
-<div class="config">
-  <div class="config-card" id="config-card"></div>
+<!-- RESTORE HIDDEN TOOLS MODAL -->
+<div id="restore-modal" class="restore-modal" onclick="if(event.target===this)closeRestoreModal()">
+  <div class="restore-modal-inner">
+    <h3 style="font-size:1.05rem;font-weight:600;letter-spacing:-0.02em;margin-bottom:4px;">Hidden Tools</h3>
+    <p style="font-size:0.83rem;color:var(--secondary);margin-bottom:20px;line-height:1.5;">Restore any tool back to the dashboard.</p>
+    <div id="restore-list"></div>
+    <div style="margin-top:20px;text-align:right;">
+      <button onclick="closeRestoreModal()" style="padding:8px 18px;background:var(--bg);color:var(--secondary);border:1px solid var(--border);border-radius:10px;font-family:inherit;font-size:0.83rem;font-weight:500;cursor:pointer;">Done</button>
+    </div>
+  </div>
 </div>
 
 <footer>
@@ -173,11 +124,72 @@
   // ============ Supabase Config ============
   const SB_URL = 'https://jbqvtnukspnlpxgosmhp.supabase.co';
   const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpicXZ0bnVrc3BubHB4Z29zbWhwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyNzU0NjcsImV4cCI6MjA4ODg1MTQ2N30.0EvUKNrSbH2UkQPEkTWXKS8PGNVr4G0dvWoJp9HBROs';
-  const STORAGE_KEY = 'tool_index_custom';   // kv_store row key
-  const LOCAL_KEY   = 'kinective_custom_tools';
+  const STORAGE_KEY = 'tool_index_custom';
+  const LOCAL_KEY = 'kinective_custom_tools';
   const LOCAL_UPDATED_KEY = 'kinective_custom_tools_updated';
 
+  // ============ Default (built-in) Tools ============
+  const DEFAULT_TOOLS = [
+    {
+      id: 'revenue',
+      label: 'Revenue',
+      name: 'Revenue by Profit Center',
+      desc: 'Dues revenue, membership trends, and billing variance tracking across all locations.',
+      url: 'https://kingzilos.github.io/-kinective-tools/Revenue%20by%20Profit%20Center.html',
+      icon: '<polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/>'
+    },
+    {
+      id: 'abc-recon',
+      label: 'Billing',
+      name: 'ABC Reconciliation',
+      desc: 'Identify invoice reversals, cycling issues, and manual refund discrepancies in the ABC billing system.',
+      url: 'https://kingzilos.github.io/-kinective-tools/ABC%20Recon.html',
+      icon: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>'
+    },
+    {
+      id: 'bank-recon',
+      label: 'Banking',
+      name: 'Bank Reconciliation',
+      desc: 'Reconcile WestStar and Wells Fargo accounts. Flags unmatched entries and outstanding transactions.',
+      url: 'https://kingzilos.github.io/-kinective-tools/Bank%20Recon.html',
+      icon: '<rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/>'
+    },
+    {
+      id: 'cashflow',
+      label: 'Cash Flow',
+      name: 'Weekly Cash Flow',
+      desc: 'Week-by-week cash position, inflows, outflows, and running balance across the business.',
+      url: 'https://kingzilos.github.io/-kinective-tools/Cashflow.html',
+      icon: '<line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>'
+    },
+    {
+      id: 'capex',
+      label: 'Capital',
+      name: 'CapEx 2026',
+      desc: 'Capital expenditure tracking for El Paso and Plano development. Asset classifications, project spend, and depreciation schedules.',
+      url: 'https://kingzilos.github.io/-kinective-tools/CAPEX.html',
+      icon: '<path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>'
+    },
+    {
+      id: 'budget',
+      label: 'Budget',
+      name: 'Consolidated Budget 2026',
+      desc: 'Live EP + Plano + AMD budget vs. actuals. Monthly, YTD, and full-year variance \u2014 updates every minute.',
+      url: 'https://kingzilos.github.io/-kinective-tools/Budget.html',
+      icon: '<rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/><line x1="6" y1="8" x2="6" y2="13"/><line x1="10" y1="10" x2="10" y2="13"/><line x1="14" y1="7" x2="14" y2="13"/><line x1="18" y1="9" x2="18" y2="13"/>'
+    },
+    {
+      id: 'payapp',
+      label: 'Plano \u00b7 Construction',
+      name: 'Pay App Tracker',
+      desc: 'Structure Tone Southwest pay applications, retainage held, change orders, and balance to finish for the Plano build.',
+      url: 'https://kingzilos.github.io/-kinective-tools/kinective_plano_payapp_tracker.html',
+      icon: '<path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><line x1="9" y1="22" x2="9" y2="12"/><line x1="15" y1="22" x2="15" y2="12"/><line x1="3" y1="12" x2="21" y2="12"/>'
+    }
+  ];
+
   let customTools = [];
+  let hiddenDefaults = [];   // array of default tool IDs that are hidden
   let saveTimer = null;
   let savePending = false;
   let lastSyncError = null;
@@ -216,13 +228,10 @@
     if (mode === 'loading') { dot.style.background = '#aeaeb2'; dot.style.animation = ''; }
   }
 
-  // Add pulse keyframes once
   (function injectPulse(){
     const s = document.createElement('style');
-    s.textContent = '@keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.35; } } #sync-status-wrap { cursor: pointer; }';
+    s.textContent = '@keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.35; } }';
     document.head.appendChild(s);
-    // make the nav-right sync indicator clickable to show error detail
-    document.querySelector('.nav-right')?.setAttribute('id', 'sync-status-wrap');
     document.querySelector('.nav-right')?.addEventListener('click', showSyncError);
   })();
 
@@ -232,18 +241,43 @@
     }
   }
 
+  // ============ Persistence helpers ============
+  function getLocalState() {
+    try {
+      const raw = localStorage.getItem(LOCAL_KEY);
+      return raw ? JSON.parse(raw) : null;
+    } catch { return null; }
+  }
+
+  function setLocalState() {
+    const state = { tools: customTools, hidden: hiddenDefaults, updated: new Date().toISOString() };
+    localStorage.setItem(LOCAL_KEY, JSON.stringify(state));
+    localStorage.setItem(LOCAL_UPDATED_KEY, state.updated);
+  }
+
   // ============ Load / Save ============
-  async function loadCustomTools() {
+  async function loadData() {
     setSync('loading', 'Loading…');
-    const localRaw = localStorage.getItem(LOCAL_KEY);
+    const local = getLocalState();
     const localTime = localStorage.getItem(LOCAL_UPDATED_KEY) || '';
-    let localTools = null;
-    try { localTools = localRaw ? JSON.parse(localRaw) : null; } catch(e) { localTools = null; }
+
+    // Migrate: old format stored tools as a plain array
+    let localTools = [];
+    let localHidden = [];
+    if (local) {
+      if (Array.isArray(local)) {
+        // Old format — just a tools array
+        localTools = local;
+        localHidden = [];
+      } else {
+        localTools = Array.isArray(local.tools) ? local.tools : [];
+        localHidden = Array.isArray(local.hidden) ? local.hidden : [];
+      }
+    }
 
     try {
       const rows = await sbFetch({ filter: `key=eq.${STORAGE_KEY}` });
       if (rows && rows.length > 0) {
-        // Pick newest cloud row by value.updated (defensive against duplicates)
         rows.sort((a, b) => {
           const at = (a.value && a.value.updated) || '';
           const bt = (b.value && b.value.updated) || '';
@@ -252,34 +286,36 @@
         const latest = rows[0];
         const cloudTime = (latest.value && latest.value.updated) || '';
         const cloudTools = (latest.value && Array.isArray(latest.value.tools)) ? latest.value.tools : null;
+        const cloudHidden = (latest.value && Array.isArray(latest.value.hidden)) ? latest.value.hidden : [];
 
-        // If local is fresher than cloud (e.g. save was interrupted), keep local and push it up
-        if (localTools && localTime && localTime > cloudTime) {
+        if (localTools.length && localTime && localTime > cloudTime) {
           customTools = localTools;
+          hiddenDefaults = localHidden;
           setSync('synced', 'Synced');
-          saveCustomTools(true);
+          saveData(true);
           return;
         }
         if (cloudTools) {
           customTools = cloudTools;
+          hiddenDefaults = cloudHidden;
           setSync('synced', 'Synced');
           return;
         }
       }
-      // No cloud row yet — seed from local if we have it, otherwise empty
-      customTools = localTools || [];
-      if (customTools.length > 0) await saveCustomTools(true);
+      customTools = localTools;
+      hiddenDefaults = localHidden;
+      if (customTools.length > 0 || hiddenDefaults.length > 0) await saveData(true);
       else setSync('synced', 'Synced');
     } catch (e) {
       console.warn('Cloud load failed; using local cache', e);
-      customTools = localTools || [];
+      customTools = localTools;
+      hiddenDefaults = localHidden;
       setSync('local', 'Local only', e);
     }
   }
 
-  function saveCustomTools(immediate=false) {
-    localStorage.setItem(LOCAL_KEY, JSON.stringify(customTools));
-    localStorage.setItem(LOCAL_UPDATED_KEY, new Date().toISOString());
+  function saveData(immediate = false) {
+    setLocalState();
     clearTimeout(saveTimer);
     savePending = true;
     setSync('saving', 'Saving…');
@@ -287,7 +323,7 @@
       try {
         await sbFetch({
           method: 'POST',
-          body: { key: STORAGE_KEY, value: { tools: customTools, updated: new Date().toISOString() } },
+          body: { key: STORAGE_KEY, value: { tools: customTools, hidden: hiddenDefaults, updated: new Date().toISOString() } },
           prefer: 'resolution=merge-duplicates,return=minimal'
         });
         savePending = false;
@@ -302,7 +338,6 @@
     saveTimer = setTimeout(doSave, 150);
   }
 
-  // Flush pending save on page unload so refresh doesn't drop the latest change
   function flushPendingSave() {
     if (!savePending) return;
     clearTimeout(saveTimer);
@@ -315,73 +350,109 @@
           'Content-Type': 'application/json',
           'Prefer': 'resolution=merge-duplicates,return=minimal'
         },
-        body: JSON.stringify({ key: STORAGE_KEY, value: { tools: customTools, updated: new Date().toISOString() } }),
+        body: JSON.stringify({ key: STORAGE_KEY, value: { tools: customTools, hidden: hiddenDefaults, updated: new Date().toISOString() } }),
         keepalive: true
       });
-    } catch (e) { /* ignore — page is unloading */ }
+    } catch { /* page unloading */ }
   }
   window.addEventListener('beforeunload', flushPendingSave);
-  window.addEventListener('pagehide',      flushPendingSave);
+  window.addEventListener('pagehide', flushPendingSave);
 
-  // Refresh when tab regains focus (in case another device updated the list)
   document.addEventListener('visibilitychange', async () => {
     if (document.visibilityState === 'visible' && !savePending) {
-      await loadCustomTools();
-      renderCustomCards();
+      await loadData();
+      renderAll();
     }
   });
 
-  // ============ Render & Mutate Custom Cards ============
-  function renderCustomCards() {
-    const container = document.getElementById('custom-cards-container');
-    container.innerHTML = '';
-    customTools.forEach((tool, idx) => {
-      const a = document.createElement('a');
-      a.className = 'card';
-      a.href = tool.url;
-      a.innerHTML = `
-        <div style="display:flex;align-items:flex-start;justify-content:space-between;">
-          <div class="card-icon">
-            <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
-          </div>
-          <button onclick="removeCustomTool(event,${idx})" title="Remove" style="background:none;border:none;cursor:pointer;padding:4px;border-radius:6px;color:var(--tertiary);font-size:16px;line-height:1;transition:color 0.15s;" onmouseover="this.style.color='#ff3b30'" onmouseout="this.style.color='var(--tertiary)'">×</button>
-        </div>
-        <div class="card-label">${escapeHtml(tool.label)}</div>
-        <h2>${escapeHtml(tool.name)}</h2>
-        <p>${escapeHtml(tool.desc)}</p>
-        <div class="card-link">Open <svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></div>`;
-      container.appendChild(a);
-    });
-  }
-
+  // ============ Rendering ============
   function escapeHtml(s) {
     return String(s ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
   }
 
-  function removeCustomTool(e, idx) {
-    e.preventDefault();
-    e.stopPropagation();
-    if (!confirm(`Remove "${customTools[idx]?.name || 'this tool'}" from the dashboard?`)) return;
-    customTools.splice(idx, 1);
-    saveCustomTools();
-    renderCustomCards();
+  function buildCard(tool, removeHandler) {
+    const a = document.createElement('a');
+    a.className = 'card';
+    a.href = tool.url;
+    a.innerHTML = `
+      <div class="card-header">
+        <div class="card-icon"><svg viewBox="0 0 24 24">${tool.icon || '<rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/>'}</svg></div>
+        <button class="remove-btn" title="Remove from dashboard">&times;</button>
+      </div>
+      <div class="card-label">${escapeHtml(tool.label)}</div>
+      <h2>${escapeHtml(tool.name)}</h2>
+      <p>${escapeHtml(tool.desc)}</p>
+      <div class="card-link">Open <svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></div>`;
+    a.querySelector('.remove-btn').addEventListener('click', function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      removeHandler(e);
+    });
+    return a;
   }
 
+  function renderAll() {
+    const grid = document.getElementById('tools-grid');
+    grid.innerHTML = '';
+
+    // Default tools (skip hidden)
+    DEFAULT_TOOLS.forEach(tool => {
+      if (hiddenDefaults.includes(tool.id)) return;
+      const card = buildCard(tool, () => {
+        if (!confirm(`Hide "${tool.name}" from the dashboard?\n\nYou can restore it anytime.`)) return;
+        hiddenDefaults.push(tool.id);
+        saveData();
+        renderAll();
+      });
+      grid.appendChild(card);
+    });
+
+    // Custom tools
+    customTools.forEach((tool, idx) => {
+      const card = buildCard(tool, () => {
+        if (!confirm(`Remove "${tool.name || 'this tool'}" from the dashboard?`)) return;
+        customTools.splice(idx, 1);
+        saveData();
+        renderAll();
+      });
+      grid.appendChild(card);
+    });
+
+    // Add Tool card
+    const addCard = document.createElement('div');
+    addCard.className = 'card add-card';
+    addCard.onclick = openAddModal;
+    addCard.style.cssText = 'cursor:pointer;border:1.5px dashed var(--border);background:transparent;align-items:center;justify-content:center;min-height:180px;gap:8px;text-align:center;';
+    addCard.innerHTML = `
+      <div style="width:36px;height:36px;border-radius:50%;background:var(--bg);display:flex;align-items:center;justify-content:center;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      </div>
+      <span style="font-size:0.83rem;font-weight:500;color:var(--blue);">Add Tool</span>`;
+    grid.appendChild(addCard);
+
+    // Restore bar
+    const restoreBar = document.getElementById('restore-bar');
+    const count = hiddenDefaults.length;
+    if (count > 0) {
+      document.getElementById('restore-count').textContent = count;
+      restoreBar.style.display = 'block';
+    } else {
+      restoreBar.style.display = 'none';
+    }
+  }
+
+  // ============ Add Tool Modal ============
   function openAddModal() {
-    const m = document.getElementById('add-modal');
-    m.style.display = 'flex';
+    document.getElementById('add-modal').style.display = 'flex';
     setTimeout(() => document.getElementById('new-name').focus(), 50);
   }
-
   function closeAddModal() {
     document.getElementById('add-modal').style.display = 'none';
     ['new-label','new-name','new-desc','new-url'].forEach(id => document.getElementById(id).value = '');
   }
-
   document.getElementById('add-modal').addEventListener('click', function(e) {
     if (e.target === this) closeAddModal();
   });
-
   function saveNewTool() {
     const label = document.getElementById('new-label').value.trim();
     const name  = document.getElementById('new-name').value.trim();
@@ -389,22 +460,50 @@
     const url   = document.getElementById('new-url').value.trim();
     if (!name || !url) { alert('Tool name and URL are required.'); return; }
     customTools.push({ label: label || 'Tool', name, desc, url });
-    saveCustomTools();
-    renderCustomCards();
+    saveData();
+    renderAll();
     closeAddModal();
   }
 
+  // ============ Restore Modal ============
+  function openRestoreModal() {
+    const list = document.getElementById('restore-list');
+    list.innerHTML = '';
+    hiddenDefaults.forEach(id => {
+      const tool = DEFAULT_TOOLS.find(t => t.id === id);
+      if (!tool) return;
+      const row = document.createElement('div');
+      row.className = 'restore-item';
+      row.innerHTML = `
+        <div>
+          <div class="restore-item-name">${escapeHtml(tool.name)}</div>
+          <div class="restore-item-label">${escapeHtml(tool.label)}</div>
+        </div>
+        <button class="restore-btn" data-id="${escapeHtml(id)}">Restore</button>`;
+      row.querySelector('.restore-btn').addEventListener('click', () => {
+        hiddenDefaults = hiddenDefaults.filter(h => h !== id);
+        saveData();
+        renderAll();
+        // Re-render the modal list
+        openRestoreModal();
+      });
+      list.appendChild(row);
+    });
+    if (hiddenDefaults.length === 0) {
+      closeRestoreModal();
+      return;
+    }
+    document.getElementById('restore-modal').style.display = 'flex';
+  }
+  function closeRestoreModal() {
+    document.getElementById('restore-modal').style.display = 'none';
+  }
+
   // ============ Init ============
-  // The old config card is no longer needed since credentials are baked in.
-  // Hide it (the <div class="config"> wrapper) to clean up the page.
   window.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('footer-date').textContent = new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
-    const configWrap = document.querySelector('.config');
-    if (configWrap) configWrap.style.display = 'none';
-    const divider = document.querySelector('.divider');
-    if (divider) divider.style.display = 'none';
-    await loadCustomTools();
-    renderCustomCards();
+    await loadData();
+    renderAll();
   });
 </script>
 </body>
