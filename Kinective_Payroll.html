@@ -813,8 +813,14 @@ function convertNewFormat(wb){
     const name=(row[iName]||'').toString().trim();
     const chkDt=(row[iChkDt]||'').toString().trim();
     const has=(row[iPayT]||'').toString().trim()||(iTaxT>=0&&(row[iTaxT]||'').toString().trim())||(iDedT>=0&&(row[iDedT]||'').toString().trim());
-    if(!name&&!has)continue;
+    if(!name&&!has&&!cur)continue;
+    // Skip "TOTALS FOR ALL EMPLOYEES" grand-totals footer
     if(name.toUpperCase().includes('TOTALS FOR ALL')){cur=null;continue;}
+    // Skip "Totals for Position : ..." subtotal blocks (they duplicate the pay lines
+    // of the position group and would cause double-counting). Setting cur=null so
+    // the continuation rows beneath the subtotal (which have empty col 0) are also
+    // ignored until the next real employee block begins.
+    if(name.toLowerCase().startsWith('totals for position')){cur=null;continue;}
     // A new employee block: name present AND check-date cell present (which only appears on the first row of a block)
     if(name && chkDt){
       cur={name,checkDate:chkDt.replace(/Check Dt:\s*/i,'').trim(),
@@ -842,7 +848,7 @@ function convertNewFormat(wb){
   // Some exports use title case ("Class"), others uppercase ("CLASS") — we normalize below.
   // "Regular" / "VACATION" / "OTHER HRS" route to HOURLY (or SSAL for salaried managers).
   const PAY_MAP_RAW={
-    'regular':'HOURLY','vacation':'HOURLY','other hrs':'HOURLY',
+    'regular':'HOURLY','vacation':'HOURLY','other hrs':'HOURLY','paid time off':'HOURLY',
     'overtime 1.5':'OT','bonus $':'BONREG','expense reimbursement':'REIMBE',
     'class':'CLASS','pilate':'PILATE','pilates':'PILATE','session':'SESS','massage':'MASAGE'
   };
