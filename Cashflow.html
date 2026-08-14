@@ -3471,13 +3471,23 @@ function downloadExcel() {
     BL(14.1); RULER();
 
     // ── Assemble ────────────────────────────────────────────────────────
-    const wb = XLSX.utils.book_new();
-    const ws = XLSX.utils.aoa_to_sheet(aoa);
+    const wb = XLSXread.utils.book_new();
+    const ws = XLSXread.utils.aoa_to_sheet(aoa);
     ws['!cols'] = [{wch:44},{wch:15},{wch:18},{wch:16},{wch:14},{wch:12.3}];
     ws['!rows'] = rowH.map(h=>({hpt:h}));
     ws['!merges'] = merges;
-    XLSX.utils.book_append_sheet(wb, ws, 'Week '+wk+' Cash Flow');
-    XLSX.writeFile(wb, 'CashFlow_Week'+wk+'_'+new Date().getFullYear()+'.xlsx');
+    XLSXread.utils.book_append_sheet(wb, ws, 'Week '+wk+' Cash Flow');
+    const wbout = XLSX.write(wb, {bookType:'xlsx', type:'binary'});
+    const buf = new ArrayBuffer(wbout.length);
+    const view = new Uint8Array(buf);
+    for (let i=0; i<wbout.length; i++) view[i] = wbout.charCodeAt(i) & 0xFF;
+    const blob = new Blob([buf], {type:'application/octet-stream'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'CashFlow_Week'+wk+'_'+new Date().getFullYear()+'.xlsx';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(()=>URL.revokeObjectURL(url), 1000);
     if(btn){btn.textContent='✓ Downloaded';btn.style.opacity='1';setTimeout(()=>{btn.textContent='↓ Excel';btn.disabled=false;},2500);}
   } catch(err) {
     console.error('Export error:',err);
