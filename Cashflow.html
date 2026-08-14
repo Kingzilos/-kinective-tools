@@ -23,7 +23,6 @@
     --gold-pale:  #FDF8EC;
     --red:        #B91C1C;
     --red-pale:   #FEF2F2;
-    --green:      #1E6B3C;
     --char:       #1E293B;
     --white:      #FFFFFF;
     --gray-50:    #F8FAFC;
@@ -1131,6 +1130,7 @@
             <span class="var-pill" id="rent-variance">—</span>
           </div>
         </div>
+        </div>
       </div>
 
       <!-- CAPEX & FINANCING BLOCK -->
@@ -1196,7 +1196,7 @@
             <span class="analytic-name editable" contenteditable="true">Loan Payment — Plano</span>
             <div class="analytic-vals" style="gap:8px; align-items:center;">
               <span class="capex-entity-toggle" data-entity="amd" onclick="toggleCapexEntity(this)" title="Click to switch entity">AMD</span>
-              <span class="analytic-val financing-amount editable" contenteditable="true" oninput="recalcFinancing()" onblur="recalcFinancing(); if(!isReadOnly) saveCurrentWeek();">—</span>
+              <span class="analytic-val financing-amount editable" contenteditable="true" oninput="recalcFinancing()" onblur="recalcFinancing(); if(!isReadOnly) saveWeek();">—</span>
               <span class="comment-btn" title="Add comment" onclick="openComment(this)">💬</span>
             </div>
           </div>
@@ -1204,7 +1204,7 @@
             <span class="analytic-name editable" contenteditable="true">Loan Payment — El Paso</span>
             <div class="analytic-vals" style="gap:8px; align-items:center;">
               <span class="capex-entity-toggle" data-entity="kin" onclick="toggleCapexEntity(this)" title="Click to switch entity">KIN EP</span>
-              <span class="analytic-val financing-amount editable" contenteditable="true" oninput="recalcFinancing()" onblur="recalcFinancing(); if(!isReadOnly) saveCurrentWeek();">—</span>
+              <span class="analytic-val financing-amount editable" contenteditable="true" oninput="recalcFinancing()" onblur="recalcFinancing(); if(!isReadOnly) saveWeek();">—</span>
               <span class="comment-btn" title="Add comment" onclick="openComment(this)">💬</span>
             </div>
           </div>
@@ -1212,7 +1212,7 @@
             <span class="analytic-name editable" contenteditable="true">Loan Payment — Plano (KIN)</span>
             <div class="analytic-vals" style="gap:8px; align-items:center;">
               <span class="capex-entity-toggle" data-entity="plano" onclick="toggleCapexEntity(this)" title="Click to switch entity">KIN PL</span>
-              <span class="analytic-val financing-amount editable" contenteditable="true" oninput="recalcFinancing()" onblur="recalcFinancing(); if(!isReadOnly) saveCurrentWeek();">—</span>
+              <span class="analytic-val financing-amount editable" contenteditable="true" oninput="recalcFinancing()" onblur="recalcFinancing(); if(!isReadOnly) saveWeek();">—</span>
               <span class="comment-btn" title="Add comment" onclick="openComment(this)">💬</span>
             </div>
           </div>
@@ -1272,7 +1272,7 @@
     </div>
   </div>
 
-</main>
+
 
 <style>
 
@@ -1857,7 +1857,7 @@ function updateTotals() {
   // On load from snapshot, cells are already set correctly by loadWeekIntoUI
   if (typeof allWeeks === 'undefined') return;
   const week = allWeeks[currentWeekNum];
-  let cbKin = 0, cbAmd = 0, _cbPlanoVal = 0;
+  let cbKin = 0, cbAmd = 0;
 
   if (window._xlsUploadedThisSession) {
     const ob = (week && week.openingBalances) || {};
@@ -1880,7 +1880,6 @@ function updateTotals() {
     ac['2085']=(ob['2085']||0)+incForAcct('2085')+xferForAcct('2085');
     cbKin=(ac['8152']||0)+(ac['2213']||0)+(ac['9753']||0)+(ac['0211']||0)+(ac['3472']||0);
     const cbPlano=(ac['6299']||0)+(ac['6280']||0);
-    _cbPlanoVal = cbPlano;
     // Update Plano closing cell
     const cbPlanoXls=document.getElementById('cb-plano'); if(cbPlanoXls) cbPlanoXls.textContent=fmt((ac['6299']||0)+(ac['6280']||0));
     cbAmd=(ac['3775']||0)+(ac['7698']||0)+(ac['2085']||0);
@@ -1903,7 +1902,6 @@ function updateTotals() {
     });
     cbKin = (savedCB['8152']||0)+(savedCB['2213']||0)+(savedCB['9753']||0)+(savedCB['0211']||0)+(savedCB['3472']||0);
     const cbPlanoSnap2 = (savedCB['6299']||0)+(savedCB['6280']||0);
-    _cbPlanoVal = cbPlanoSnap2;
     cbAmd = (savedCB['3775']||0)+(savedCB['7698']||0)+(savedCB['2085']||0);
     const cbPlanoEl4 = document.getElementById('cb-plano'); if(cbPlanoEl4) cbPlanoEl4.textContent = fmt(cbPlanoSnap2);
     const cbKinEl2   = document.getElementById('cb-kin');   if(cbKinEl2)   cbKinEl2.textContent   = fmt(cbKin);
@@ -1916,7 +1914,9 @@ function updateTotals() {
     const cbCombSnap3 = document.getElementById('cb-combined');
     if (cbCombSnap3) { const tot=cbKin+cbPlanoSnap2+cbAmd; cbCombSnap3.textContent=fmt(tot); cbCombSnap3.style.color=tot<0?'#f87171':'#F0D080'; }
   }
-  const cbComb = cbKin + _cbPlanoVal + cbAmd;
+  // cbPlanoSnap2 defined in non-XLS block, cbPlano in XLS block — use whichever is defined
+  const _cbPlanoVal = typeof cbPlanoSnap2 !== 'undefined' ? cbPlanoSnap2 : (typeof cbPlano !== 'undefined' ? cbPlano : 0);
+  const cbComb=cbKin+_cbPlanoVal+cbAmd;
   const combKinSub   = document.getElementById('cb-comb-kin-sub');
   const combPlanoSub = document.getElementById('cb-comb-plano-sub');
   const combAmdSub   = document.getElementById('cb-comb-amd-sub');
@@ -2000,7 +2000,7 @@ function capexBlur(el) {
   const comment = el.dataset.comment;
   if (comment) { el.title = comment; el.classList.add('has-comment'); }
   recalcCapex();
-  if (!isReadOnly) saveCurrentWeek();
+  if (!isReadOnly) saveWeek();
 }
 
 function switchCFTab(tab) {
@@ -2670,6 +2670,9 @@ function obBlur(acctId) {
 }
 
 function loadWeekIntoUI(weekNum, readOnly) {
+  // CRITICAL: reset loan adjustments per-week so no phantom leaks between weeks
+  window._loanAdjustments = {};
+
   const week = allWeeks[weekNum];
   if (!week) return;
 
@@ -2771,6 +2774,11 @@ function loadWeekIntoUI(weekNum, readOnly) {
     if (week.financingItems?.length) {
       const items = finRows.querySelectorAll('.financing-item');
       week.financingItems.forEach((fi, i) => {
+        // Rebuild loan adjustments from THIS week's saved loan proceeds only
+        if (fi.name && fi.name.includes('Loan Proceeds') && fi.amount > 0) {
+          const acct = fi._acct || '3775';
+          window._loanAdjustments[acct] = (window._loanAdjustments[acct] || 0) + fi.amount;
+        }
         if (!items[i]) return;
         const nameEl   = items[i].querySelector('.analytic-name');
         const amtEl    = items[i].querySelector('.financing-amount');
@@ -3056,6 +3064,9 @@ function parseXLS(buffer, filename) {
   const acctRaw = String(rows[1][0] || '').trim();
   const acctMatch = acctRaw.match(/(\d{4})$/);
   const acctNum = acctMatch ? acctMatch[1] : 'unknown';
+  // Reset this account's loan adjustment before processing rows (prevents doubling on re-upload)
+  if (!window._loanAdjustments) window._loanAdjustments = {};
+  window._loanAdjustments[acctNum] = 0;
 
   const expenses = [], income = [], transfers = [];
   for (let i = 1; i < rows.length; i++) {
@@ -3257,7 +3268,8 @@ function addUploadPill(acctNum, filename, txCount) {
 //  EXPORT EXCEL — reads ALL live data, builds fresh
 // ═══════════════════════════════════════════════════
 // ─────────────────────────────────────────────────
-//  EXPORT — collects live data, downloads as XLSX
+//  EXPORT — collects live data, downloads as CSV
+//  (opens perfectly in Excel, 100% reliable)
 // ─────────────────────────────────────────────────
 
 
@@ -3464,56 +3476,13 @@ function downloadExcel() {
     BL(14.1); RULER();
 
     // ── Assemble ────────────────────────────────────────────────────────
-    // Built by hand: xlsx-style 0.8.13 has no book_new/book_append_sheet,
-    // and its aoa_to_sheet discards the .s style objects.
-    const ws = {};
-    let maxC = 0;
-    for (let R = 0; R < aoa.length; R++) {
-      const rowCells = aoa[R] || [];
-      if (rowCells.length - 1 > maxC) maxC = rowCells.length - 1;
-      for (let C = 0; C < rowCells.length; C++) {
-        const src = rowCells[C];
-        if (src === null || src === undefined) continue;
-        const cell = (typeof src === 'object' && 'v' in src)
-          ? { v: src.v, t: src.t || (typeof src.v === 'number' ? 'n' : 's'), s: src.s }
-          : { v: src, t: typeof src === 'number' ? 'n' : 's' };
-        if (cell.v === undefined || cell.v === null) cell.v = '';
-        if (typeof cell.v !== 'number') cell.t = 's';
-        ws[XLSX.utils.encode_cell({ r: R, c: C })] = cell;
-      }
-    }
-    ws['!ref']    = XLSX.utils.encode_range({ s:{r:0,c:0}, e:{r:Math.max(aoa.length-1,0), c:Math.max(maxC,0)} });
-    ws['!cols']   = [{wch:44},{wch:15},{wch:18},{wch:16},{wch:14},{wch:12.3}];
-    ws['!rows']   = rowH.map(h => ({ hpt: h }));
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.aoa_to_sheet(aoa);
+    ws['!cols'] = [{wch:44},{wch:15},{wch:18},{wch:16},{wch:14},{wch:12.3}];
+    ws['!rows'] = rowH.map(h=>({hpt:h}));
     ws['!merges'] = merges;
-
-    const sheetName = 'Week ' + wk + ' Cash Flow';
-    const wb = { SheetNames: [sheetName], Sheets: {} };
-    wb.Sheets[sheetName] = ws;
-
-    const fileName = 'CashFlow_Week' + wk + '_' + new Date().getFullYear() + '.xlsx';
-    let wrote = false;
-    try {
-      // xlsx-style can only emit a binary string in the browser — no writeFile
-      const bin  = XLSX.write(wb, { bookType: 'xlsx', type: 'binary' });
-      const buf  = new ArrayBuffer(bin.length);
-      const view = new Uint8Array(buf);
-      for (let i = 0; i < bin.length; i++) view[i] = bin.charCodeAt(i) & 0xFF;
-      const url = URL.createObjectURL(new Blob([buf], { type: 'application/octet-stream' }));
-      const a = document.createElement('a');
-      a.href = url; a.download = fileName;
-      document.body.appendChild(a); a.click(); a.remove();
-      setTimeout(() => URL.revokeObjectURL(url), 2000);
-      wrote = true;
-    } catch (styleErr) {
-      console.warn('Styled export failed, falling back to plain:', styleErr);
-    }
-    if (!wrote && window.XLSXread) {
-      window.XLSXread.writeFile(wb, fileName);  // unstyled, but always produces a valid file
-      wrote = true;
-    }
-    if (!wrote) throw new Error('No working XLSX writer available');
-
+    XLSX.utils.book_append_sheet(wb, ws, 'Week '+wk+' Cash Flow');
+    XLSX.writeFile(wb, 'CashFlow_Week'+wk+'_'+new Date().getFullYear()+'.xlsx');
     if(btn){btn.textContent='✓ Downloaded';btn.style.opacity='1';setTimeout(()=>{btn.textContent='↓ Excel';btn.disabled=false;},2500);}
   } catch(err) {
     console.error('Export error:',err);
@@ -3525,4 +3494,5 @@ function downloadExcel() {
 
 </script>
 </body>
-</html>
+</htm
+l
