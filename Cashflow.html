@@ -2215,7 +2215,13 @@ async function dbLoadAll() {
         const rows = await res.json();
         if (Array.isArray(rows) && rows.length > 0) {
           // Cache to localStorage
-          rows.forEach(r => { if (r.data?.weekNum) localStorage.setItem(LS_PREFIX + r.data.weekNum, JSON.stringify(r.data)); });
+          // Cache each row individually — a single oversize week must not throw away Supabase results
+          rows.forEach(r => {
+            if (r.data?.weekNum) {
+              try { localStorage.setItem(LS_PREFIX + r.data.weekNum, JSON.stringify(r.data)); }
+              catch(e) { /* quota exceeded or serialization error — ignore, Supabase data is still returned */ }
+            }
+          });
           return rows.map(r => r.data).filter(Boolean);
         }
       }
@@ -2670,9 +2676,6 @@ function obBlur(acctId) {
 }
 
 function loadWeekIntoUI(weekNum, readOnly) {
-  // CRITICAL: reset loan adjustments per-week so no phantom leaks between weeks
-  window._loanAdjustments = {};
-
   const week = allWeeks[weekNum];
   if (!week) return;
 
@@ -2774,11 +2777,6 @@ function loadWeekIntoUI(weekNum, readOnly) {
     if (week.financingItems?.length) {
       const items = finRows.querySelectorAll('.financing-item');
       week.financingItems.forEach((fi, i) => {
-        // Rebuild loan adjustments from THIS week's saved loan proceeds only
-        if (fi.name && fi.name.includes('Loan Proceeds') && fi.amount > 0) {
-          const acct = fi._acct || '3775';
-          window._loanAdjustments[acct] = (window._loanAdjustments[acct] || 0) + fi.amount;
-        }
         if (!items[i]) return;
         const nameEl   = items[i].querySelector('.analytic-name');
         const amtEl    = items[i].querySelector('.financing-amount');
@@ -3064,9 +3062,6 @@ function parseXLS(buffer, filename) {
   const acctRaw = String(rows[1][0] || '').trim();
   const acctMatch = acctRaw.match(/(\d{4})$/);
   const acctNum = acctMatch ? acctMatch[1] : 'unknown';
-  // Reset this account's loan adjustment before processing rows (prevents doubling on re-upload)
-  if (!window._loanAdjustments) window._loanAdjustments = {};
-  window._loanAdjustments[acctNum] = 0;
 
   const expenses = [], income = [], transfers = [];
   for (let i = 1; i < rows.length; i++) {
