@@ -358,7 +358,7 @@ const PRIORITIES = ['High','Medium','Low'];
 const STATUSES   = ['Not Started','In Progress','Completed','On Hold','Overdue'];
 const SELECT_FIELDS = new Set(['category','priority','status','dueDate']);
 const ARCHIVE_DAYS = 30;
-const APP_VERSION  = 'v1.8 · 2026-08-18';
+const APP_VERSION  = 'v1.8.1 · 2026-08-18';
 
 let tasks = [];
 let viewMode = 'flat';            // 'flat' | 'grouped'
@@ -894,12 +894,12 @@ function beginEdit(td) {
     let newVal = input.value;
     if (field === 'link') newVal = newVal.trim();
     const changed = newVal !== val;
-    if (changed) applyFieldChange(task, field, newVal);
-    // Defer full re-render + save to the next frame so the click doesn't hitch.
-    requestAnimationFrame(() => {
-      if (changed) saveTasks();
-      render();
-    });
+    if (changed) {
+      applyFieldChange(task, field, newVal);
+      saveTasks(true); // save synchronously — localStorage write + kick off cloud save immediately
+    }
+    // Defer only the re-render to the next frame so the click doesn't hitch.
+    requestAnimationFrame(render);
   };
   const cancel = () => {
     committed = true;
