@@ -358,7 +358,7 @@ const PRIORITIES = ['High','Medium','Low'];
 const STATUSES   = ['Not Started','In Progress','Completed','On Hold','Overdue'];
 const SELECT_FIELDS = new Set(['category','priority','status','dueDate']);
 const ARCHIVE_DAYS = 30;
-const APP_VERSION  = 'v1.6 · 2026-08-18';
+const APP_VERSION  = 'v1.7 · 2026-08-18';
 
 let tasks = [];
 let viewMode = 'flat';            // 'flat' | 'grouped'
@@ -893,16 +893,18 @@ function beginEdit(td) {
     document.removeEventListener('mousedown', outsideMousedown, true);
     let newVal = input.value;
     if (field === 'link') newVal = newVal.trim();
-    if (newVal !== val) {
-      applyFieldChange(task, field, newVal);
-      saveTasks();
-    }
-    render();
+    const changed = newVal !== val;
+    if (changed) applyFieldChange(task, field, newVal);
+    // Defer full re-render + save to the next frame so the click doesn't hitch.
+    requestAnimationFrame(() => {
+      if (changed) saveTasks();
+      render();
+    });
   };
   const cancel = () => {
     committed = true;
     document.removeEventListener('mousedown', outsideMousedown, true);
-    render();
+    requestAnimationFrame(render);
   };
   // Fallback: if focus/blur misbehaves (common with native <select> dropdowns
   // on Windows), any mousedown outside the editing cell commits the edit.
