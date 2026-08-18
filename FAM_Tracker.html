@@ -358,7 +358,7 @@ const PRIORITIES = ['High','Medium','Low'];
 const STATUSES   = ['Not Started','In Progress','Completed','On Hold','Overdue'];
 const SELECT_FIELDS = new Set(['category','priority','status','dueDate']);
 const ARCHIVE_DAYS = 30;
-const APP_VERSION  = 'v1.7 · 2026-08-18';
+const APP_VERSION  = 'v1.8 · 2026-08-18';
 
 let tasks = [];
 let viewMode = 'flat';            // 'flat' | 'grouped'
@@ -1418,8 +1418,21 @@ async function testSync(e) {
 (async () => {
   document.getElementById('version-stamp').textContent = APP_VERSION;
   loadUIPrefs();
+  // Paint from localStorage immediately so the page isn't blocked on the
+  // Supabase round-trip. If there's no local cache, fall back to the seed.
+  try {
+    const localRaw = localStorage.getItem(STORAGE_KEY);
+    const localTasks = localRaw ? JSON.parse(localRaw) : null;
+    tasks = (localTasks || seedTasks()).map(normalizeTask);
+    CATEGORIES = loadLocalCategories();
+    ensureCategoriesCoverTasks();
+    setSync('local', 'Loading…');
+    render();
+  } catch (e) { /* fall through to loadTasks */ }
+  // Now reconcile with cloud in the background and re-render if it differs.
+  const before = JSON.stringify(tasks);
   await loadTasks();
-  render();
+  if (JSON.stringify(tasks) !== before) render();
 })();
 </script>
 </body>
