@@ -358,7 +358,7 @@ const PRIORITIES = ['High','Medium','Low'];
 const STATUSES   = ['Not Started','In Progress','Completed','On Hold','Overdue'];
 const SELECT_FIELDS = new Set(['category','priority','status','dueDate']);
 const ARCHIVE_DAYS = 30;
-const APP_VERSION  = 'v1.8.1 · 2026-08-18';
+const APP_VERSION  = 'v1.8.2 · 2026-08-18';
 
 let tasks = [];
 let viewMode = 'flat';            // 'flat' | 'grouped'
@@ -453,7 +453,8 @@ function loadLocalCategories() {
   return [...DEFAULT_CATEGORIES];
 }
 function saveLocalCategories() {
-  localStorage.setItem(STORAGE_KEY + '_categories', JSON.stringify(CATEGORIES));
+  try { localStorage.setItem(STORAGE_KEY + '_categories', JSON.stringify(CATEGORIES)); }
+  catch (e) { /* quota — handled by safeLocalSet warning */ }
 }
 // Forgiving: if tasks reference a category not in the list, add it so nothing
 // gets visually orphaned. Maintains DEFAULT_CATEGORIES order at top.
@@ -462,11 +463,28 @@ function ensureCategoriesCoverTasks() {
   tasks.forEach(t => { if (t.category && !present.has(t.category)) { CATEGORIES.push(t.category); present.add(t.category); } });
 }
 
+let quotaWarned = false;
+function safeLocalSet(key, value) {
+  try {
+    localStorage.setItem(key, value);
+    return true;
+  } catch (e) {
+    // QuotaExceededError, private-mode restrictions, etc. — don't let this
+    // block the cloud save.
+    if (!quotaWarned) {
+      quotaWarned = true;
+      console.warn('localStorage write failed:', e);
+      toast('Local cache full — cloud sync still active. Clear browser storage for this site.');
+    }
+    return false;
+  }
+}
+
 let saveTimer = null;
 let savePending = false;
 function saveTasks(immediate=false) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks));
-  localStorage.setItem(STORAGE_KEY + '_updated', new Date().toISOString());
+  safeLocalSet(STORAGE_KEY, JSON.stringify(tasks));
+  safeLocalSet(STORAGE_KEY + '_updated', new Date().toISOString());
   saveLocalCategories();
   clearTimeout(saveTimer);
   savePending = true;
@@ -586,10 +604,12 @@ function loadUIPrefs() {
   document.querySelectorAll('#view-toggle button').forEach(b => b.classList.toggle('active', b.dataset.view === viewMode));
 }
 function saveUIPrefs() {
-  localStorage.setItem(UI_PREFS_KEY, JSON.stringify({
-    viewMode, hideCompleted, showArchived, sortMode,
-    collapsedGroups: Array.from(collapsedGroups)
-  }));
+  try {
+    localStorage.setItem(UI_PREFS_KEY, JSON.stringify({
+      viewMode, hideCompleted, showArchived, sortMode,
+      collapsedGroups: Array.from(collapsedGroups)
+    }));
+  } catch (e) { /* quota — non-critical */ }
 }
 
 /* ============ Seed (from xlsb) ============ */
