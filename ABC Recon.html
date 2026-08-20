@@ -2039,11 +2039,75 @@
             URL.revokeObjectURL(url);
         }
 
+        // Merge two buckets (reports + groups) intelligently.
+        // Reports dedupe by dateRange (same natural key saveReport uses).
+        // Groups dedupe by name (case-insensitive); reportIds are unioned.
+        // Since Date.now() ids differ between machines, incoming group memberships
+        // are translated through an incoming-id -> canonical-id map built from the
+        // dateRange match.
+        function smartMergeBucket(existingReports, incomingReports, existingGroups, incomingGroups) {
+            const reportsByDateRange = new Map();
+            existingReports.forEach(r => reportsByDateRange.set(r.dateRange, r));
+
+            const idMap = new Map();  // incoming.id -> canonical id after merge
+            existingReports.forEach(r => idMap.set(r.id, r.id));
+
+            let addedReports = 0;
+            let updatedReports = 0;
+            incomingReports.forEach(r => {
+                const existing = reportsByDateRange.get(r.dateRange);
+                if (!existing) {
+                    reportsByDateRange.set(r.dateRange, r);
+                    idMap.set(r.id, r.id);
+                    addedReports++;
+                } else {
+                    const existingTs = new Date(existing.timestamp || 0).getTime();
+                    const incomingTs = new Date(r.timestamp || 0).getTime();
+                    if (incomingTs > existingTs) {
+                        // Take the newer version but keep existing id (preserves group memberships)
+                        reportsByDateRange.set(r.dateRange, { ...r, id: existing.id });
+                        updatedReports++;
+                    }
+                    idMap.set(r.id, existing.id);
+                }
+            });
+
+            const mergedReports = Array.from(reportsByDateRange.values());
+
+            // Merge groups by name (case-insensitive)
+            const groupsByName = new Map();
+            existingGroups.forEach(g => groupsByName.set(String(g.name).toLowerCase(), g));
+
+            let addedGroups = 0;
+            let mergedGroupsCount = 0;
+            incomingGroups.forEach(g => {
+                const translated = (g.reportIds || [])
+                    .map(id => idMap.get(id))
+                    .filter(x => x != null);
+                const key = String(g.name).toLowerCase();
+                const existing = groupsByName.get(key);
+                if (!existing) {
+                    groupsByName.set(key, { ...g, reportIds: translated });
+                    addedGroups++;
+                } else {
+                    const union = new Set([...(existing.reportIds || []), ...translated]);
+                    if (union.size !== (existing.reportIds || []).length) mergedGroupsCount++;
+                    existing.reportIds = Array.from(union);
+                }
+            });
+
+            return {
+                reports: mergedReports,
+                groups: Array.from(groupsByName.values()),
+                stats: { addedReports, updatedReports, addedGroups, mergedGroupsCount }
+            };
+        }
+
         function importData() {
             const input = document.createElement('input');
             input.type = 'file';
             input.accept = '.json';
-            
+
             input.onchange = (e) => {
                 const file = e.target.files[0];
                 if (!file) return;
@@ -2052,31 +2116,45 @@
                 reader.onload = (event) => {
                     try {
                         const data = JSON.parse(event.target.result);
-                        
-                        // Confirm before overwriting
-                        if (!confirm('This will replace all existing data. Continue?')) {
-                            return;
-                        }
 
-                        // Import all data
-                        if (data.dailyDepReports) {
-                            localStorage.setItem('dailyDepReports', JSON.stringify(data.dailyDepReports));
-                        }
-                        if (data.dailyDepGroups) {
-                            localStorage.setItem('dailyDepGroups', JSON.stringify(data.dailyDepGroups));
-                        }
-                        if (data.abcBillingReports) {
-                            localStorage.setItem('abcBillingReports', JSON.stringify(data.abcBillingReports));
-                        }
-                        if (data.abcBillingGroups) {
-                            localStorage.setItem('abcBillingGroups', JSON.stringify(data.abcBillingGroups));
-                        }
+                        const proceed = confirm(
+                            'MERGE with existing data?\n\n' +
+                            'This will ADD anything from the imported file that this device doesn\'t already have.\n' +
+                            'Nothing on this device will be deleted.\n' +
+                            'Reports matched by date range; groups matched by name.\n\n' +
+                            'OK = merge\nCancel = abort'
+                        );
+                        if (!proceed) return;
 
-                        alert('Data imported successfully!');
+                        const dailyDep = smartMergeBucket(
+                            JSON.parse(localStorage.getItem('dailyDepReports') || '[]'),
+                            data.dailyDepReports || [],
+                            JSON.parse(localStorage.getItem('dailyDepGroups') || '[]'),
+                            data.dailyDepGroups || []
+                        );
+                        localStorage.setItem('dailyDepReports', JSON.stringify(dailyDep.reports));
+                        localStorage.setItem('dailyDepGroups', JSON.stringify(dailyDep.groups));
+
+                        const abcBilling = smartMergeBucket(
+                            JSON.parse(localStorage.getItem('abcBillingReports') || '[]'),
+                            data.abcBillingReports || [],
+                            JSON.parse(localStorage.getItem('abcBillingGroups') || '[]'),
+                            data.abcBillingGroups || []
+                        );
+                        localStorage.setItem('abcBillingReports', JSON.stringify(abcBilling.reports));
+                        localStorage.setItem('abcBillingGroups', JSON.stringify(abcBilling.groups));
+
+                        const s1 = dailyDep.stats, s2 = abcBilling.stats;
+                        alert(
+                            'Merge complete.\n\n' +
+                            'Daily Dep: +' + s1.addedReports + ' reports, ' + s1.updatedReports + ' updated, +' + s1.addedGroups + ' groups\n' +
+                            'ABC Billing: +' + s2.addedReports + ' reports, ' + s2.updatedReports + ' updated, +' + s2.addedGroups + ' groups\n\n' +
+                            'Changes will sync to cloud automatically.'
+                        );
                         loadSavedReports();
                     } catch (error) {
                         alert('Error importing data. Please make sure the file is valid.');
-                        console.error('Import error:', error);
+                        console.error(error);
                     }
                 };
                 reader.readAsText(file);
