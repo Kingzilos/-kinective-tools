@@ -218,8 +218,73 @@
             color: #1a1a1a;
         }
 
+        /* Year wrapper for list groups */
+        .year-list-section {
+            margin-bottom: 20px;
+            background: transparent;
+        }
+        .year-list-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 14px;
+            background: linear-gradient(to right, #eef2ff, #f9fafb);
+            border-radius: 10px;
+            border: 1px solid #dbeafe;
+            cursor: pointer;
+            user-select: none;
+            margin-bottom: 10px;
+        }
+        .year-list-header:hover { background: linear-gradient(to right, #e0e7ff, #f3f4f6); }
+        .year-list-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 14px;
+            font-weight: 700;
+            color: #1e40af;
+            letter-spacing: -0.2px;
+        }
+        .year-list-summary {
+            font-size: 12px;
+            color: #6b7280;
+            font-weight: 500;
+        }
+        .year-list-summary strong {
+            color: #059669;
+            font-family: 'SF Mono', Monaco, monospace;
+        }
+        .year-list-body { display: block; padding-left: 8px; border-left: 2px solid #e0e7ff; margin-left: 6px; }
+        .year-list-body.collapsed { display: none; }
+
+        /* Sync status pill */
+        .sync-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 5px 10px;
+            border-radius: 999px;
+            font-size: 11px;
+            font-weight: 600;
+            background: #f3f4f6;
+            color: #6b7280;
+            user-select: none;
+        }
+        .sync-status::before {
+            content: '';
+            width: 7px; height: 7px; border-radius: 50%;
+            background: #9ca3af;
+        }
+        .sync-status.synced { background: #d1fae5; color: #059669; }
+        .sync-status.synced::before { background: #10b981; }
+        .sync-status.syncing { background: #dbeafe; color: #1d4ed8; }
+        .sync-status.syncing::before { background: #3b82f6; animation: pulse 1s infinite; }
+        .sync-status.offline { background: #fee2e2; color: #dc2626; }
+        .sync-status.offline::before { background: #ef4444; }
+        @keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:0.3;} }
+
         .group-section {
-            margin-bottom: 24px;
+            margin-bottom: 12px;
             background: white;
             border-radius: 12px;
             overflow: hidden;
@@ -344,6 +409,7 @@
             transition: all 0.2s ease;
             position: relative;
         }
+        .saved-report-item .saved-report-info { user-select: none; }
 
         .saved-report-item:last-child {
             border-bottom: none;
@@ -468,52 +534,103 @@
             margin-bottom: 24px;
         }
 
+        /* Year wrapper for KPI cards */
+        .year-kpi-section {
+            margin-bottom: 20px;
+        }
+        .year-kpi-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 14px;
+            background: #ffffff;
+            border-radius: 10px;
+            border: 1px solid #e5e7eb;
+            cursor: pointer;
+            user-select: none;
+            margin-bottom: 10px;
+            transition: background 0.15s ease;
+        }
+        .year-kpi-header:hover { background: #f9fafb; }
+        .year-kpi-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 14px;
+            font-weight: 700;
+            color: #1a1a1a;
+            letter-spacing: -0.2px;
+        }
+        .year-toggle-icon {
+            font-size: 11px;
+            color: #6b7280;
+            transition: transform 0.2s ease;
+        }
+        .year-toggle-icon.collapsed { transform: rotate(-90deg); }
+        .year-kpi-summary {
+            display: flex;
+            gap: 16px;
+            align-items: center;
+            font-size: 12px;
+            color: #6b7280;
+        }
+        .year-kpi-summary strong {
+            color: #0066cc;
+            font-family: 'SF Mono', Monaco, monospace;
+            font-size: 13px;
+        }
+        .year-kpi-body { display: block; }
+        .year-kpi-body.collapsed { display: none; }
+
         .group-summary-cards {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-            gap: 16px;
-            margin-bottom: 24px;
+            grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+            gap: 10px;
+            margin-bottom: 0;
         }
 
         .group-card {
             background: white;
-            border-radius: 12px;
-            padding: 20px;
+            border-radius: 10px;
+            padding: 12px 14px;
             border: 1px solid #e5e7eb;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-            transition: all 0.3s ease;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+            transition: all 0.2s ease;
         }
 
         .group-card:hover {
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-            transform: translateY(-2px);
+            box-shadow: 0 3px 8px rgba(0, 0, 0, 0.08);
+            transform: translateY(-1px);
         }
 
         .group-card-header {
             display: flex;
             justify-content: space-between;
             align-items: flex-start;
-            margin-bottom: 12px;
+            margin-bottom: 6px;
+            gap: 8px;
         }
 
         .group-card-title {
-            font-size: 16px;
+            font-size: 13px;
             font-weight: 700;
             color: #1a1a1a;
-            margin-bottom: 2px;
+            margin-bottom: 1px;
+            line-height: 1.2;
         }
 
         .group-card-date {
-            font-size: 11px;
+            font-size: 10px;
             color: #6b7280;
             font-weight: 500;
         }
 
         .group-card-growth {
-            padding: 4px 8px;
-            border-radius: 6px;
-            font-size: 11px;
+            padding: 2px 6px;
+            border-radius: 5px;
+            font-size: 10px;
             font-weight: 600;
+            white-space: nowrap;
         }
 
         .growth-positive {
@@ -532,21 +649,21 @@
         }
 
         .group-card-revenue {
-            font-size: 24px;
+            font-size: 17px;
             font-weight: 700;
             color: #0066cc;
-            margin-bottom: 8px;
+            margin-bottom: 6px;
             font-family: 'SF Mono', Monaco, monospace;
+            letter-spacing: -0.3px;
         }
 
         .group-card-metrics {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 8px;
-            margin: 12px 0;
-            padding: 12px 0;
+            gap: 6px 8px;
+            margin: 6px 0 0;
+            padding: 6px 0 0;
             border-top: 1px solid #f3f4f6;
-            border-bottom: 1px solid #f3f4f6;
         }
 
         .metric-item {
@@ -555,16 +672,16 @@
         }
 
         .metric-label {
-            font-size: 10px;
+            font-size: 9px;
             color: #6b7280;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
-            margin-bottom: 2px;
+            letter-spacing: 0.4px;
+            margin-bottom: 1px;
             font-weight: 600;
         }
 
         .metric-value {
-            font-size: 14px;
+            font-size: 11px;
             font-weight: 700;
             color: #1a1a1a;
             font-family: 'SF Mono', Monaco, monospace;
@@ -572,6 +689,12 @@
 
         .metric-value.highlight {
             color: #0066cc;
+        }
+
+        /* Hide bulky sections from compact card */
+        .group-card .category-breakdown,
+        .group-card .insights-section {
+            display: none;
         }
 
         .category-breakdown {
@@ -1036,6 +1159,7 @@
             <div class="saved-reports-header">
                 <h2>Saved Reports</h2>
                 <div class="group-controls">
+                    <span class="sync-status" id="syncStatus" title="Cloud sync status">Cloud: --</span>
                     <div class="import-export-btns">
                         <button class="export-btn" onclick="exportData()">Export Data</button>
                         <button class="import-btn" onclick="importData()">Import Data</button>
@@ -1067,8 +1191,8 @@
                 </div>
             </div>
 
-            <!-- Group Summary Cards -->
-            <div class="group-summary-cards" id="groupSummaryCards"></div>
+            <!-- Group Summary Cards (grouped by year) -->
+            <div id="groupSummaryCards"></div>
 
             <div id="savedReportsList"></div>
         </div>
@@ -1214,6 +1338,143 @@
         let isSelectMode = false;
         let selectedReports = new Set();
         let isComparisonMode = false;
+        let lastClickedReportId = null;      // for shift-click range select
+        let visibleReportOrder = [];         // flat ordered list of currently rendered report IDs
+        let collapsedYears = {};             // { 'kpi:2026': true, 'list:2026': false, ... }
+
+        // ============================================================
+        // SUPABASE CLOUD SYNC — keeps PC and Mac (and any device) aligned
+        // ============================================================
+        const SB_URL = 'https://jbqvtnukspnlpxgosmhp.supabase.co';
+        const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpicXZ0bnVrc3BubHB4Z29zbWhwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyNzU0NjcsImV4cCI6MjA4ODg1MTQ2N30.0EvUKNrSbH2UkQPEkTWXKS8PGNVr4G0dvWoJp9HBROs';
+        const SYNCED_KEYS = ['dailyDepReports', 'dailyDepGroups', 'abcBillingReports', 'abcBillingGroups', 'abcReconCollapsedYears'];
+        const CLOUD_PREFIX = 'abc_recon:';
+
+        function setSyncStatus(state, msg) {
+            const el = document.getElementById('syncStatus');
+            if (!el) return;
+            el.classList.remove('synced', 'syncing', 'offline');
+            if (state) el.classList.add(state);
+            const labels = { synced: 'Cloud: synced', syncing: 'Cloud: syncing…', offline: 'Cloud: offline' };
+            el.textContent = msg || labels[state] || 'Cloud: --';
+        }
+
+        async function pullFromCloud() {
+            setSyncStatus('syncing');
+            try {
+                const keyList = SYNCED_KEYS.map(k => `"${CLOUD_PREFIX}${k}"`).join(',');
+                const url = `${SB_URL}/rest/v1/kv_store?select=key,value&key=in.(${keyList})`;
+                const res = await fetch(url, {
+                    headers: { 'apikey': SB_KEY, 'Authorization': `Bearer ${SB_KEY}` }
+                });
+                if (!res.ok) throw new Error('HTTP ' + res.status);
+                const rows = await res.json();
+                const cloudKeys = new Set();
+                rows.forEach(row => {
+                    const localKey = row.key.replace(CLOUD_PREFIX, '');
+                    if (!SYNCED_KEYS.includes(localKey)) return;
+                    if (row.value == null) return;
+                    _origSetItem(localKey, JSON.stringify(row.value));
+                    cloudKeys.add(localKey);
+                });
+                // Restore year-collapse state from cloud (if present)
+                const savedCollapse = localStorage.getItem('abcReconCollapsedYears');
+                if (savedCollapse) {
+                    try { collapsedYears = JSON.parse(savedCollapse) || {}; } catch(_) {}
+                }
+                // BOOTSTRAP: if any synced key is missing from cloud BUT exists locally
+                // with real data, push it up so the other device can see it.
+                SYNCED_KEYS.forEach(k => {
+                    if (cloudKeys.has(k)) return;
+                    const local = localStorage.getItem(k);
+                    if (!local) return;
+                    try {
+                        const parsed = JSON.parse(local);
+                        const hasData = Array.isArray(parsed) ? parsed.length > 0 : (parsed && Object.keys(parsed).length > 0);
+                        if (hasData) {
+                            console.log('[sync] bootstrapping missing cloud key →', k);
+                            pushToCloud(k);
+                        }
+                    } catch(_) {}
+                });
+                setSyncStatus('synced');
+                return true;
+            } catch (e) {
+                console.warn('[sync] pull failed:', e);
+                setSyncStatus('offline');
+                return false;
+            }
+        }
+
+        const _pushTimers = {};
+        async function pushToCloud(localKey) {
+            if (!SYNCED_KEYS.includes(localKey)) return;
+            clearTimeout(_pushTimers[localKey]);
+            _pushTimers[localKey] = setTimeout(async () => {
+                setSyncStatus('syncing');
+                try {
+                    const raw = localStorage.getItem(localKey);
+                    const value = raw ? JSON.parse(raw) : null;
+                    const res = await fetch(`${SB_URL}/rest/v1/kv_store?on_conflict=key`, {
+                        method: 'POST',
+                        headers: {
+                            'apikey': SB_KEY,
+                            'Authorization': `Bearer ${SB_KEY}`,
+                            'Content-Type': 'application/json',
+                            'Prefer': 'resolution=merge-duplicates,return=minimal'
+                        },
+                        body: JSON.stringify({ key: CLOUD_PREFIX + localKey, value })
+                    });
+                    if (!res.ok) throw new Error('HTTP ' + res.status);
+                    setSyncStatus('synced');
+                } catch (e) {
+                    console.warn('[sync] push failed for', localKey, e);
+                    setSyncStatus('offline');
+                }
+            }, 400);
+        }
+
+        // Monkey-patch localStorage.setItem so every write to a synced key
+        // also pushes to Supabase — no need to modify every save site.
+        const _origSetItem = localStorage.setItem.bind(localStorage);
+        localStorage.setItem = function(key, value) {
+            _origSetItem(key, value);
+            if (SYNCED_KEYS.includes(key)) pushToCloud(key);
+        };
+
+        function saveCollapsedYears() {
+            localStorage.setItem('abcReconCollapsedYears', JSON.stringify(collapsedYears));
+        }
+        function toggleYear(scope, year) {
+            const key = `${scope}:${year}`;
+            collapsedYears[key] = !collapsedYears[key];
+            saveCollapsedYears();
+            if (scope === 'kpi') renderGroupSummaryCards();
+            else loadSavedReports();
+        }
+        function isYearCollapsed(scope, year, defaultCollapsed) {
+            const key = `${scope}:${year}`;
+            if (key in collapsedYears) return collapsedYears[key];
+            return !!defaultCollapsed;
+        }
+
+        // Extract year from a group by pulling earliest report timestamp/dateRange
+        function getGroupYear(group, allReports) {
+            const rpts = allReports.filter(r => group.reportIds.includes(r.id));
+            if (rpts.length === 0) {
+                // Fallback to name pattern
+                const m = String(group.name || '').match(/(20\d{2})/);
+                return m ? parseInt(m[1]) : new Date().getFullYear();
+            }
+            rpts.sort((a,b) => new Date(a.timestamp) - new Date(b.timestamp));
+            const first = rpts[0];
+            let d = first.timestamp ? new Date(first.timestamp) : null;
+            if (!d || isNaN(d)) {
+                const m = String(first.dateRange || '').match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+                if (m) d = new Date(m[0]);
+            }
+            return d && !isNaN(d) ? d.getFullYear() : new Date().getFullYear();
+        }
 
         // Multi-select functions
         function toggleSelectMode() {
@@ -1241,6 +1502,7 @@
         function cancelSelectMode() {
             isSelectMode = false;
             selectedReports.clear();
+            lastClickedReportId = null;
             document.getElementById('selectModeBtn').classList.remove('active');
             document.getElementById('selectModeBtn').textContent = 'Select Multiple';
             document.getElementById('bulkActions').classList.remove('active');
@@ -1249,37 +1511,59 @@
         }
 
         function toggleReportSelection(reportId, event) {
-            // Support Ctrl+Click for multi-select even when not in select mode
-            if (event && (event.ctrlKey || event.metaKey)) {
+            // Ctrl/Cmd/Shift-click activates select mode even when off
+            if (event && (event.ctrlKey || event.metaKey || event.shiftKey)) {
                 if (!isSelectMode) {
                     isSelectMode = true;
                     document.getElementById('selectModeBtn').classList.add('active');
                     document.getElementById('selectModeBtn').textContent = 'Cancel Selection';
                     document.getElementById('bulkActions').classList.add('active');
                     document.getElementById('createGroupBtn').style.display = 'none';
+                    // Refresh render so checkboxes appear; then re-invoke this click after render
+                    // so shift-range and highlighted state are correct.
+                    loadSavedReports();
                 }
             }
-            
+
             if (!isSelectMode) return;
-            
-            if (selectedReports.has(reportId)) {
-                selectedReports.delete(reportId);
-            } else {
-                selectedReports.add(reportId);
+
+            // Shift-click range: select every visible report between last clicked and this one
+            if (event && event.shiftKey && lastClickedReportId !== null && lastClickedReportId !== reportId) {
+                const list = visibleReportOrder;
+                const from = list.indexOf(lastClickedReportId);
+                const to = list.indexOf(reportId);
+                if (from !== -1 && to !== -1) {
+                    const [start, end] = from < to ? [from, to] : [to, from];
+                    const shouldSelect = !selectedReports.has(reportId); // if target off, select range; if on, deselect range
+                    for (let i = start; i <= end; i++) {
+                        if (shouldSelect) selectedReports.add(list[i]);
+                        else selectedReports.delete(list[i]);
+                    }
+                    lastClickedReportId = reportId;
+                    document.getElementById('selectedCount').textContent = selectedReports.size;
+                    // Re-render only the checkbox/selected classes across the DOM
+                    list.forEach(id => {
+                        const cb = document.querySelector(`[data-report-id="${id}"]`);
+                        if (cb) cb.classList.toggle('checked', selectedReports.has(id));
+                        const item = cb?.closest('.saved-report-item');
+                        if (item) item.classList.toggle('selected', selectedReports.has(id));
+                    });
+                    if (event.preventDefault) event.preventDefault();
+                    return;
+                }
             }
-            
+
+            // Standard single toggle
+            if (selectedReports.has(reportId)) selectedReports.delete(reportId);
+            else selectedReports.add(reportId);
+
+            lastClickedReportId = reportId;
             document.getElementById('selectedCount').textContent = selectedReports.size;
-            
-            // Update UI
+
             const checkbox = document.querySelector(`[data-report-id="${reportId}"]`);
-            if (checkbox) {
-                checkbox.classList.toggle('checked', selectedReports.has(reportId));
-            }
-            
+            if (checkbox) checkbox.classList.toggle('checked', selectedReports.has(reportId));
             const reportItem = checkbox?.closest('.saved-report-item');
-            if (reportItem) {
-                reportItem.classList.toggle('selected', selectedReports.has(reportId));
-            }
+            if (reportItem) reportItem.classList.toggle('selected', selectedReports.has(reportId));
         }
 
         function groupSelectedReports() {
@@ -1443,16 +1727,59 @@
 
             cardsContainer.innerHTML = '';
 
-            // Calculate analytics for all groups
-            const groupAnalytics = groups.map(group => calculateGroupAnalytics(group, savedReports)).filter(a => a !== null);
+            // Attach analytics + year to each group, sort chronologically
+            const enriched = groups.map(g => {
+                const a = calculateGroupAnalytics(g, savedReports);
+                if (!a) return null;
+                a._year = getGroupYear(g, savedReports);
+                a._sortKey = a.startDate && a.startDate !== 'N/A' ? new Date(a.startDate).getTime() : 0;
+                return a;
+            }).filter(Boolean);
+            enriched.sort((x, y) => x._sortKey - y._sortKey);
 
-            groupAnalytics.forEach((analytics, index) => {
-                // Calculate growth vs previous group
-                const previousAnalytics = index > 0 ? groupAnalytics[index - 1] : null;
-                const revenueGrowth = previousAnalytics ? calculateGrowth(analytics.totalRevenue, previousAnalytics.totalRevenue) : null;
+            // Group by year
+            const byYear = {};
+            enriched.forEach(a => {
+                if (!byYear[a._year]) byYear[a._year] = [];
+                byYear[a._year].push(a);
+            });
+            const years = Object.keys(byYear).map(Number).sort((a,b) => a - b);
+            const currentYear = years[years.length - 1]; // latest year in data — expanded by default
 
-                const card = document.createElement('div');
-                card.className = 'group-card';
+            years.forEach(year => {
+                const yearGroups = byYear[year];
+                const yearRevenue = yearGroups.reduce((s, a) => s + a.totalRevenue, 0);
+                const yearSalesTax = yearGroups.reduce((s, a) => s + a.totalSalesTax, 0);
+
+                const collapsed = isYearCollapsed('kpi', year, year !== currentYear);
+                const section = document.createElement('div');
+                section.className = 'year-kpi-section';
+                section.innerHTML = `
+                    <div class="year-kpi-header" onclick="toggleYear('kpi', ${year})">
+                        <div class="year-kpi-title">
+                            <span class="year-toggle-icon ${collapsed ? 'collapsed' : ''}">▼</span>
+                            ${year}
+                            <span class="group-count">${yearGroups.length} groups</span>
+                        </div>
+                        <div class="year-kpi-summary">
+                            <span>Revenue <strong>$${yearRevenue.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}</strong></span>
+                            <span>Sales Tax <strong>$${yearSalesTax.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}</strong></span>
+                        </div>
+                    </div>
+                    <div class="year-kpi-body ${collapsed ? 'collapsed' : ''}">
+                        <div class="group-summary-cards" id="yearKpiBody-${year}"></div>
+                    </div>
+                `;
+                cardsContainer.appendChild(section);
+
+                const bodyGrid = document.getElementById(`yearKpiBody-${year}`);
+
+                yearGroups.forEach((analytics, index) => {
+                    const previousAnalytics = index > 0 ? yearGroups[index - 1] : null;
+                    const revenueGrowth = previousAnalytics ? calculateGrowth(analytics.totalRevenue, previousAnalytics.totalRevenue) : null;
+
+                    const card = document.createElement('div');
+                    card.className = 'group-card';
                 
                 // Growth badge
                 let growthBadge = '';
@@ -1531,7 +1858,8 @@
                     ${insightsHTML}
                 `;
 
-                cardsContainer.appendChild(card);
+                    bodyGrid.appendChild(card);
+                });
             });
         }
 
@@ -1758,9 +2086,18 @@
         }
 
         // Load saved reports on page load
-        window.addEventListener('DOMContentLoaded', () => {
+        window.addEventListener('DOMContentLoaded', async () => {
             migrateOldData();
+            // Restore collapsed years from local cache immediately
+            try {
+                const cached = localStorage.getItem('abcReconCollapsedYears');
+                if (cached) collapsedYears = JSON.parse(cached) || {};
+            } catch(_) {}
+            // Render once from local cache so UI appears instantly
             loadSavedReports();
+            // Then pull from cloud (source of truth); re-render if updated
+            const ok = await pullFromCloud();
+            if (ok) loadSavedReports();
         });
 
         // Switch between reconciliation types
@@ -2209,123 +2546,153 @@
             localStorage.setItem(storageKey, JSON.stringify(savedReports));
         }
 
+        // Helper: build a single report row (used by both grouped and ungrouped renders)
+        function buildReportItem(report, opts) {
+            const reportItem = document.createElement('div');
+            reportItem.className = `saved-report-item ${selectedReports.has(report.id) ? 'selected' : ''}`;
+
+            const checkboxHtml = isSelectMode
+                ? `<div class="report-checkbox active ${selectedReports.has(report.id) ? 'checked' : ''}" data-report-id="${report.id}" onclick="toggleReportSelection(${report.id}, event)"></div>`
+                : '';
+
+            const actionsHtml = isSelectMode
+                ? ''
+                : (opts.groupId
+                    ? `<div class="saved-report-actions">
+                          <button class="view-btn" onclick="viewReport(${report.id})">View</button>
+                          <button class="move-to-group-btn" onclick="removeReportFromGroup(${opts.groupId}, ${report.id})">Ungroup</button>
+                          <button class="delete-btn" onclick="deleteReport(${report.id})">Delete</button>
+                       </div>`
+                    : `<div class="saved-report-actions">
+                          <button class="view-btn" onclick="viewReport(${report.id})">View</button>
+                          <button class="move-to-group-btn" onclick="showMoveToGroupModal(${report.id})">Move to Group</button>
+                          <button class="delete-btn" onclick="deleteReport(${report.id})">Delete</button>
+                       </div>`);
+
+            const infoClickHandler = isSelectMode
+                ? `onclick="toggleReportSelection(${report.id}, event)" style="cursor: pointer; flex: 1;"`
+                : `onclick="if(event.ctrlKey || event.metaKey || event.shiftKey) toggleReportSelection(${report.id}, event)" style="flex: 1;"`;
+
+            reportItem.innerHTML = `
+                ${checkboxHtml}
+                <div class="saved-report-info" ${infoClickHandler}>
+                    <div class="saved-report-date">${report.dateRange}</div>
+                    <div class="saved-report-location">${report.location}</div>
+                    <div class="saved-report-revenue">$${report.totalRevenue}</div>
+                </div>
+                ${actionsHtml}
+            `;
+            return reportItem;
+        }
+
         function loadSavedReports() {
-            // Get the correct storage key based on reconciliation type
             const storageKey = currentReconciliationType === 'dailyDep' ? 'dailyDepReports' : 'abcBillingReports';
             const savedReports = JSON.parse(localStorage.getItem(storageKey) || '[]');
             const groups = getGroups();
-            
+
             if (savedReports.length === 0) {
                 savedReportsSection.style.display = 'none';
                 return;
             }
-            
+
             savedReportsSection.style.display = 'block';
             savedReportsList.innerHTML = '';
-            
-            // Render group summary cards
+
+            // Render top KPI cards (grouped by year)
             renderGroupSummaryCards();
-            
-            // Sort by date (oldest first - ascending order)
+
+            // Sort by date ascending
             savedReports.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
-            
-            // Get all report IDs that are in groups
+
+            // All grouped report ids
             const groupedReportIds = new Set();
-            groups.forEach(group => {
-                group.reportIds.forEach(id => groupedReportIds.add(id));
+            groups.forEach(g => g.reportIds.forEach(id => groupedReportIds.add(id)));
+
+            // Build visible order tracker for shift-click ranges
+            visibleReportOrder = [];
+
+            // ---- Groups by year ----
+            const groupsByYear = {};
+            groups.forEach(g => {
+                const y = getGroupYear(g, savedReports);
+                if (!groupsByYear[y]) groupsByYear[y] = [];
+                groupsByYear[y].push(g);
             });
-            
-            // Display groups
-            groups.forEach(group => {
-                const groupSection = document.createElement('div');
-                groupSection.className = 'group-section';
-                
-                const groupReports = savedReports.filter(r => group.reportIds.includes(r.id));
-                
-                groupSection.innerHTML = `
-                    <div class="group-header" onclick="toggleGroupCollapse(${group.id})">
-                        <div class="group-title-section">
-                            <span class="group-toggle-icon ${group.collapsed ? 'collapsed' : ''}">▼</span>
-                            <div class="group-title">${group.name}</div>
-                            <span class="group-count">${groupReports.length} reports</span>
+            const years = Object.keys(groupsByYear).map(Number).sort((a,b) => a - b);
+            const currentYear = years[years.length - 1];
+
+            years.forEach(year => {
+                const yearGroups = groupsByYear[year];
+                // Compute year totals for the header
+                let yearRevenue = 0;
+                let yearReportCount = 0;
+                yearGroups.forEach(g => {
+                    const rpts = savedReports.filter(r => g.reportIds.includes(r.id));
+                    rpts.forEach(r => {
+                        yearRevenue += parseFloat(String(r.totalRevenue).replace(/,/g, '')) || 0;
+                        yearReportCount += 1;
+                    });
+                });
+
+                const yearCollapsed = isYearCollapsed('list', year, year !== currentYear);
+                const yearSection = document.createElement('div');
+                yearSection.className = 'year-list-section';
+                yearSection.innerHTML = `
+                    <div class="year-list-header" onclick="toggleYear('list', ${year})">
+                        <div class="year-list-title">
+                            <span class="year-toggle-icon ${yearCollapsed ? 'collapsed' : ''}">▼</span>
+                            ${year}
+                            <span class="group-count">${yearGroups.length} groups · ${yearReportCount} reports</span>
                         </div>
-                        <div class="group-actions" onclick="event.stopPropagation()">
-                            <button class="group-action-btn" onclick="renameGroup(${group.id})">Rename</button>
-                            <button class="group-action-btn delete-group-btn" onclick="deleteGroup(${group.id})">Delete</button>
+                        <div class="year-list-summary">
+                            Revenue <strong>$${yearRevenue.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}</strong>
                         </div>
                     </div>
-                    <div class="group-reports ${group.collapsed ? 'collapsed' : ''}" id="group-${group.id}"></div>
+                    <div class="year-list-body ${yearCollapsed ? 'collapsed' : ''}" id="yearListBody-${year}"></div>
                 `;
-                
-                savedReportsList.appendChild(groupSection);
-                
-                // Add reports to this group
-                const groupReportsContainer = document.getElementById(`group-${group.id}`);
-                groupReports.forEach(report => {
-                    const reportItem = document.createElement('div');
-                    reportItem.className = `saved-report-item ${selectedReports.has(report.id) ? 'selected' : ''}`;
-                    
-                    const checkboxHtml = isSelectMode ? 
-                        `<div class="report-checkbox active ${selectedReports.has(report.id) ? 'checked' : ''}" data-report-id="${report.id}" onclick="toggleReportSelection(${report.id}, event)"></div>` : 
-                        '';
-                    
-                    const actionsHtml = isSelectMode ? '' : `
-                        <div class="saved-report-actions">
-                            <button class="view-btn" onclick="viewReport(${report.id})">View</button>
-                            <button class="move-to-group-btn" onclick="removeReportFromGroup(${group.id}, ${report.id})">Ungroup</button>
-                            <button class="delete-btn" onclick="deleteReport(${report.id})">Delete</button>
+                savedReportsList.appendChild(yearSection);
+
+                const yearBody = document.getElementById(`yearListBody-${year}`);
+
+                yearGroups.forEach(group => {
+                    const groupSection = document.createElement('div');
+                    groupSection.className = 'group-section';
+                    const groupReports = savedReports.filter(r => group.reportIds.includes(r.id));
+
+                    groupSection.innerHTML = `
+                        <div class="group-header" onclick="toggleGroupCollapse(${group.id})">
+                            <div class="group-title-section">
+                                <span class="group-toggle-icon ${group.collapsed ? 'collapsed' : ''}">▼</span>
+                                <div class="group-title">${group.name}</div>
+                                <span class="group-count">${groupReports.length} reports</span>
+                            </div>
+                            <div class="group-actions" onclick="event.stopPropagation()">
+                                <button class="group-action-btn" onclick="renameGroup(${group.id})">Rename</button>
+                                <button class="group-action-btn delete-group-btn" onclick="deleteGroup(${group.id})">Delete</button>
+                            </div>
                         </div>
+                        <div class="group-reports ${group.collapsed ? 'collapsed' : ''}" id="group-${group.id}"></div>
                     `;
-                    
-                    reportItem.innerHTML = `
-                        ${checkboxHtml}
-                        <div class="saved-report-info" ${isSelectMode ? `onclick="toggleReportSelection(${report.id}, event)" style="cursor: pointer; flex: 1;"` : `onclick="if(event.ctrlKey || event.metaKey) toggleReportSelection(${report.id}, event)" style="flex: 1;"`}>
-                            <div class="saved-report-date">${report.dateRange}</div>
-                            <div class="saved-report-location">${report.location}</div>
-                            <div class="saved-report-revenue">$${report.totalRevenue}</div>
-                        </div>
-                        ${actionsHtml}
-                    `;
-                    groupReportsContainer.appendChild(reportItem);
+                    yearBody.appendChild(groupSection);
+
+                    const container = document.getElementById(`group-${group.id}`);
+                    groupReports.forEach(report => {
+                        visibleReportOrder.push(report.id);
+                        container.appendChild(buildReportItem(report, { groupId: group.id }));
+                    });
                 });
             });
-            
-            // Display ungrouped reports
+
+            // ---- Ungrouped ----
             const ungroupedReports = savedReports.filter(r => !groupedReportIds.has(r.id));
-            
             if (ungroupedReports.length > 0) {
                 const ungroupedSection = document.createElement('div');
                 ungroupedSection.className = 'ungrouped-section';
                 ungroupedSection.innerHTML = '<div class="ungrouped-header">Ungrouped Reports</div>';
-                
                 ungroupedReports.forEach(report => {
-                    const reportItem = document.createElement('div');
-                    reportItem.className = `saved-report-item ${selectedReports.has(report.id) ? 'selected' : ''}`;
-                    
-                    const checkboxHtml = isSelectMode ? 
-                        `<div class="report-checkbox active ${selectedReports.has(report.id) ? 'checked' : ''}" data-report-id="${report.id}" onclick="toggleReportSelection(${report.id}, event)"></div>` : 
-                        '';
-                    
-                    const actionsHtml = isSelectMode ? '' : `
-                        <div class="saved-report-actions">
-                            <button class="view-btn" onclick="viewReport(${report.id})">View</button>
-                            <button class="move-to-group-btn" onclick="showMoveToGroupModal(${report.id})">Move to Group</button>
-                            <button class="delete-btn" onclick="deleteReport(${report.id})">Delete</button>
-                        </div>
-                    `;
-                    
-                    reportItem.innerHTML = `
-                        ${checkboxHtml}
-                        <div class="saved-report-info" ${isSelectMode ? `onclick="toggleReportSelection(${report.id}, event)" style="cursor: pointer; flex: 1;"` : `onclick="if(event.ctrlKey || event.metaKey) toggleReportSelection(${report.id}, event)" style="flex: 1;"`}>
-                            <div class="saved-report-date">${report.dateRange}</div>
-                            <div class="saved-report-location">${report.location}</div>
-                            <div class="saved-report-revenue">$${report.totalRevenue}</div>
-                        </div>
-                        ${actionsHtml}
-                    `;
-                    ungroupedSection.appendChild(reportItem);
+                    visibleReportOrder.push(report.id);
+                    ungroupedSection.appendChild(buildReportItem(report, {}));
                 });
-                
                 savedReportsList.appendChild(ungroupedSection);
             }
         }
