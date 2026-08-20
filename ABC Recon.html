@@ -1571,12 +1571,12 @@
                 alert('Please select at least one report');
                 return;
             }
-            
+
             const groupName = prompt('Enter name for the new group:');
             if (!groupName || !groupName.trim()) {
                 return;
             }
-            
+
             const groups = getGroups();
             const newGroup = {
                 id: Date.now(),
@@ -1584,9 +1584,21 @@
                 reportIds: Array.from(selectedReports),
                 collapsed: false
             };
-            
+
             groups.push(newGroup);
             saveGroups(groups);
+
+            // Force-expand the year this new group belongs to (both KPI + list)
+            // so the user actually sees what they just created.
+            try {
+                const storageKey = currentReconciliationType === 'dailyDep' ? 'dailyDepReports' : 'abcBillingReports';
+                const allReports = JSON.parse(localStorage.getItem(storageKey) || '[]');
+                const year = getGroupYear(newGroup, allReports);
+                collapsedYears[`kpi:${year}`] = false;
+                collapsedYears[`list:${year}`] = false;
+                saveCollapsedYears();
+            } catch(_) {}
+
             cancelSelectMode();
             loadSavedReports();
         }
@@ -1714,6 +1726,78 @@
             return ((current - previous) / previous) * 100;
         }
 
+        // Build a single KPI card DOM element from analytics
+        function buildKpiCard(analytics, revenueGrowth) {
+            const card = document.createElement('div');
+            card.className = 'group-card';
+
+            let growthBadge = '';
+            if (revenueGrowth !== null) {
+                const growthClass = revenueGrowth > 0 ? 'growth-positive' : revenueGrowth < 0 ? 'growth-negative' : 'growth-neutral';
+                const growthSymbol = revenueGrowth > 0 ? '▲' : revenueGrowth < 0 ? '▼' : '−';
+                growthBadge = `<span class="group-card-growth ${growthClass}">${growthSymbol} ${Math.abs(revenueGrowth).toFixed(1)}%</span>`;
+            }
+
+            const categoryHTML = analytics.categories.slice(0, 5).map(cat => `
+                <div class="category-item">
+                    <div>
+                        <div class="category-name">${cat.name}</div>
+                        <div class="category-bar">
+                            <div class="category-bar-fill" style="width: ${cat.percentage}%"></div>
+                        </div>
+                    </div>
+                    <div class="category-amount">$${cat.total.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
+                </div>
+            `).join('');
+
+            const insights = [];
+            if (analytics.totalUnapplied > 0) {
+                insights.push(`<div class="insight-item"><span class="insight-icon warning">!</span> $${analytics.totalUnapplied.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})} in unapplied payments</div>`);
+            }
+            if (analytics.totalDeductions < 0) {
+                insights.push(`<div class="insight-item"><span class="insight-icon info">i</span> $${Math.abs(analytics.totalDeductions).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})} in deductions</div>`);
+            }
+            if (analytics.daysDiff > 1) {
+                insights.push(`<div class="insight-item"><span class="insight-icon info">i</span> Avg: $${analytics.avgDailyRevenue.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}/day</div>`);
+            }
+            const insightsHTML = insights.length > 0 ? `<div class="insights-section">${insights.join('')}</div>` : '';
+
+            card.innerHTML = `
+                <div class="group-card-header">
+                    <div>
+                        <div class="group-card-title">${analytics.name}</div>
+                        <div class="group-card-date">${analytics.startDate} - ${analytics.endDate}</div>
+                    </div>
+                    ${growthBadge}
+                </div>
+                <div class="group-card-revenue">$${analytics.totalRevenue.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
+                <div class="group-card-metrics">
+                    <div class="metric-item">
+                        <div class="metric-label">Reports</div>
+                        <div class="metric-value">${analytics.reportCount}</div>
+                    </div>
+                    <div class="metric-item">
+                        <div class="metric-label">Sales Tax</div>
+                        <div class="metric-value highlight">$${analytics.totalSalesTax.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
+                    </div>
+                    <div class="metric-item">
+                        <div class="metric-label">Pre-Tax</div>
+                        <div class="metric-value">$${analytics.totalPreTax.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
+                    </div>
+                    <div class="metric-item">
+                        <div class="metric-label">Tax Rate</div>
+                        <div class="metric-value">${analytics.effectiveTaxRate.toFixed(2)}%</div>
+                    </div>
+                </div>
+                <div class="category-breakdown">
+                    <div class="category-breakdown-title">Category Breakdown</div>
+                    ${categoryHTML}
+                </div>
+                ${insightsHTML}
+            `;
+            return card;
+        }
+
         function renderGroupSummaryCards() {
             const storageKey = currentReconciliationType === 'dailyDep' ? 'dailyDepReports' : 'abcBillingReports';
             const savedReports = JSON.parse(localStorage.getItem(storageKey) || '[]');
@@ -1724,7 +1808,6 @@
                 cardsContainer.innerHTML = '';
                 return;
             }
-
             cardsContainer.innerHTML = '';
 
             // Attach analytics + year to each group, sort chronologically
@@ -1744,8 +1827,22 @@
                 byYear[a._year].push(a);
             });
             const years = Object.keys(byYear).map(Number).sort((a,b) => a - b);
-            const currentYear = years[years.length - 1]; // latest year in data — expanded by default
+            const currentYear = years[years.length - 1];
 
+            // Only ONE year of data → skip year wrapper entirely
+            if (years.length <= 1) {
+                const flatGrid = document.createElement('div');
+                flatGrid.className = 'group-summary-cards';
+                cardsContainer.appendChild(flatGrid);
+                enriched.forEach((analytics, index) => {
+                    const prev = index > 0 ? enriched[index - 1] : null;
+                    const growth = prev ? calculateGrowth(analytics.totalRevenue, prev.totalRevenue) : null;
+                    flatGrid.appendChild(buildKpiCard(analytics, growth));
+                });
+                return;
+            }
+
+            // Multi-year → wrap each year in a collapsible section
             years.forEach(year => {
                 const yearGroups = byYear[year];
                 const yearRevenue = yearGroups.reduce((s, a) => s + a.totalRevenue, 0);
@@ -1773,92 +1870,10 @@
                 cardsContainer.appendChild(section);
 
                 const bodyGrid = document.getElementById(`yearKpiBody-${year}`);
-
                 yearGroups.forEach((analytics, index) => {
-                    const previousAnalytics = index > 0 ? yearGroups[index - 1] : null;
-                    const revenueGrowth = previousAnalytics ? calculateGrowth(analytics.totalRevenue, previousAnalytics.totalRevenue) : null;
-
-                    const card = document.createElement('div');
-                    card.className = 'group-card';
-                
-                // Growth badge
-                let growthBadge = '';
-                if (revenueGrowth !== null) {
-                    const growthClass = revenueGrowth > 0 ? 'growth-positive' : revenueGrowth < 0 ? 'growth-negative' : 'growth-neutral';
-                    const growthSymbol = revenueGrowth > 0 ? '▲' : revenueGrowth < 0 ? '▼' : '−';
-                    growthBadge = `<span class="group-card-growth ${growthClass}">${growthSymbol} ${Math.abs(revenueGrowth).toFixed(1)}%</span>`;
-                }
-
-                // Build category breakdown HTML
-                const categoryHTML = analytics.categories.slice(0, 5).map(cat => `
-                    <div class="category-item">
-                        <div>
-                            <div class="category-name">${cat.name}</div>
-                            <div class="category-bar">
-                                <div class="category-bar-fill" style="width: ${cat.percentage}%"></div>
-                            </div>
-                        </div>
-                        <div class="category-amount">$${cat.total.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
-                    </div>
-                `).join('');
-
-                // Build insights
-                const insights = [];
-                if (analytics.totalUnapplied > 0) {
-                    insights.push(`<div class="insight-item"><span class="insight-icon warning">!</span> $${analytics.totalUnapplied.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})} in unapplied payments</div>`);
-                }
-                if (analytics.totalDeductions < 0) {
-                    insights.push(`<div class="insight-item"><span class="insight-icon info">i</span> $${Math.abs(analytics.totalDeductions).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})} in deductions</div>`);
-                }
-                if (analytics.daysDiff > 1) {
-                    insights.push(`<div class="insight-item"><span class="insight-icon info">i</span> Avg: $${analytics.avgDailyRevenue.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}/day</div>`);
-                }
-
-                const insightsHTML = insights.length > 0 ? `
-                    <div class="insights-section">
-                        ${insights.join('')}
-                    </div>
-                ` : '';
-
-                card.innerHTML = `
-                    <div class="group-card-header">
-                        <div>
-                            <div class="group-card-title">${analytics.name}</div>
-                            <div class="group-card-date">${analytics.startDate} - ${analytics.endDate}</div>
-                        </div>
-                        ${growthBadge}
-                    </div>
-                    
-                    <div class="group-card-revenue">$${analytics.totalRevenue.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
-                    
-                    <div class="group-card-metrics">
-                        <div class="metric-item">
-                            <div class="metric-label">Reports</div>
-                            <div class="metric-value">${analytics.reportCount}</div>
-                        </div>
-                        <div class="metric-item">
-                            <div class="metric-label">Sales Tax</div>
-                            <div class="metric-value highlight">$${analytics.totalSalesTax.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
-                        </div>
-                        <div class="metric-item">
-                            <div class="metric-label">Pre-Tax</div>
-                            <div class="metric-value">$${analytics.totalPreTax.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
-                        </div>
-                        <div class="metric-item">
-                            <div class="metric-label">Tax Rate</div>
-                            <div class="metric-value">${analytics.effectiveTaxRate.toFixed(2)}%</div>
-                        </div>
-                    </div>
-
-                    <div class="category-breakdown">
-                        <div class="category-breakdown-title">Category Breakdown</div>
-                        ${categoryHTML}
-                    </div>
-
-                    ${insightsHTML}
-                `;
-
-                    bodyGrid.appendChild(card);
+                    const prev = index > 0 ? yearGroups[index - 1] : null;
+                    const growth = prev ? calculateGrowth(analytics.totalRevenue, prev.totalRevenue) : null;
+                    bodyGrid.appendChild(buildKpiCard(analytics, growth));
                 });
             });
         }
@@ -1917,6 +1932,15 @@
 
             groups.push(newGroup);
             saveGroups(groups);
+
+            // Empty group defaults to current year — force-expand it
+            try {
+                const y = new Date().getFullYear();
+                collapsedYears[`kpi:${y}`] = false;
+                collapsedYears[`list:${y}`] = false;
+                saveCollapsedYears();
+            } catch(_) {}
+
             closeCreateGroupModal();
             loadSavedReports();
         }
@@ -2699,67 +2723,75 @@
             const years = Object.keys(groupsByYear).map(Number).sort((a,b) => a - b);
             const currentYear = years[years.length - 1];
 
-            years.forEach(year => {
-                const yearGroups = groupsByYear[year];
-                // Compute year totals for the header
-                let yearRevenue = 0;
-                let yearReportCount = 0;
-                yearGroups.forEach(g => {
-                    const rpts = savedReports.filter(r => g.reportIds.includes(r.id));
-                    rpts.forEach(r => {
-                        yearRevenue += parseFloat(String(r.totalRevenue).replace(/,/g, '')) || 0;
-                        yearReportCount += 1;
-                    });
-                });
+            // Helper: render one group section into a parent
+            function renderGroup(group, parent) {
+                const groupSection = document.createElement('div');
+                groupSection.className = 'group-section';
+                const groupReports = savedReports.filter(r => group.reportIds.includes(r.id));
 
-                const yearCollapsed = isYearCollapsed('list', year, year !== currentYear);
-                const yearSection = document.createElement('div');
-                yearSection.className = 'year-list-section';
-                yearSection.innerHTML = `
-                    <div class="year-list-header" onclick="toggleYear('list', ${year})">
-                        <div class="year-list-title">
-                            <span class="year-toggle-icon ${yearCollapsed ? 'collapsed' : ''}">▼</span>
-                            ${year}
-                            <span class="group-count">${yearGroups.length} groups · ${yearReportCount} reports</span>
+                groupSection.innerHTML = `
+                    <div class="group-header" onclick="toggleGroupCollapse(${group.id})">
+                        <div class="group-title-section">
+                            <span class="group-toggle-icon ${group.collapsed ? 'collapsed' : ''}">▼</span>
+                            <div class="group-title">${group.name}</div>
+                            <span class="group-count">${groupReports.length} reports</span>
                         </div>
-                        <div class="year-list-summary">
-                            Revenue <strong>$${yearRevenue.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}</strong>
+                        <div class="group-actions" onclick="event.stopPropagation()">
+                            <button class="group-action-btn" onclick="renameGroup(${group.id})">Rename</button>
+                            <button class="group-action-btn delete-group-btn" onclick="deleteGroup(${group.id})">Delete</button>
                         </div>
                     </div>
-                    <div class="year-list-body ${yearCollapsed ? 'collapsed' : ''}" id="yearListBody-${year}"></div>
+                    <div class="group-reports ${group.collapsed ? 'collapsed' : ''}" id="group-${group.id}"></div>
                 `;
-                savedReportsList.appendChild(yearSection);
+                parent.appendChild(groupSection);
 
-                const yearBody = document.getElementById(`yearListBody-${year}`);
+                const container = document.getElementById(`group-${group.id}`);
+                groupReports.forEach(report => {
+                    visibleReportOrder.push(report.id);
+                    container.appendChild(buildReportItem(report, { groupId: group.id }));
+                });
+            }
 
-                yearGroups.forEach(group => {
-                    const groupSection = document.createElement('div');
-                    groupSection.className = 'group-section';
-                    const groupReports = savedReports.filter(r => group.reportIds.includes(r.id));
+            // Only ONE year → skip year wrapper; render groups directly
+            if (years.length <= 1) {
+                if (years.length === 1) {
+                    groupsByYear[years[0]].forEach(g => renderGroup(g, savedReportsList));
+                }
+            } else {
+                // Multi-year → collapsible year sections
+                years.forEach(year => {
+                    const yearGroups = groupsByYear[year];
+                    let yearRevenue = 0;
+                    let yearReportCount = 0;
+                    yearGroups.forEach(g => {
+                        const rpts = savedReports.filter(r => g.reportIds.includes(r.id));
+                        rpts.forEach(r => {
+                            yearRevenue += parseFloat(String(r.totalRevenue).replace(/,/g, '')) || 0;
+                            yearReportCount += 1;
+                        });
+                    });
 
-                    groupSection.innerHTML = `
-                        <div class="group-header" onclick="toggleGroupCollapse(${group.id})">
-                            <div class="group-title-section">
-                                <span class="group-toggle-icon ${group.collapsed ? 'collapsed' : ''}">▼</span>
-                                <div class="group-title">${group.name}</div>
-                                <span class="group-count">${groupReports.length} reports</span>
+                    const yearCollapsed = isYearCollapsed('list', year, year !== currentYear);
+                    const yearSection = document.createElement('div');
+                    yearSection.className = 'year-list-section';
+                    yearSection.innerHTML = `
+                        <div class="year-list-header" onclick="toggleYear('list', ${year})">
+                            <div class="year-list-title">
+                                <span class="year-toggle-icon ${yearCollapsed ? 'collapsed' : ''}">▼</span>
+                                ${year}
+                                <span class="group-count">${yearGroups.length} groups · ${yearReportCount} reports</span>
                             </div>
-                            <div class="group-actions" onclick="event.stopPropagation()">
-                                <button class="group-action-btn" onclick="renameGroup(${group.id})">Rename</button>
-                                <button class="group-action-btn delete-group-btn" onclick="deleteGroup(${group.id})">Delete</button>
+                            <div class="year-list-summary">
+                                Revenue <strong>$${yearRevenue.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}</strong>
                             </div>
                         </div>
-                        <div class="group-reports ${group.collapsed ? 'collapsed' : ''}" id="group-${group.id}"></div>
+                        <div class="year-list-body ${yearCollapsed ? 'collapsed' : ''}" id="yearListBody-${year}"></div>
                     `;
-                    yearBody.appendChild(groupSection);
-
-                    const container = document.getElementById(`group-${group.id}`);
-                    groupReports.forEach(report => {
-                        visibleReportOrder.push(report.id);
-                        container.appendChild(buildReportItem(report, { groupId: group.id }));
-                    });
+                    savedReportsList.appendChild(yearSection);
+                    const yearBody = document.getElementById(`yearListBody-${year}`);
+                    yearGroups.forEach(group => renderGroup(group, yearBody));
                 });
-            });
+            }
 
             // ---- Ungrouped ----
             const ungroupedReports = savedReports.filter(r => !groupedReportIds.has(r.id));
