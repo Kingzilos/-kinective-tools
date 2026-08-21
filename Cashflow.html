@@ -3280,7 +3280,7 @@ function downloadExcel() {
 
     const wk  = typeof currentWeekNum!=='undefined'?currentWeekNum:9;
     const dtl = (typeof WEEK_DATES!=='undefined'&&WEEK_DATES[wk])||'';
-    const ob  = {k8152:gN('ob-8152'),k2213:gN('ob-2213'),k9753:gN('ob-9753'),k0211:gN('ob-0211'),k3472:gN('ob-3472'),a3775:gN('ob-3775'),a7698:gN('ob-7698'),aInv:gN('ob-2085')};
+    const ob  = {k8152:gN('ob-8152'),k2213:gN('ob-2213'),k9753:gN('ob-9753'),k0211:gN('ob-0211'),k3472:gN('ob-3472'),k6299:gN('ob-6299'),k6280:gN('ob-6280'),a3775:gN('ob-3775'),a7698:gN('ob-7698'),aInv:gN('ob-2085')};
     const kinIncRows=[], amdIncRows=[];
     if(typeof incomeData!=='undefined'){
       Object.entries(incomeData.kin||{}).forEach(([k,v])=>kinIncRows.push({n:v.label,a:+(v.amount||0),ent:'Kinective',ac:k}));
@@ -3288,8 +3288,9 @@ function downloadExcel() {
     }
     const kinIncTot=kinIncRows.reduce((s,x)=>s+x.a,0), amdIncTot=amdIncRows.reduce((s,x)=>s+x.a,0), incTotal=kinIncTot+amdIncTot;
     const kinExp=(typeof kinExpenses!=='undefined'?kinExpenses:[]).map(e=>({n:e.name,a:+(e.amount||0),ac:e.account||''}));
+    const planoExp=(typeof planoExpenses!=='undefined'?planoExpenses:[]).map(e=>({n:e.name,a:+(e.amount||0),ac:e.account||''}));
     const amdExp=(typeof amdExpenses!=='undefined'?amdExpenses:[]).map(e=>({n:e.name,a:+(e.amount||0),ac:e.account||''}));
-    const kinExpTot=kinExp.reduce((s,x)=>s+x.a,0), amdExpTot=amdExp.reduce((s,x)=>s+x.a,0), totalExp=kinExpTot+amdExpTot, fcf=incTotal-totalExp;
+    const kinExpTot=kinExp.reduce((s,x)=>s+x.a,0), planoExpTot=planoExp.reduce((s,x)=>s+x.a,0), amdExpTot=amdExp.reduce((s,x)=>s+x.a,0), totalExp=kinExpTot+planoExpTot+amdExpTot, fcf=incTotal-totalExp;
     const capexItems=[];
     document.querySelectorAll('#capex-rows .capex-item').forEach(item=>{
       const n=(item.querySelector('.analytic-name')?.textContent||'').trim();
@@ -3395,13 +3396,15 @@ function downloadExcel() {
     DR('9753 Wells Fargo — Income',  'Kinective','',ob.k9753,false);
     DR('0211 Wells Fargo — Expenses','Kinective','',ob.k0211,true);
     DR('3472 Investment — 4.09% Int.','Kinective','',ob.k3472,false);
-    SUBT('Kinective Total', ob.k8152+ob.k2213+ob.k9753+ob.k0211+ob.k3472);
+    DR('6299 Plano — Income',        'Kinective','',ob.k6299,true);
+    DR('6280 Plano — Expenses',      'Kinective','',ob.k6280,false);
+    SUBT('Kinective Total', ob.k8152+ob.k2213+ob.k9753+ob.k0211+ob.k3472+ob.k6299+ob.k6280);
     BL(6);
     DR('3775 WestStar',              'AMD Capital','',ob.a3775,false);
     DR('7698 Wells Fargo',           'AMD Capital','',ob.a7698,true);
     DR('Investment — 4.09% Interest','AMD Capital','',ob.aInv,false);
     SUBT('AMD Capital Total', ob.a3775+ob.a7698+ob.aInv);
-    TOT('Combined Opening Balance', ob.k8152+ob.k2213+ob.k9753+ob.k0211+ob.k3472+ob.a3775+ob.a7698+ob.aInv);
+    TOT('Combined Opening Balance', ob.k8152+ob.k2213+ob.k9753+ob.k0211+ob.k3472+ob.k6299+ob.k6280+ob.a3775+ob.a7698+ob.aInv);
     BL(16);
 
     // ── 02 Income ───────────────────────────────────────────────────────
@@ -3421,6 +3424,11 @@ function downloadExcel() {
     kinExp.forEach((e,i)=>DR(e.n,'Kinective',e.ac,e.a,i%2===1));
     SUBT('Kinective Subtotal', kinExpTot);
     BL(6);
+    if(planoExp.length){
+      planoExp.forEach((e,i)=>DR(e.n,'Kinective Plano',e.ac,e.a,i%2===1));
+      SUBT('Kinective Plano Subtotal', planoExpTot);
+      BL(6);
+    }
     if(amdExp.length) amdExp.forEach((e,i)=>DR(e.n,'AMD Capital',e.ac,e.a,i%2===1));
     else DR('—','AMD Capital','—',0,false);
     SUBT('AMD Capital Subtotal', amdExpTot);
