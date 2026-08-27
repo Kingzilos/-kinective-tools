@@ -663,9 +663,16 @@ function pf(file,type){
       const flat = rows2.map(r=>r.join('|')).join('\n');
       const isNewFmt=/payroll\s*#/i.test(r0) || flat.includes('company name') || (flat.includes('pay type') && flat.includes('check date') && flat.includes('period'));
       if(isNewFmt){
+        // Reset unknown-pay-type tracker before each conversion so we can flag new format changes.
+        if(typeof G!=='undefined') G.unknownPayTypes=new Set();
         const res=convertNewFormat(wb);
         wb=res.wb; // replaces with T&T workbook; parsing continues as T&T
-        setSt('ok',`Detected payroll company format — converted ${res.empCount} employees (${res.payRows} pay rows) to T&T.`);
+        let msg=`Detected payroll company format — converted ${res.empCount} employees (${res.payRows} pay rows) to T&T.`;
+        if(G.unknownPayTypes && G.unknownPayTypes.size){
+          const unknowns=[...G.unknownPayTypes].join(', ');
+          msg+=` ⚠️ Unrecognized pay types (defaulted to HOURLY): ${unknowns}`;
+        }
+        setSt('ok',msg);
       }
       const txName=wb.SheetNames.find(s=>s.toLowerCase().includes('transaction')||s.toLowerCase().includes('employee payroll'))||wb.SheetNames[0];
       const txWs=wb.Sheets[txName];
@@ -844,16 +851,45 @@ function convertNewFormat(wb){
   }
   if(!emps.length)throw new Error('No employee data found — is this the payroll company format?');
 
-  // Pay type → T&T code. Payroll company sends codes directly (Class/Session/Pilate/Massage).
-  // Some exports use title case ("Class"), others uppercase ("CLASS") — we normalize below.
-  // "Regular" / "VACATION" / "OTHER HRS" route to HOURLY (or SSAL for salaried managers).
-  const PAY_MAP_RAW={
-    'regular':'HOURLY','vacation':'HOURLY','other hrs':'HOURLY','paid time off':'HOURLY',
-    'overtime 1.5':'OT','bonus $':'BONREG','expense reimbursement':'REIMBE',
-    'class':'CLASS','pilate':'PILATE','pilates':'PILATE','session':'SESS','massage':'MASAGE'
+  // Pay type → T&T code. Payroll company keeps renaming these (Class → CLASSES,
+  // Session → SESSIONS, Pilate → PILATES, etc.) — so instead of a strict lookup,
+  // we match by substring against the lowercased pay type. Order matters:
+  // reimbursement is checked before "regular" catch-all, PTO/vacation before HOURLY.
+  // Unknown pay types default to HOURLY and are collected in G.unknownPayTypes for
+  // visibility so you know if the payroll company invents a brand-new code.
+  const PAY_MAP_PATTERNS=[
+    // most specific first
+    [/reimburs|expense/,       'REIMBE'],
+    [/overtime|^ot\b|\bot\s*1/,'OT'],
+    [/bonus/,                  'BONREG'],
+    [/pilat/,                  'PILATE'],   // "Pilate", "Pilates", "Pilates Class"
+    [/class/,                  'CLASS'],    // "Class", "CLASSES", "Group Fitness Class"
+    [/session/,                'SESS'],     // "Session", "SESSIONS", "PT Session"
+    [/massage/,                'MASAGE'],   // "Massage", "MASSAGE", "Massage Therapy"
+    [/vacation|pto|paid\s*time|holiday|sick/, 'HOURLY'], // paid leave → HOURLY (or SSAL via salaried check)
+    [/regular|hourly|other\s*hrs?/, 'HOURLY'],
+  ];
+  const PAY_MAP=key=>{
+    const s=String(key||'').toLowerCase().trim();
+    if(!s)return null;
+    for(const [rx,code] of PAY_MAP_PATTERNS){if(rx.test(s))return code;}
+    // Unknown pay type — record it (so we can surface it to the user) and default to HOURLY.
+    if(typeof G!=='undefined'){
+      G.unknownPayTypes=G.unknownPayTypes||new Set();
+      G.unknownPayTypes.add(key);
+    }
+    return 'HOURLY';
   };
-  const PAY_MAP=key=>PAY_MAP_RAW[String(key||'').toLowerCase().trim()];
-  const DED_MAP={'Client Voluntary Medical Pre Tax (CR)':'HIPT1','Colonial PreTax (CR)':'SCOPT','Colonial Post (CR)':'SCOAT'};
+  const DED_PATTERNS=[
+    [/colonial\s*pre|colonial.*pretax|scopt/i, 'SCOPT'],
+    [/colonial\s*post|colonial.*after|scoat/i, 'SCOAT'],
+    [/(voluntary|client).*medical|health\s*ins|hipt/i, 'HIPT1'],
+  ];
+  const DED_MAP=raw=>{
+    const s=String(raw||'').trim();
+    for(const [rx,code] of DED_PATTERNS){if(rx.test(s))return code;}
+    return s; // unknown → pass through the original label
+  };
 
   const mdY=s=>{const p=s.trim().split('/');return new Date(+p[2],+p[0]-1,+p[1]);};
   const hdr=['Employee ID','EE Client ID','First Name','Last Name','Position-Job Title','Check Number','PPS','PPE','Check Date','Payroll Record Type','Payroll Code','Units To Pay','Amount','WC Transaction'];
@@ -875,7 +911,7 @@ function convertNewFormat(wb){
       out.push(base('Pay Codes',code,pl.hours,pl.pay,code==='REIMBE'?'':'TX9063'));
     });
     // Deductions
-    emp.dedLines.forEach(dl=>{ if(dl.amount>0)out.push(base('Deductions',DED_MAP[dl.dedType]||dl.dedType,0,dl.amount,'')); });
+    emp.dedLines.forEach(dl=>{ if(dl.amount>0)out.push(base('Deductions',DED_MAP(dl.dedType),0,dl.amount,'')); });
   });
 
   const owb=XLSX.utils.book_new();
