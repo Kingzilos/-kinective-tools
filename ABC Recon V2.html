@@ -1027,6 +1027,128 @@
             font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, monospace;
         }
 
+        .qbo-export-btn {
+            padding: 12px 24px;
+            background: linear-gradient(135deg, #0066cc 0%, #0052a3 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            margin-left: 10px;
+        }
+        .qbo-export-btn:hover {
+            background: linear-gradient(135deg, #0052a3 0%, #004080 100%);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 102, 204, 0.25);
+        }
+
+        #igniteDropZone:hover {
+            border-color: #0066cc !important;
+            background: linear-gradient(135deg, #f0f4ff 0%, #e8f0ff 100%) !important;
+        }
+        #igniteDropZone.dragover {
+            border-color: #10b981 !important;
+            background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%) !important;
+            transform: scale(1.005);
+        }
+
+        .warning-banner {
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            font-size: 13px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .warning-banner.warn {
+            background: #fef3c7;
+            color: #92400e;
+            border-left: 4px solid #f59e0b;
+        }
+        .warning-banner.info {
+            background: #dbeafe;
+            color: #1e40af;
+            border-left: 4px solid #0066cc;
+        }
+        .warning-banner.success {
+            background: #d1fae5;
+            color: #065f46;
+            border-left: 4px solid #10b981;
+        }
+
+        #dailyBreakdownTable th {
+            background: linear-gradient(135deg, #0066cc 0%, #0052a3 100%);
+            color: white;
+            padding: 10px 8px;
+            text-align: right;
+            font-weight: 600;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+            white-space: nowrap;
+        }
+        #dailyBreakdownTable th:first-child {
+            text-align: left;
+        }
+        #dailyBreakdownTable td {
+            padding: 8px;
+            border-bottom: 1px solid #f3f4f6;
+            font-size: 12px;
+            color: #1a1a1a;
+            text-align: right;
+            font-family: 'SF Mono', Monaco, 'Consolas', monospace;
+            white-space: nowrap;
+        }
+        #dailyBreakdownTable td:first-child {
+            text-align: left;
+            font-weight: 600;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        }
+        #dailyBreakdownTable tr:hover td {
+            background: #f9fafb;
+        }
+        #dailyBreakdownTable tr.total-row td {
+            background: #f8f9fa;
+            font-weight: 700;
+            border-top: 2px solid #d1d5db;
+            border-bottom: none;
+        }
+        #dailyBreakdownTable tr.mismatch-row td {
+            background: #fef3c7 !important;
+        }
+        #dailyBreakdownTable td.match-ok { color: #059669; font-weight: 600; }
+        #dailyBreakdownTable td.match-warn { color: #dc2626; font-weight: 600; }
+        #dailyBreakdownTable td.deduction-cell { color: #dc2626; }
+
+        #qboPreviewContent table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+            margin-top: 12px;
+        }
+        #qboPreviewContent th {
+            background: #f3f4f6;
+            padding: 8px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 11px;
+            text-transform: uppercase;
+            color: #4b5563;
+            border-bottom: 1px solid #d1d5db;
+        }
+        #qboPreviewContent td {
+            padding: 8px;
+            border-bottom: 1px solid #f3f4f6;
+            font-family: 'SF Mono', Monaco, monospace;
+        }
+        #qboPreviewContent td.amount { text-align: right; }
+        #qboPreviewContent td.negative { color: #dc2626; }
+
         .reset-btn {
             padding: 12px 24px;
             background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
@@ -1318,6 +1440,65 @@
 
             <div class="report-actions">
                 <button class="reset-btn" id="resetBtn">Upload New Report</button>
+                <button class="qbo-export-btn" id="qboExportBtn" onclick="showQboSection()" style="display:none;">Prepare QBO Export</button>
+            </div>
+
+            <!-- QBO EXPORT SECTION (Daily Dep only) -->
+            <div id="qboSection" style="display:none; margin-top: 32px; padding-top: 32px; border-top: 1px solid #e5e7eb;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                    <div>
+                        <h2 style="font-size:22px; font-weight:700; color:#1a1a1a; margin-bottom:4px;">QBO Export — Daily Breakdown</h2>
+                        <div style="font-size:13px; color:#6b7280;">Upload the ABC Ignite Daily Deposit Analysis to add merchant fees per day.</div>
+                    </div>
+                    <button class="reset-btn" onclick="hideQboSection()" style="background:linear-gradient(135deg,#e5e7eb 0%,#d1d5db 100%); color:#1a1a1a;">Close</button>
+                </div>
+
+                <!-- Ignite upload zone -->
+                <div id="igniteDropZone" style="border:2px dashed #cbd5e1; border-radius:12px; padding:32px; text-align:center; cursor:pointer; background:linear-gradient(135deg,#fafbfc 0%,#f8f9fa 100%); transition:all 0.3s;">
+                    <div style="font-size:44px; margin-bottom:12px;">
+                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#0066cc" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                            <polyline points="17 8 12 3 7 8"></polyline>
+                            <line x1="12" y1="3" x2="12" y2="15"></line>
+                        </svg>
+                    </div>
+                    <div style="font-size:16px; color:#1a1a1a; font-weight:600; margin-bottom:4px;">Drop ABC Ignite Daily Deposit Analysis here</div>
+                    <div style="font-size:13px; color:#6b7280;">or click to browse (Excel export from Ignite dashboard)</div>
+                    <input type="file" id="igniteFileInput" accept=".xlsx,.xls" style="display:none;">
+                </div>
+
+                <!-- Ignite loaded indicator -->
+                <div id="igniteLoadedIndicator" style="display:none; padding:14px 18px; background:#ecfdf5; border:1px solid #a7f3d0; border-radius:10px; margin-top:12px; display:none; justify-content:space-between; align-items:center;">
+                    <div style="color:#047857; font-weight:600; font-size:14px;">✓ Ignite Daily Deposit Analysis loaded — <span id="igniteRangeLabel"></span></div>
+                    <button onclick="clearIgnite()" style="background:transparent; border:1px solid #a7f3d0; color:#047857; padding:6px 12px; border-radius:6px; cursor:pointer; font-size:12px; font-weight:600;">Clear</button>
+                </div>
+
+                <!-- Warnings area -->
+                <div id="qboWarnings" style="margin-top:16px;"></div>
+
+                <!-- Daily breakdown table -->
+                <div id="dailyBreakdownContainer" style="display:none; margin-top:24px; overflow-x:auto;">
+                    <h3 style="font-size:16px; font-weight:700; color:#1a1a1a; margin-bottom:12px;">Daily Breakdown</h3>
+                    <table id="dailyBreakdownTable" style="width:100%; border-collapse:collapse; font-size:13px;"></table>
+                </div>
+
+                <!-- Export buttons -->
+                <div id="qboExportActions" style="display:none; margin-top:24px; gap:10px; display:none;">
+                    <button onclick="showQboPreview()" style="padding:12px 24px; background:linear-gradient(135deg,#0066cc 0%,#0052a3 100%); color:white; border:none; border-radius:8px; cursor:pointer; font-weight:600; font-size:14px;">Preview QBO CSV</button>
+                    <button onclick="downloadQboCsv()" style="padding:12px 24px; background:linear-gradient(135deg,#059669 0%,#047857 100%); color:white; border:none; border-radius:8px; cursor:pointer; font-weight:600; font-size:14px; margin-left:10px;">Download QBO CSV</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- QBO Preview Modal -->
+    <div class="modal" id="qboPreviewModal">
+        <div class="modal-content" style="max-width:900px; width:95%; max-height:85vh; overflow-y:auto;">
+            <div class="modal-header">QBO CSV Preview</div>
+            <div id="qboPreviewContent"></div>
+            <div class="modal-actions" style="position:sticky; bottom:0; background:white; padding-top:16px;">
+                <button class="modal-btn modal-btn-secondary" onclick="closeQboPreview()">Close</button>
+                <button class="modal-btn modal-btn-primary" onclick="downloadQboCsv(); closeQboPreview();">Download CSV</button>
             </div>
         </div>
     </div>
@@ -2240,6 +2421,10 @@
             dropZone.style.display = 'block';
             currentReportData = null;
             
+            // Reset QBO Export state (Daily Dep only feature)
+            if (typeof hideQboSection === 'function') hideQboSection();
+            if (typeof clearIgnite === 'function') clearIgnite(true);
+            
             // Load reports for selected type
             loadSavedReports();
         }
@@ -2485,10 +2670,14 @@
             const paymentAmountIdx = headers.findIndex(h => h && h === 'Payment\nAmount');
             const salesTaxIdx = headers.findIndex(h => h && h === 'Sales Tax');
             const paymentExcludingIdx = headers.findIndex(h => h && h.toString().includes('Excluding Tax'));
+            const paymentDateIdx = headers.findIndex(h => h && h.toString().includes('Payment') && h.toString().includes('Date'));
+            const clubNameIdx = headers.findIndex(h => h && h.toString().includes('Club') && h.toString().includes('Name'));
             
             // Process data rows (starting from row 6, index 5)
             const processedData = {};
             let unappliedPayments = [];
+            // Store raw non-cash rows for daily-slicing (Daily Dep QBO export feature)
+            const rawRows = [];
             
             for (let i = 5; i < data.length; i++) {
                 const row = data[i];
@@ -2496,9 +2685,25 @@
                 
                 const paymentType = row[paymentTypeIdx];
                 const profitCenter = row[profitCenterIdx];
+                const clubName = clubNameIdx >= 0 ? row[clubNameIdx] : null;
+                
+                // Skip subtotal/total rows (Club Name starts with "Total" or "Grand")
+                if (clubName && /^(Total|Grand)/i.test(String(clubName))) continue;
                 
                 // Skip CASH payments
                 if (paymentType && paymentType.toString().toUpperCase() === 'CASH') continue;
+                
+                // Capture raw row (for daily slicing)
+                if (currentReconciliationType === 'dailyDep' && profitCenter && paymentDateIdx >= 0) {
+                    rawRows.push({
+                        date: row[paymentDateIdx],
+                        profitCenter: profitCenter,
+                        amount: parseFloat(row[paymentAmountIdx] || 0),
+                        tax: parseFloat(row[salesTaxIdx] || 0),
+                        excludingTax: parseFloat(row[paymentExcludingIdx] || 0),
+                        paymentType: paymentType
+                    });
+                }
                 
                 // Check for UNAPPLIED PAYMENT
                 if (profitCenter && profitCenter.toString().toUpperCase().includes('UNAPPLIED PAYMENT')) {
@@ -2557,6 +2762,7 @@
                 totalRevenue,
                 data: processedData,
                 unappliedPayments,
+                rawRows: currentReconciliationType === 'dailyDep' ? rawRows : undefined,
                 timestamp: new Date().toISOString()
             };
             
@@ -2636,6 +2842,16 @@
                 `;
                 tableBody.appendChild(warningRow);
             }
+            
+            // Show/hide the Prepare QBO Export button (Daily Dep only, and only if rawRows exist)
+            const qboBtn = document.getElementById('qboExportBtn');
+            if (qboBtn) {
+                const isDailyDep = currentReconciliationType === 'dailyDep';
+                const hasRawRows = currentReportData && currentReportData.rawRows && currentReportData.rawRows.length > 0;
+                qboBtn.style.display = (isDailyDep && hasRawRows) ? 'inline-block' : 'none';
+            }
+            // Reset any open QBO section from a prior report
+            hideQboSection();
             
             // Show report
             dropZone.style.display = 'none';
@@ -2844,6 +3060,540 @@
                 store.set(storageKey, savedReports);
                 loadSavedReports();
             }
+        }
+
+        // ============================================================
+        //  QBO EXPORT MODULE (Daily Dep tab only)
+        //  Adds daily breakdown + Ignite Daily Deposit Analysis ingest
+        //  + QBO CSV generator posting to 1007 ABC Clearing
+        // ============================================================
+
+        // Category -> QBO Account mapping (KFC El Paso COA)
+        const QBO_ACCOUNTS = {
+            'Dues':               { num: '20011', name: 'Memberships / Dues' },
+            'Annual Fee':         { num: '20051', name: 'Memberships / Dues:Annual Fee' },
+            'Annual Fees':        { num: '20051', name: 'Memberships / Dues:Annual Fee' },
+            'PERSONAL TRAINING':  { num: '20019', name: 'Personal Training' },
+            'Zest':               { num: '20035', name: 'Zest' },
+            'Retail':             { num: '20028', name: 'Retail' },
+            'Kinective Kids':     { num: '20005', name: 'Kinective Kids' },
+            'Missed class fee':   { num: '20053', name: 'Missed class Fee' },
+            'Massages':           { num: '20008', name: 'Massages' },
+            'Booking fee':        { num: '20052', name: 'Booking fee' },
+            'Lockers':            { num: '20015', name: 'Lockers' },
+            'Pilates':            { num: '20024', name: 'Pilates' },
+            'Talks and events':   { num: '20013', name: 'Talks and Events' }
+        };
+        const QBO_MERCHANT_FEES = { num: '40026', name: 'Merchant Service Fees' };
+        // Categories that need flagging - do NOT export to CSV
+        const QBO_FLAG_CATEGORIES = new Set(['Kin Donations', 'Laundry']);
+
+        let igniteData = null; // { dailyByDate: {ISO -> {collections, refunds, void, deduction, deposit, endingBalance}}, dateRange }
+        let dailyBreakdown = null; // computed from currentReportData.rawRows + igniteData
+
+        function showQboSection() {
+            document.getElementById('qboSection').style.display = 'block';
+            document.getElementById('qboExportBtn').style.display = 'none';
+            wireIgniteDropZone();
+        }
+        function hideQboSection() {
+            const s = document.getElementById('qboSection');
+            if (s) s.style.display = 'none';
+            const btn = document.getElementById('qboExportBtn');
+            if (btn && currentReportData && currentReportData.rawRows && currentReconciliationType === 'dailyDep') {
+                btn.style.display = 'inline-block';
+            }
+        }
+
+        let igniteWired = false;
+        function wireIgniteDropZone() {
+            if (igniteWired) return;
+            igniteWired = true;
+            const dz = document.getElementById('igniteDropZone');
+            const fi = document.getElementById('igniteFileInput');
+            if (!dz || !fi) return;
+            dz.addEventListener('click', () => fi.click());
+            dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('dragover'); });
+            dz.addEventListener('dragleave', () => dz.classList.remove('dragover'));
+            dz.addEventListener('drop', e => {
+                e.preventDefault();
+                dz.classList.remove('dragover');
+                if (e.dataTransfer.files.length > 0) handleIgniteFile(e.dataTransfer.files[0]);
+            });
+            fi.addEventListener('change', e => {
+                if (e.target.files.length > 0) handleIgniteFile(e.target.files[0]);
+            });
+        }
+
+        function handleIgniteFile(file) {
+            const reader = new FileReader();
+            reader.onload = e => {
+                try {
+                    const wb = XLSX.read(new Uint8Array(e.target.result), { type: 'array', cellDates: true });
+                    // Try to find the sheet with the Ignite data - usually "Export"
+                    let sheet = wb.Sheets['Export'] || wb.Sheets[wb.SheetNames[0]];
+                    const grid = XLSX.utils.sheet_to_json(sheet, { header: 1, raw: true });
+                    igniteData = parseIgniteGrid(grid);
+                    if (!igniteData) {
+                        showIgniteError("Could not parse this file as ABC Ignite Daily Deposit Analysis.");
+                        return;
+                    }
+                    showIgniteLoaded();
+                    computeAndRenderDailyBreakdown();
+                } catch (err) {
+                    console.error(err);
+                    showIgniteError("Error reading file: " + err.message);
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        function parseIgniteGrid(grid) {
+            if (!grid || grid.length < 2) return null;
+            // Row 0 (index 0) has the date headers: first cell is a label like "FormattedFullDate_Pos"
+            const headerRow = grid[0] || [];
+            // Detect ignite header
+            const firstCell = String(headerRow[0] || '');
+            if (!/FullDate|FormattedFullDate/i.test(firstCell) && !isIgniteByRowLabels(grid)) {
+                return null;
+            }
+
+            // Build column -> date map (skip col 0 which is label, and skip "Total" column)
+            const colDates = [];
+            for (let j = 1; j < headerRow.length; j++) {
+                const v = headerRow[j];
+                let d = null;
+                if (v instanceof Date && !isNaN(v.getTime())) {
+                    d = v;
+                } else if (typeof v === 'number') {
+                    // Excel date serial number - convert to JS Date
+                    // Excel epoch: 1899-12-30 (accounting for 1900 leap-year bug)
+                    const utcMs = Math.round((v - 25569) * 86400 * 1000);
+                    const tmp = new Date(utcMs);
+                    if (!isNaN(tmp.getTime())) {
+                        d = new Date(tmp.getUTCFullYear(), tmp.getUTCMonth(), tmp.getUTCDate());
+                    }
+                } else if (typeof v === 'string') {
+                    const s = v.trim();
+                    // Skip "Total" and blanks
+                    if (/^total$/i.test(s) || s === '') { colDates.push(null); continue; }
+                    const parsed = new Date(s);
+                    if (!isNaN(parsed.getTime())) d = parsed;
+                }
+                colDates.push((d && typeof d.getFullYear === 'function' && !isNaN(d.getTime())) ? isoDate(d) : null);
+            }
+
+            // Find rows for Collections, Refunds, Void, Deduction, Deposit, Ending Balance, Starting Balance
+            const rowIdx = {};
+            const wantedLabels = ['Starting Balance', 'Collections', 'Refunds', 'Void', 'Deduction', 'Deposit', 'Ending Balance'];
+            for (let i = 1; i < grid.length; i++) {
+                const label = String((grid[i] || [])[0] || '').trim();
+                if (wantedLabels.includes(label)) rowIdx[label] = i;
+            }
+            if (!('Collections' in rowIdx) || !('Deduction' in rowIdx)) return null;
+
+            // Build daily map
+            const dailyByDate = {};
+            for (let j = 1; j < colDates.length + 1; j++) {
+                const iso = colDates[j - 1];
+                if (!iso) continue;
+                dailyByDate[iso] = {
+                    startingBalance: numAt(grid, rowIdx['Starting Balance'], j),
+                    collections:     numAt(grid, rowIdx['Collections'], j),
+                    refunds:         numAt(grid, rowIdx['Refunds'], j),
+                    voidAmt:         numAt(grid, rowIdx['Void'], j),
+                    deduction:       numAt(grid, rowIdx['Deduction'], j),
+                    deposit:         numAt(grid, rowIdx['Deposit'], j),
+                    endingBalance:   numAt(grid, rowIdx['Ending Balance'], j)
+                };
+            }
+            const dates = Object.keys(dailyByDate).sort();
+            return { dailyByDate, dateRange: dates.length ? { start: dates[0], end: dates[dates.length - 1] } : null };
+        }
+
+        function isIgniteByRowLabels(grid) {
+            // Backup detection: look for both "Collections" and "Deduction" in column A
+            let hasCol = false, hasDed = false;
+            for (let i = 0; i < grid.length; i++) {
+                const v = String((grid[i] || [])[0] || '').trim();
+                if (v === 'Collections') hasCol = true;
+                if (v === 'Deduction') hasDed = true;
+            }
+            return hasCol && hasDed;
+        }
+
+        function numAt(grid, row, col) {
+            if (row === undefined) return 0;
+            const v = (grid[row] || [])[col];
+            const n = Number(v);
+            return isFinite(n) ? n : 0;
+        }
+
+        function isoDate(d) {
+            // Local-date ISO YYYY-MM-DD
+            const y = d.getFullYear();
+            const m = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            return `${y}-${m}-${day}`;
+        }
+
+        function showIgniteError(msg) {
+            const w = document.getElementById('qboWarnings');
+            w.innerHTML = `<div class="warning-banner warn">⚠ ${msg}</div>`;
+        }
+
+        function showIgniteLoaded() {
+            const el = document.getElementById('igniteLoadedIndicator');
+            el.style.display = 'flex';
+            const range = igniteData.dateRange;
+            document.getElementById('igniteRangeLabel').textContent =
+                range ? `${range.start} → ${range.end} (${Object.keys(igniteData.dailyByDate).length} days)` : '';
+            document.getElementById('igniteDropZone').style.display = 'none';
+        }
+
+        function clearIgnite(silent) {
+            igniteData = null;
+            dailyBreakdown = null;
+            const el = document.getElementById('igniteLoadedIndicator');
+            if (el) el.style.display = 'none';
+            const dz = document.getElementById('igniteDropZone');
+            if (dz) dz.style.display = 'block';
+            const fi = document.getElementById('igniteFileInput');
+            if (fi) fi.value = '';
+            const container = document.getElementById('dailyBreakdownContainer');
+            if (container) container.style.display = 'none';
+            const actions = document.getElementById('qboExportActions');
+            if (actions) actions.style.display = 'none';
+            const w = document.getElementById('qboWarnings');
+            if (w && !silent) w.innerHTML = '';
+        }
+
+        function computeAndRenderDailyBreakdown() {
+            if (!currentReportData || !currentReportData.rawRows || !igniteData) return;
+
+            const rawRows = currentReportData.rawRows;
+            // Group raw rows by (date, mapped category)
+            // Also track unapplied payments per day
+            const byDate = {}; // iso -> { categories: {catName: {ex, tax, tot}}, unapplied: total, flagged: {catName: total} }
+
+            for (const r of rawRows) {
+                const iso = rowToIso(r.date);
+                if (!iso) continue;
+                if (!byDate[iso]) byDate[iso] = { categories: {}, unapplied: 0, flagged: {} };
+                const bucket = byDate[iso];
+
+                const pc = String(r.profitCenter || '');
+                // UNAPPLIED — same treatment as monthly: allocate to Dues at 1.0825
+                if (pc.toUpperCase().includes('UNAPPLIED PAYMENT')) {
+                    bucket.unapplied += r.amount;
+                    continue;
+                }
+                const glCode = profitCenterMapping[pc] || pc;
+                if (!glCode) continue;
+
+                // Flagged (Kin Donations / Laundry) — don't add to categories, track separately
+                if (QBO_FLAG_CATEGORIES.has(glCode)) {
+                    bucket.flagged[glCode] = (bucket.flagged[glCode] || 0) + r.amount;
+                    continue;
+                }
+                if (!bucket.categories[glCode]) bucket.categories[glCode] = { ex: 0, tax: 0, tot: 0 };
+                bucket.categories[glCode].ex += r.excludingTax || 0;
+                bucket.categories[glCode].tax += r.tax || 0;
+                bucket.categories[glCode].tot += r.amount || 0;
+            }
+
+            // Apply UNAPPLIED payment tax split into Dues per day
+            for (const iso of Object.keys(byDate)) {
+                const b = byDate[iso];
+                if (b.unapplied !== 0) {
+                    const pre = b.unapplied / 1.0825;
+                    const tax = b.unapplied - pre;
+                    if (!b.categories['Dues']) b.categories['Dues'] = { ex: 0, tax: 0, tot: 0 };
+                    b.categories['Dues'].ex += pre;
+                    b.categories['Dues'].tax += tax;
+                    b.categories['Dues'].tot += b.unapplied;
+                }
+            }
+
+            // Determine full date range = union of report dates + ignite dates, sorted
+            const allDates = new Set([...Object.keys(byDate), ...Object.keys(igniteData.dailyByDate)]);
+            const dates = Array.from(allDates).sort();
+
+            // Determine which categories appear anywhere (union)
+            const categorySet = new Set();
+            for (const iso of dates) {
+                const b = byDate[iso];
+                if (b) Object.keys(b.categories).forEach(c => categorySet.add(c));
+            }
+            // Preferred order: Dues, Annual Fee, PT, Zest, Retail, Kids, Missed, Massages, Booking, Lockers, Pilates, Talks, then anything else
+            const preferredOrder = ['Dues', 'Annual Fee', 'PERSONAL TRAINING', 'Zest', 'Retail', 'Kinective Kids',
+                                    'Missed class fee', 'Massages', 'Booking fee', 'Lockers', 'Pilates', 'Talks and events'];
+            const orderedCategories = preferredOrder.filter(c => categorySet.has(c))
+                                        .concat([...categorySet].filter(c => !preferredOrder.includes(c)).sort());
+
+            // Aggregate flagged totals across all dates for warning banner
+            const flaggedTotals = {}; // {catName: total}
+            for (const iso of dates) {
+                const b = byDate[iso];
+                if (b) for (const [k, v] of Object.entries(b.flagged)) {
+                    flaggedTotals[k] = (flaggedTotals[k] || 0) + v;
+                }
+            }
+
+            dailyBreakdown = { dates, byDate, orderedCategories, flaggedTotals };
+            renderDailyBreakdown();
+            renderQboWarnings();
+            document.getElementById('qboExportActions').style.display = 'flex';
+        }
+
+        function rowToIso(v) {
+            if (!v) return null;
+            if (v instanceof Date && !isNaN(v.getTime())) return isoDate(v);
+            if (typeof v === 'number') {
+                // Excel date serial
+                const utcMs = Math.round((v - 25569) * 86400 * 1000);
+                const tmp = new Date(utcMs);
+                if (isNaN(tmp.getTime())) return null;
+                const localDate = new Date(tmp.getUTCFullYear(), tmp.getUTCMonth(), tmp.getUTCDate());
+                return isoDate(localDate);
+            }
+            const d = new Date(v);
+            if (!isNaN(d.getTime())) return isoDate(d);
+            return null;
+        }
+
+        function renderDailyBreakdown() {
+            const { dates, byDate, orderedCategories } = dailyBreakdown;
+            const table = document.getElementById('dailyBreakdownTable');
+            const container = document.getElementById('dailyBreakdownContainer');
+            container.style.display = 'block';
+
+            // Header
+            let html = '<thead><tr>';
+            html += '<th>Date</th>';
+            orderedCategories.forEach(c => html += `<th>${escapeHtml(c)}</th>`);
+            html += '<th>Rev Total</th>';
+            html += '<th>Ignite Coll</th>';
+            html += '<th>Match</th>';
+            html += '<th>Deduction</th>';
+            html += '<th>End Bal</th>';
+            html += '</tr></thead><tbody>';
+
+            // Column totals
+            const colTotals = {}; // category -> sum
+            let totalRev = 0, totalIgColl = 0, totalDed = 0, totalRefunds = 0;
+
+            dates.forEach(iso => {
+                const b = byDate[iso] || { categories: {} };
+                const ig = igniteData.dailyByDate[iso];
+                const revTotal = Object.values(b.categories).reduce((s, o) => s + o.tot, 0);
+                // Ignite net = Collections + Refunds  (both signed; refunds are negative)
+                const igNet = ig ? (ig.collections + ig.refunds) : null;
+                const diff = ig ? (revTotal - igNet) : null;
+                const isMismatch = ig && Math.abs(diff) > 5;
+
+                totalRev += revTotal;
+                if (ig) {
+                    totalIgColl += ig.collections;
+                    totalRefunds += ig.refunds;
+                    totalDed += ig.deduction;
+                }
+
+                html += `<tr${isMismatch ? ' class="mismatch-row"' : ''}>`;
+                html += `<td>${iso}</td>`;
+                orderedCategories.forEach(c => {
+                    const val = (b.categories[c] && b.categories[c].tot) || 0;
+                    colTotals[c] = (colTotals[c] || 0) + val;
+                    html += `<td>${val ? fmtMoney(val) : ''}</td>`;
+                });
+                html += `<td>${fmtMoney(revTotal)}</td>`;
+                html += `<td>${ig ? fmtMoney(ig.collections) : '—'}</td>`;
+                if (ig) {
+                    const cls = isMismatch ? 'match-warn' : 'match-ok';
+                    const sym = isMismatch ? '✗' : '✓';
+                    html += `<td class="${cls}">${sym} ${fmtMoney(diff)}</td>`;
+                } else {
+                    html += `<td>—</td>`;
+                }
+                html += `<td class="deduction-cell">${ig ? fmtMoney(ig.deduction) : '—'}</td>`;
+                html += `<td>${ig ? fmtMoney(ig.endingBalance) : '—'}</td>`;
+                html += `</tr>`;
+            });
+
+            // Totals row
+            html += '<tr class="total-row"><td>Total</td>';
+            orderedCategories.forEach(c => html += `<td>${fmtMoney(colTotals[c] || 0)}</td>`);
+            html += `<td>${fmtMoney(totalRev)}</td>`;
+            html += `<td>${fmtMoney(totalIgColl)}</td>`;
+            html += `<td>—</td>`;
+            html += `<td class="deduction-cell">${fmtMoney(totalDed)}</td>`;
+            html += `<td>—</td>`;
+            html += '</tr></tbody>';
+            table.innerHTML = html;
+        }
+
+        function renderQboWarnings() {
+            const w = document.getElementById('qboWarnings');
+            const parts = [];
+
+            // Ignite range vs report range mismatch
+            const revDates = new Set(dailyBreakdown.dates.filter(d => (dailyBreakdown.byDate[d]?.categories && Object.keys(dailyBreakdown.byDate[d].categories).length > 0)));
+            const igDates = new Set(Object.keys(igniteData.dailyByDate));
+            const revOnly = [...revDates].filter(d => !igDates.has(d));
+            const igOnly = [...igDates].filter(d => !revDates.has(d));
+            if (revOnly.length || igOnly.length) {
+                parts.push(`<div class="warning-banner info">⚠ Date coverage differs: ${revOnly.length ? `Revenue-only days: ${revOnly.length}. ` : ''}${igOnly.length ? `Ignite-only days: ${igOnly.length}.` : ''} Review the breakdown table.</div>`);
+            }
+
+            // Flagged categories
+            const flagged = dailyBreakdown.flaggedTotals;
+            const flaggedKeys = Object.keys(flagged).filter(k => Math.abs(flagged[k]) > 0.001);
+            if (flaggedKeys.length) {
+                const parts2 = flaggedKeys.map(k => `${escapeHtml(k)}: ${fmtMoney(flagged[k])}`).join(', ');
+                parts.push(`<div class="warning-banner warn">⚠ Non-income categories detected — excluded from QBO CSV: ${parts2}. Review manually.</div>`);
+            }
+
+            // Mismatch days summary
+            let mismatchCount = 0;
+            let mismatchNet = 0;
+            for (const iso of dailyBreakdown.dates) {
+                const b = dailyBreakdown.byDate[iso];
+                const ig = igniteData.dailyByDate[iso];
+                if (!b || !ig) continue;
+                const revTotal = Object.values(b.categories).reduce((s, o) => s + o.tot, 0);
+                const diff = revTotal - (ig.collections + ig.refunds);
+                if (Math.abs(diff) > 5) { mismatchCount++; mismatchNet += diff; }
+            }
+            if (mismatchCount > 0) {
+                parts.push(`<div class="warning-banner warn">⚠ ${mismatchCount} day(s) with variance &gt; $5 vs. Ignite Collections. Net variance: ${fmtMoney(mismatchNet)}. Highlighted in yellow.</div>`);
+            } else {
+                parts.push(`<div class="warning-banner success">✓ All days reconcile within $5 of Ignite Collections.</div>`);
+            }
+
+            w.innerHTML = parts.join('');
+        }
+
+        // ---- QBO CSV Generation ----
+
+        function buildQboRows() {
+            // Produces an array of {date: 'MM/DD/YYYY', description, amount}
+            // For each day and each mapped category: one line per (day, category)
+            // Plus one Deduction line per day where Ignite deduction != 0
+            if (!dailyBreakdown || !igniteData) return [];
+
+            const rows = [];
+            for (const iso of dailyBreakdown.dates) {
+                const b = dailyBreakdown.byDate[iso] || { categories: {} };
+                const mmddyyyy = isoToMMDDYYYY(iso);
+
+                // Revenue lines (positive or negative)
+                for (const cat of Object.keys(b.categories)) {
+                    if (QBO_FLAG_CATEGORIES.has(cat)) continue; // safety — should already be excluded
+                    const acct = QBO_ACCOUNTS[cat];
+                    if (!acct) continue; // unmapped — skip
+                    const item = b.categories[cat];
+                    if (Math.abs(item.tot) < 0.005) continue; // skip zero rows
+                    rows.push({
+                        date: mmddyyyy,
+                        description: `${acct.num} ${acct.name} - ABC`,
+                        amount: round2(item.tot),
+                        category: cat
+                    });
+                }
+
+                // Merchant fee line (from Ignite Deduction) — always negative amount
+                const ig = igniteData.dailyByDate[iso];
+                if (ig && Math.abs(ig.deduction) > 0.005) {
+                    rows.push({
+                        date: mmddyyyy,
+                        description: `${QBO_MERCHANT_FEES.num} ${QBO_MERCHANT_FEES.name} - ABC`,
+                        amount: round2(ig.deduction),
+                        category: 'Merchant Service Fees'
+                    });
+                }
+            }
+            return rows;
+        }
+
+        function showQboPreview() {
+            const rows = buildQboRows();
+            if (rows.length === 0) {
+                document.getElementById('qboPreviewContent').innerHTML = '<div class="warning-banner warn">No rows to export.</div>';
+            } else {
+                const total = rows.reduce((s, r) => s + r.amount, 0);
+                const numRevenue = rows.filter(r => r.amount > 0).length;
+                const numFees = rows.filter(r => r.amount < 0).length;
+
+                let html = `
+                    <div style="background:#f8f9fa; padding:12px 16px; border-radius:8px; margin-bottom:14px; font-size:13px; color:#4b5563;">
+                        <strong>Summary:</strong> ${rows.length} rows &nbsp;|&nbsp;
+                        Revenue lines: ${numRevenue} &nbsp;|&nbsp; Fee lines: ${numFees} &nbsp;|&nbsp;
+                        <strong>Net total:</strong> ${fmtMoney(total)}
+                    </div>
+                    <div style="font-size:12px; color:#6b7280; margin-bottom:8px;">Upload target: <strong>1007 ABC Clearing</strong> (Bank / Cash on hand). Format: Date, Description, Received, Spent (QBO 2-column).</div>
+                    <table><thead><tr><th>Date</th><th>Description</th><th style="text-align:right;">Received</th><th style="text-align:right;">Spent</th></tr></thead><tbody>`;
+                for (const r of rows) {
+                    if (r.amount >= 0) {
+                        html += `<tr><td>${r.date}</td><td>${escapeHtml(r.description)}</td><td class="amount">${fmtMoney(r.amount)}</td><td class="amount"></td></tr>`;
+                    } else {
+                        html += `<tr><td>${r.date}</td><td>${escapeHtml(r.description)}</td><td class="amount"></td><td class="amount negative">${fmtMoney(Math.abs(r.amount))}</td></tr>`;
+                    }
+                }
+                html += '</tbody></table>';
+                document.getElementById('qboPreviewContent').innerHTML = html;
+            }
+            document.getElementById('qboPreviewModal').classList.add('active');
+        }
+        function closeQboPreview() {
+            document.getElementById('qboPreviewModal').classList.remove('active');
+        }
+
+        function downloadQboCsv() {
+            const rows = buildQboRows();
+            if (rows.length === 0) { alert('No rows to export.'); return; }
+            // QBO native 2-column format: Date, Description, Received, Spent
+            // QBO drops negative amounts in single-Amount CSV imports, so we split
+            // positive amounts into "Received" and negative into "Spent" (as positive)
+            const lines = ['Date,Description,Received,Spent'];
+            for (const r of rows) {
+                const desc = '"' + String(r.description).replace(/"/g, '""') + '"';
+                if (r.amount >= 0) {
+                    lines.push(`${r.date},${desc},${r.amount.toFixed(2)},`);
+                } else {
+                    lines.push(`${r.date},${desc},,${Math.abs(r.amount).toFixed(2)}`);
+                }
+            }
+            const csv = lines.join('\r\n');
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            const rangeLabel = igniteData.dateRange
+                ? `${igniteData.dateRange.start}_to_${igniteData.dateRange.end}`
+                : 'export';
+            a.href = url;
+            a.download = `QBO_ABC_Clearing_${rangeLabel}.csv`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        // ---- utils ----
+        function fmtMoney(n) {
+            if (n === null || n === undefined || isNaN(n)) return '—';
+            const abs = Math.abs(n);
+            const s = abs.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            return n < 0 ? `(${s})` : s;
+        }
+        function round2(n) { return Math.round(n * 100) / 100; }
+        function isoToMMDDYYYY(iso) {
+            const [y, m, d] = iso.split('-');
+            return `${m}/${d}/${y}`;
+        }
+        function escapeHtml(s) {
+            return String(s).replace(/[&<>"']/g, c => ({
+                '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+            })[c]);
         }
     </script>
 </body>
