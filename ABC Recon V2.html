@@ -1265,14 +1265,15 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1 id="pageTitle">Daily Dep Reconciliation</h1>
+            <h1 id="pageTitle">ABC POS Reconciliation</h1>
+            <div style="text-align:center; font-size:11px; color:rgba(255,255,255,0.7); margin-top:4px;">v4-clean — open browser console (F12) to see logs</div>
             <p>Upload and analyze your reports</p>
             <div class="reconciliation-toggle">
                 <button class="toggle-btn active" id="dailyDepBtn" onclick="switchReconciliation('dailyDep')">
-                    Daily Dep
+                    ABC POS
                 </button>
                 <button class="toggle-btn" id="abcBillingBtn" onclick="switchReconciliation('abcBilling')">
-                    ABC Billing
+                    ABC Bill
                 </button>
             </div>
         </div>
@@ -1447,13 +1448,13 @@
             <div id="qboSection" style="display:none; margin-top: 32px; padding-top: 32px; border-top: 1px solid #e5e7eb;">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
                     <div>
-                        <h2 style="font-size:22px; font-weight:700; color:#1a1a1a; margin-bottom:4px;">QBO Export — Daily Breakdown</h2>
-                        <div style="font-size:13px; color:#6b7280;">Upload the ABC Ignite Daily Deposit Analysis to add merchant fees per day.</div>
+                        <h2 id="qboSectionHeader" style="font-size:22px; font-weight:700; color:#1a1a1a; margin-bottom:4px;">QBO Export — Daily Breakdown</h2>
+                        <div id="qboSectionSub" style="font-size:13px; color:#6b7280;">Upload the ABC Ignite Daily Deposit Analysis to add merchant fees per day.</div>
                     </div>
                     <button class="reset-btn" onclick="hideQboSection()" style="background:linear-gradient(135deg,#e5e7eb 0%,#d1d5db 100%); color:#1a1a1a;">Close</button>
                 </div>
 
-                <!-- Ignite upload zone -->
+                <!-- Ignite upload zone (used by ABC POS tab) -->
                 <div id="igniteDropZone" style="border:2px dashed #cbd5e1; border-radius:12px; padding:32px; text-align:center; cursor:pointer; background:linear-gradient(135deg,#fafbfc 0%,#f8f9fa 100%); transition:all 0.3s;">
                     <div style="font-size:44px; margin-bottom:12px;">
                         <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#0066cc" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -1462,15 +1463,51 @@
                             <line x1="12" y1="3" x2="12" y2="15"></line>
                         </svg>
                     </div>
-                    <div style="font-size:16px; color:#1a1a1a; font-weight:600; margin-bottom:4px;">Drop ABC Ignite Daily Deposit Analysis here</div>
-                    <div style="font-size:13px; color:#6b7280;">or click to browse (Excel export from Ignite dashboard)</div>
+                    <div id="igniteDropZoneTitle" style="font-size:16px; color:#1a1a1a; font-weight:600; margin-bottom:4px;">Drop ABC Ignite Daily Deposit Analysis here</div>
+                    <div id="igniteDropZoneSub" style="font-size:13px; color:#6b7280;">or click to browse (Excel export from Ignite dashboard)</div>
                     <input type="file" id="igniteFileInput" accept=".xlsx,.xls" style="display:none;">
                 </div>
 
                 <!-- Ignite loaded indicator -->
                 <div id="igniteLoadedIndicator" style="display:none; padding:14px 18px; background:#ecfdf5; border:1px solid #a7f3d0; border-radius:10px; margin-top:12px; display:none; justify-content:space-between; align-items:center;">
-                    <div style="color:#047857; font-weight:600; font-size:14px;">✓ Ignite Daily Deposit Analysis loaded — <span id="igniteRangeLabel"></span></div>
+                    <div style="color:#047857; font-weight:600; font-size:14px;">✓ <span id="igniteLoadedLabelText">Ignite Daily Deposit Analysis loaded</span> — <span id="igniteRangeLabel"></span></div>
                     <button onclick="clearIgnite()" style="background:transparent; border:1px solid #a7f3d0; color:#047857; padding:6px 12px; border-radius:6px; cursor:pointer; font-size:12px; font-weight:600;">Clear</button>
+                </div>
+
+                <!-- DRDR upload zone (used by ABC Bill tab) -->
+                <div id="drdrDropZone" style="display:none; border:2px dashed #cbd5e1; border-radius:12px; padding:32px; text-align:center; cursor:pointer; background:linear-gradient(135deg,#fafbfc 0%,#f8f9fa 100%); transition:all 0.3s; margin-top:14px;">
+                    <div style="font-size:44px; margin-bottom:12px;">
+                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#0066cc" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                            <polyline points="14 2 14 8 20 8"></polyline>
+                            <line x1="12" y1="18" x2="12" y2="12"></line>
+                            <line x1="9" y1="15" x2="15" y2="15"></line>
+                        </svg>
+                    </div>
+                    <div style="font-size:16px; color:#1a1a1a; font-weight:600; margin-bottom:4px;">Drop DRDR (Daily Revenue &amp; Deposit Report) here</div>
+                    <div style="font-size:13px; color:#6b7280;">Tool will auto-extract Total Deductions MTD for ABC Member Billing</div>
+                    <input type="file" id="drdrFileInput" accept=".xlsx,.xls" style="display:none;">
+                </div>
+
+                <!-- DRDR loaded — compact panel with picker and manual override -->
+                <div id="drdrLoadedIndicator" style="display:none; padding:14px 18px; background:#ecfdf5; border:1px solid #a7f3d0; border-radius:10px; margin-top:12px; flex-direction:column; gap:10px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <div style="color:#047857; font-weight:600; font-size:14px;">✓ DRDR loaded — Total Deductions: <span id="drdrDeductionLabel"></span> <span id="drdrSelectedColLabel" style="font-weight:normal; font-size:12px; opacity:0.85;"></span></div>
+                        <button onclick="clearDrdr()" style="background:transparent; border:1px solid #a7f3d0; color:#047857; padding:6px 12px; border-radius:6px; cursor:pointer; font-size:12px; font-weight:600;">Clear</button>
+                    </div>
+                    <div id="drdrColumnSelector" style="display:flex; gap:16px; align-items:center; flex-wrap:wrap; padding-top:8px; border-top:1px solid #a7f3d0;">
+                        <div style="color:#065f46; font-weight:600; font-size:12px;">Use:</div>
+                        <label style="display:flex; align-items:center; gap:6px; cursor:pointer; font-size:13px; color:#065f46;">
+                            <input type="radio" name="drdrCol" value="daily" onchange="switchDrdrColumn('daily')"> Daily — <span id="drdrDailyValLabel" style="font-family:'SF Mono',Monaco,monospace;">—</span>
+                        </label>
+                        <label style="display:flex; align-items:center; gap:6px; cursor:pointer; font-size:13px; color:#065f46;">
+                            <input type="radio" name="drdrCol" value="mtd" checked onchange="switchDrdrColumn('mtd')"> MTD — <span id="drdrMtdValLabel" style="font-family:'SF Mono',Monaco,monospace;">—</span>
+                        </label>
+                        <label style="display:flex; align-items:center; gap:6px; cursor:pointer; font-size:13px; color:#065f46; margin-left:auto;">
+                            Manual: <input type="number" step="0.01" id="drdrManualInput" placeholder="0.00" style="width:110px; padding:4px 8px; border:1px solid #a7f3d0; border-radius:4px; font-size:12px; font-family:'SF Mono',Monaco,monospace;">
+                            <button onclick="applyDrdrManualOverride()" style="padding:4px 10px; background:#065f46; color:white; border:none; border-radius:4px; cursor:pointer; font-weight:600; font-size:12px;">Apply</button>
+                        </label>
+                    </div>
                 </div>
 
                 <!-- Warnings area -->
@@ -2403,6 +2440,7 @@
 
         // Switch between reconciliation types
         function switchReconciliation(type) {
+            console.log('[switchReconciliation] switching to:', type);
             currentReconciliationType = type;
             
             // Update UI
@@ -2411,9 +2449,9 @@
             
             // Update title
             if (type === 'dailyDep') {
-                pageTitle.textContent = 'Daily Dep Reconciliation';
+                pageTitle.textContent = 'ABC POS Reconciliation';
             } else {
-                pageTitle.textContent = 'ABC Billing Reconciliation';
+                pageTitle.textContent = 'ABC Bill Reconciliation';
             }
             
             // Hide current report if showing
@@ -2424,6 +2462,7 @@
             // Reset QBO Export state (Daily Dep only feature)
             if (typeof hideQboSection === 'function') hideQboSection();
             if (typeof clearIgnite === 'function') clearIgnite(true);
+            if (typeof clearDrdr === 'function') clearDrdr();
             
             // Load reports for selected type
             loadSavedReports();
@@ -2472,8 +2511,12 @@
             'Centric': 'Retail',
             'CENTRIC': 'Retail',
             'MERCHANDISE': 'Retail',
+            'BALANCE': 'Dues',
             'BALANCE REFUNDS': 'Dues',
+            'CANCELLATION FEE': 'Dues',
             'CHARGEBACK': 'Dues',
+            'CHARGEBACK REPOST': 'Dues',
+            'RETURN': 'Dues',
             'UNAPPLIED PAYMENT': 'Dues'
         };
 
@@ -2639,7 +2682,7 @@
                     }
                     
                     const worksheet = workbook.Sheets[sheetName];
-                    const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+                    const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: null });
                     
                     processReport(jsonData);
                     
@@ -2672,29 +2715,80 @@
             const paymentExcludingIdx = headers.findIndex(h => h && h.toString().includes('Excluding Tax'));
             const paymentDateIdx = headers.findIndex(h => h && h.toString().includes('Payment') && h.toString().includes('Date'));
             const clubNameIdx = headers.findIndex(h => h && h.toString().includes('Club') && h.toString().includes('Name'));
+            const collectedMethodIdx = headers.findIndex(h => h && h.toString().includes('Collected Method'));
+            
+            // === DEBUG LOGGING ===
+            console.log('[processReport] tab:', currentReconciliationType);
+            console.log('[processReport] total rows:', data.length);
+            console.log('[processReport] headers array length:', headers.length);
+            console.log('[processReport] headers:', headers);
+            console.log('[processReport] column indices:', {
+                clubNameIdx, profitCenterIdx, paymentTypeIdx, paymentAmountIdx,
+                salesTaxIdx, paymentExcludingIdx, paymentDateIdx, collectedMethodIdx
+            });
+            if (data[5]) {
+                console.log('[processReport] first data row (data[5]):', data[5]);
+                console.log('[processReport] first data row length:', data[5].length);
+                console.log('[processReport] first data row Collected Method value:', 
+                    collectedMethodIdx >= 0 ? data[5][collectedMethodIdx] : '(no idx)');
+            }
+            // === END DEBUG ===
             
             // Process data rows (starting from row 6, index 5)
             const processedData = {};
             let unappliedPayments = [];
-            // Store raw non-cash rows for daily-slicing (Daily Dep QBO export feature)
+            // Store raw rows for daily-slicing (QBO export feature — works on both tabs)
             const rawRows = [];
+            
+            // === DEBUG counters ===
+            let debugCounters = {
+                totalRows: 0,
+                skipEmpty: 0,
+                skipSubtotal: 0,
+                skipCash: 0,
+                skipNotAbcBill: 0,
+                skipOldFile: 0,
+                keptForProcessing: 0
+            };
+            let debugFirstFewSkips = { notAbcBill: [] };
+            // === END DEBUG ===
             
             for (let i = 5; i < data.length; i++) {
                 const row = data[i];
-                if (!row || row.length === 0) continue;
+                debugCounters.totalRows++;
+                if (!row || row.length === 0) { debugCounters.skipEmpty++; continue; }
                 
                 const paymentType = row[paymentTypeIdx];
                 const profitCenter = row[profitCenterIdx];
                 const clubName = clubNameIdx >= 0 ? row[clubNameIdx] : null;
+                const collectedMethod = collectedMethodIdx >= 0 ? row[collectedMethodIdx] : null;
                 
                 // Skip subtotal/total rows (Club Name starts with "Total" or "Grand")
-                if (clubName && /^(Total|Grand)/i.test(String(clubName))) continue;
+                if (clubName && /^(Total|Grand)/i.test(String(clubName))) { debugCounters.skipSubtotal++; continue; }
                 
-                // Skip CASH payments
-                if (paymentType && paymentType.toString().toUpperCase() === 'CASH') continue;
+                // Tab-specific filtering:
+                if (currentReconciliationType === 'dailyDep') {
+                    if (paymentType && paymentType.toString().toUpperCase() === 'CASH') { debugCounters.skipCash++; continue; }
+                    if (collectedMethodIdx >= 0 && collectedMethod && 
+                        String(collectedMethod).trim().toLowerCase() === 'abc member billing') { debugCounters.skipNotAbcBill++; continue; }
+                } else if (currentReconciliationType === 'abcBilling') {
+                    if (collectedMethodIdx < 0) { debugCounters.skipOldFile++; continue; }
+                    if (!collectedMethod || String(collectedMethod).trim().toLowerCase() !== 'abc member billing') {
+                        debugCounters.skipNotAbcBill++;
+                        if (debugFirstFewSkips.notAbcBill.length < 5) {
+                            debugFirstFewSkips.notAbcBill.push({
+                                row: i, collectedMethod: collectedMethod, 
+                                type: typeof collectedMethod, profitCenter: profitCenter
+                            });
+                        }
+                        continue;
+                    }
+                }
                 
-                // Capture raw row (for daily slicing)
-                if (currentReconciliationType === 'dailyDep' && profitCenter && paymentDateIdx >= 0) {
+                debugCounters.keptForProcessing++;
+                
+                // Capture raw row (for daily slicing on either tab)
+                if (profitCenter && paymentDateIdx >= 0) {
                     rawRows.push({
                         date: row[paymentDateIdx],
                         profitCenter: profitCenter,
@@ -2755,6 +2849,16 @@
                 processedData['Dues'].totalAmount += unappliedTotal;
             }
             
+            // === DEBUG: log final counters and processedData summary ===
+            console.log('[processReport] loop counters:', debugCounters);
+            console.log('[processReport] processedData categories:', Object.keys(processedData));
+            console.log('[processReport] processedData:', processedData);
+            if (debugFirstFewSkips.notAbcBill.length > 0) {
+                console.log('[processReport] first 5 rows skipped (not ABC Bill):', debugFirstFewSkips.notAbcBill);
+            }
+            console.log('[processReport] rawRows count:', rawRows.length);
+            // === END DEBUG ===
+            
             // Store current report data
             currentReportData = {
                 location,
@@ -2762,7 +2866,7 @@
                 totalRevenue,
                 data: processedData,
                 unappliedPayments,
-                rawRows: currentReconciliationType === 'dailyDep' ? rawRows : undefined,
+                rawRows: rawRows.length > 0 ? rawRows : undefined,
                 timestamp: new Date().toISOString()
             };
             
@@ -2843,12 +2947,11 @@
                 tableBody.appendChild(warningRow);
             }
             
-            // Show/hide the Prepare QBO Export button (Daily Dep only, and only if rawRows exist)
+            // Show/hide the Prepare QBO Export button (works on both tabs if rawRows exist)
             const qboBtn = document.getElementById('qboExportBtn');
             if (qboBtn) {
-                const isDailyDep = currentReconciliationType === 'dailyDep';
                 const hasRawRows = currentReportData && currentReportData.rawRows && currentReportData.rawRows.length > 0;
-                qboBtn.style.display = (isDailyDep && hasRawRows) ? 'inline-block' : 'none';
+                qboBtn.style.display = hasRawRows ? 'inline-block' : 'none';
             }
             // Reset any open QBO section from a prior report
             hideQboSection();
@@ -3090,17 +3193,49 @@
 
         let igniteData = null; // { dailyByDate: {ISO -> {collections, refunds, void, deduction, deposit, endingBalance}}, dateRange }
         let dailyBreakdown = null; // computed from currentReportData.rawRows + igniteData
+        let flaggedRouting = {}; // {flaggedCategoryName: 'targetCategoryName' or null (skip)}
+
+        function handleFlaggedRoutingChange(flaggedCat, targetCat) {
+            if (targetCat) {
+                flaggedRouting[flaggedCat] = targetCat;
+            } else {
+                delete flaggedRouting[flaggedCat];
+            }
+            // Re-aggregate and re-render with new routing applied
+            computeAndRenderDailyBreakdown();
+        }
 
         function showQboSection() {
             document.getElementById('qboSection').style.display = 'block';
             document.getElementById('qboExportBtn').style.display = 'none';
-            wireIgniteDropZone();
+            const cfg = getQboConfig();
+            const header = document.getElementById('qboSectionHeader');
+            if (header) header.textContent = `QBO Export — ${cfg.label} Daily Breakdown`;
+            const sub = document.getElementById('qboSectionSub');
+
+            const isBill = currentReconciliationType === 'abcBilling';
+            const igniteZone = document.getElementById('igniteDropZone');
+            const drdrZone = document.getElementById('drdrDropZone');
+
+            if (isBill) {
+                // ABC Bill: use DRDR for deductions (single monthly number)
+                if (sub) sub.textContent = 'Upload the DRDR file — tool will auto-extract Total Deductions for ABC Member Billing. Pick Daily or MTD after upload, or enter a manual value.';
+                if (igniteZone) igniteZone.style.display = 'none';
+                if (drdrZone) drdrZone.style.display = 'block';
+                wireDrdrDropZone();
+            } else {
+                // ABC POS: use Ignite Daily Deposit Analysis (daily deductions per day)
+                if (sub) sub.textContent = 'Upload the ABC Ignite Daily Deposit Analysis to add merchant fees per day.';
+                if (igniteZone) igniteZone.style.display = 'block';
+                if (drdrZone) drdrZone.style.display = 'none';
+                wireIgniteDropZone();
+            }
         }
         function hideQboSection() {
             const s = document.getElementById('qboSection');
             if (s) s.style.display = 'none';
             const btn = document.getElementById('qboExportBtn');
-            if (btn && currentReportData && currentReportData.rawRows && currentReconciliationType === 'dailyDep') {
+            if (btn && currentReportData && currentReportData.rawRows) {
                 btn.style.display = 'inline-block';
             }
         }
@@ -3123,6 +3258,220 @@
             fi.addEventListener('change', e => {
                 if (e.target.files.length > 0) handleIgniteFile(e.target.files[0]);
             });
+        }
+
+        // === ABC BILL DRDR HANDLING ===
+        // Both the DRDR "Daily" (single day, col 5) and "MTD" (full month, col 7) values are stored.
+        // User picks which to use via radio buttons. drdrDeduction / drdrRevenue reflect the current selection.
+        let drdrDailyDeduction = null;   // col 5, single day
+        let drdrMtdDeduction = null;     // col 7, MTD
+        let drdrDailyRevenue = null;     // col 5, single day
+        let drdrMtdRevenue = null;       // col 7, MTD
+        let drdrDailyDateLabel = '';     // the specific date the DRDR was pulled for (from report header)
+        let drdrSelectedColumn = 'mtd';  // 'daily' or 'mtd'
+        let drdrDeduction = null;        // active deduction value (based on selection)
+        let drdrRevenue = null;          // active revenue value (based on selection)
+        let drdrWired = false;
+
+        function wireDrdrDropZone() {
+            if (drdrWired) return;
+            drdrWired = true;
+            const dz = document.getElementById('drdrDropZone');
+            const fi = document.getElementById('drdrFileInput');
+            if (!dz || !fi) return;
+            dz.addEventListener('click', () => fi.click());
+            dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('dragover'); });
+            dz.addEventListener('dragleave', () => dz.classList.remove('dragover'));
+            dz.addEventListener('drop', e => {
+                e.preventDefault();
+                dz.classList.remove('dragover');
+                if (e.dataTransfer.files.length > 0) handleDrdrFile(e.dataTransfer.files[0]);
+            });
+            fi.addEventListener('change', e => {
+                if (e.target.files.length > 0) handleDrdrFile(e.target.files[0]);
+            });
+        }
+
+        function handleDrdrFile(file) {
+            const reader = new FileReader();
+            reader.onload = e => {
+                try {
+                    const wb = XLSX.read(new Uint8Array(e.target.result), { type: 'array', cellDates: true });
+                    // DRDR has one sheet named like "03754 - KINECTIVE FITNESS CLUB"
+                    // Fall back to first sheet if that pattern isn't found
+                    let sheetName = wb.SheetNames.find(n => /KINECTIVE FITNESS CLUB/i.test(n)) || wb.SheetNames[0];
+                    const grid = XLSX.utils.sheet_to_json(wb.Sheets[sheetName], { header: 1, defval: null });
+
+                    // Scan column A (index 0) for both "Total Deductions" AND "Total Revenue by Profit Center"
+                    console.log('[DRDR] scanning grid for anchor rows across', grid.length, 'rows');
+                    let deductionRow = -1;
+                    let revenueRow = -1;
+                    for (let i = 0; i < grid.length; i++) {
+                        const cell = grid[i] && grid[i][0];
+                        if (!cell) continue;
+                        const cellStr = String(cell).trim();
+                        if (cellStr === 'Total Deductions' && deductionRow < 0) deductionRow = i;
+                        if (cellStr === 'Total Revenue by Profit Center' && revenueRow < 0) revenueRow = i;
+                    }
+                    if (deductionRow < 0) {
+                        showDrdrError('Could not find "Total Deductions" row in the DRDR. Is this the right file?');
+                        return;
+                    }
+                    console.log('[DRDR] found "Total Deductions" at row', deductionRow, 'row content:', grid[deductionRow]);
+                    if (revenueRow >= 0) {
+                        console.log('[DRDR] found "Total Revenue by Profit Center" at row', revenueRow, 'row content:', grid[revenueRow]);
+                    } else {
+                        console.log('[DRDR] warning: "Total Revenue by Profit Center" row not found - match check will be skipped');
+                    }
+                    // ABC Member Billing:
+                    //   Column 5 (index 4) = Daily (single day, whatever the DRDR was pulled for)
+                    //   Column 7 (index 6) = MTD (full month cumulative)
+                    const dailyDedVal = grid[deductionRow][4];
+                    const mtdDedVal = grid[deductionRow][6];
+                    const dailyRevVal = revenueRow >= 0 ? grid[revenueRow][4] : null;
+                    const mtdRevVal = revenueRow >= 0 ? grid[revenueRow][6] : null;
+                    console.log('[DRDR] Deduction: daily(col5)=', dailyDedVal, 'MTD(col7)=', mtdDedVal);
+                    console.log('[DRDR] Revenue: daily(col5)=', dailyRevVal, 'MTD(col7)=', mtdRevVal);
+                    if (typeof mtdDedVal !== 'number' || isNaN(mtdDedVal)) {
+                        showDrdrError('Total Deductions MTD column is empty or not a number. Check the DRDR file.');
+                        return;
+                    }
+
+                    // Try to find the DRDR "report date" — from the header rows (usually shows the pulled date)
+                    // Look for a "Date" or date-like cell in rows 3-8
+                    let reportDateLabel = '';
+                    for (let hi = 3; hi < Math.min(12, grid.length); hi++) {
+                        const rowVals = grid[hi] || [];
+                        for (let jj = 0; jj < rowVals.length; jj++) {
+                            const v = rowVals[jj];
+                            if (v instanceof Date && !isNaN(v.getTime())) {
+                                reportDateLabel = isoDate(v);
+                                break;
+                            }
+                        }
+                        if (reportDateLabel) break;
+                    }
+                    console.log('[DRDR] detected report date:', reportDateLabel);
+
+                    // Store all four values, then apply the default selection
+                    drdrDailyDeduction = (typeof dailyDedVal === 'number' && !isNaN(dailyDedVal)) 
+                        ? (dailyDedVal > 0 ? -dailyDedVal : dailyDedVal) : null;
+                    drdrMtdDeduction = mtdDedVal > 0 ? -mtdDedVal : mtdDedVal;
+                    drdrDailyRevenue = (typeof dailyRevVal === 'number' && !isNaN(dailyRevVal)) ? dailyRevVal : null;
+                    drdrMtdRevenue = (typeof mtdRevVal === 'number' && !isNaN(mtdRevVal)) ? mtdRevVal : null;
+                    drdrDailyDateLabel = reportDateLabel;
+
+                    // Default to MTD selection
+                    drdrSelectedColumn = 'mtd';
+                    drdrDeduction = drdrMtdDeduction;
+                    drdrRevenue = drdrMtdRevenue;
+                    console.log('[DRDR] initial selection = MTD. drdrDeduction=', drdrDeduction, 'drdrRevenue=', drdrRevenue);
+                    showDrdrLoaded(drdrDeduction);
+                    computeAndRenderDailyBreakdown();
+                } catch (err) {
+                    console.error('[DRDR] error:', err);
+                    showDrdrError('Error reading DRDR file: ' + err.message);
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        function showDrdrError(msg) {
+            const w = document.getElementById('qboWarnings');
+            if (w) w.innerHTML = `<div class="warning-banner warn">⚠ ${msg}</div>`;
+        }
+
+        function showDrdrLoaded(val) {
+            const el = document.getElementById('drdrLoadedIndicator');
+            if (el) el.style.display = 'flex';
+            const lbl = document.getElementById('drdrDeductionLabel');
+            if (lbl) lbl.textContent = fmtMoney(val);
+            const colLbl = document.getElementById('drdrSelectedColLabel');
+            if (colLbl) {
+                colLbl.textContent = drdrSelectedColumn === 'daily' 
+                    ? `(daily ${drdrDailyDateLabel || ''})`.trim() 
+                    : '(MTD)';
+            }
+            const dz = document.getElementById('drdrDropZone');
+            if (dz) dz.style.display = 'none';
+
+            // Populate the picker labels
+            const dailyLbl = document.getElementById('drdrDailyValLabel');
+            if (dailyLbl) {
+                dailyLbl.textContent = drdrDailyDeduction !== null 
+                    ? `${fmtMoney(drdrDailyDeduction)}${drdrDailyDateLabel ? ' (' + drdrDailyDateLabel + ')' : ''}` 
+                    : 'not available';
+            }
+            const mtdLbl = document.getElementById('drdrMtdValLabel');
+            if (mtdLbl) mtdLbl.textContent = drdrMtdDeduction !== null ? fmtMoney(drdrMtdDeduction) : 'not available';
+
+            // Sync radio button state
+            const dailyRadio = document.querySelector('input[name="drdrCol"][value="daily"]');
+            const mtdRadio = document.querySelector('input[name="drdrCol"][value="mtd"]');
+            if (dailyRadio) {
+                dailyRadio.disabled = (drdrDailyDeduction === null);
+                dailyRadio.checked = (drdrSelectedColumn === 'daily');
+            }
+            if (mtdRadio) mtdRadio.checked = (drdrSelectedColumn === 'mtd');
+
+            // Sync the manual override input
+            const mi = document.getElementById('drdrManualInput');
+            if (mi) mi.value = Math.abs(val).toFixed(2);
+        }
+
+        function switchDrdrColumn(col) {
+            console.log('[DRDR] switching column to:', col);
+            drdrSelectedColumn = col;
+            if (col === 'daily') {
+                drdrDeduction = drdrDailyDeduction;
+                drdrRevenue = drdrDailyRevenue;
+            } else {
+                drdrDeduction = drdrMtdDeduction;
+                drdrRevenue = drdrMtdRevenue;
+            }
+            console.log('[DRDR] active drdrDeduction=', drdrDeduction, 'drdrRevenue=', drdrRevenue);
+            showDrdrLoaded(drdrDeduction);
+            computeAndRenderDailyBreakdown();
+        }
+
+        function clearDrdr() {
+            drdrDeduction = null;
+            drdrRevenue = null;
+            drdrDailyDeduction = null;
+            drdrMtdDeduction = null;
+            drdrDailyRevenue = null;
+            drdrMtdRevenue = null;
+            drdrDailyDateLabel = '';
+            drdrSelectedColumn = 'mtd';
+            const el = document.getElementById('drdrLoadedIndicator');
+            if (el) el.style.display = 'none';
+            const dz = document.getElementById('drdrDropZone');
+            if (dz) dz.style.display = 'block';
+            const fi = document.getElementById('drdrFileInput');
+            if (fi) fi.value = '';
+            const mi = document.getElementById('drdrManualInput');
+            if (mi) mi.value = '';
+            // Clear breakdown too if it was showing the DRDR value
+            const container = document.getElementById('dailyBreakdownContainer');
+            if (container) container.style.display = 'none';
+            const actions = document.getElementById('qboExportActions');
+            if (actions) actions.style.display = 'none';
+            const w = document.getElementById('qboWarnings');
+            if (w) w.innerHTML = '';
+        }
+
+        function applyDrdrManualOverride() {
+            const mi = document.getElementById('drdrManualInput');
+            if (!mi) return;
+            const val = parseFloat(mi.value);
+            if (isNaN(val)) {
+                showDrdrError('Enter a valid number for the deduction amount.');
+                return;
+            }
+            drdrDeduction = val > 0 ? -val : val;
+            console.log('[DRDR] manual override applied:', drdrDeduction);
+            showDrdrLoaded(drdrDeduction);
+            computeAndRenderDailyBreakdown();
         }
 
         function handleIgniteFile(file) {
@@ -3254,6 +3603,7 @@
         function clearIgnite(silent) {
             igniteData = null;
             dailyBreakdown = null;
+            flaggedRouting = {};
             const el = document.getElementById('igniteLoadedIndicator');
             if (el) el.style.display = 'none';
             const dz = document.getElementById('igniteDropZone');
@@ -3269,7 +3619,12 @@
         }
 
         function computeAndRenderDailyBreakdown() {
-            if (!currentReportData || !currentReportData.rawRows || !igniteData) return;
+            console.log('[compute] called. tab:', currentReconciliationType, 'igniteData:', !!igniteData, 'drdrDeduction:', drdrDeduction);
+            if (!currentReportData || !currentReportData.rawRows) { console.log('[compute] EXIT: no rawRows'); return; }
+            const isBill = currentReconciliationType === 'abcBilling';
+            if (!isBill && !igniteData) { console.log('[compute] EXIT: POS but no ignite'); return; }
+            if (isBill && drdrDeduction === null) { console.log('[compute] EXIT: ABC Bill but no DRDR deduction'); return; }
+            console.log('[compute] proceeding. rawRows:', currentReportData.rawRows.length);
 
             const rawRows = currentReportData.rawRows;
             // Group raw rows by (date, mapped category)
@@ -3291,9 +3646,21 @@
                 const glCode = profitCenterMapping[pc] || pc;
                 if (!glCode) continue;
 
-                // Flagged (Kin Donations / Laundry) — don't add to categories, track separately
+                // Flagged (Kin Donations / Laundry) — check if user picked a routing
                 if (QBO_FLAG_CATEGORIES.has(glCode)) {
-                    bucket.flagged[glCode] = (bucket.flagged[glCode] || 0) + r.amount;
+                    const routedTo = flaggedRouting[glCode]; // e.g., 'Missed class fee' or null (skip) or undefined (not yet chosen)
+                    if (routedTo && QBO_ACCOUNTS[routedTo]) {
+                        // Route into the target category
+                        if (!bucket.categories[routedTo]) bucket.categories[routedTo] = { ex: 0, tax: 0, tot: 0 };
+                        bucket.categories[routedTo].ex += r.excludingTax || 0;
+                        bucket.categories[routedTo].tax += r.tax || 0;
+                        bucket.categories[routedTo].tot += r.amount || 0;
+                        // Also track in flagged for warning display purposes
+                        bucket.flagged[glCode] = (bucket.flagged[glCode] || 0) + r.amount;
+                    } else {
+                        // Not yet routed (or user chose skip) — track only, exclude from CSV
+                        bucket.flagged[glCode] = (bucket.flagged[glCode] || 0) + r.amount;
+                    }
                     continue;
                 }
                 if (!bucket.categories[glCode]) bucket.categories[glCode] = { ex: 0, tax: 0, tot: 0 };
@@ -3315,8 +3682,9 @@
                 }
             }
 
-            // Determine full date range = union of report dates + ignite dates, sorted
-            const allDates = new Set([...Object.keys(byDate), ...Object.keys(igniteData.dailyByDate)]);
+            // Determine full date range = union of report dates + ignite dates (or just report dates for ABC Bill), sorted
+            const igDatesForUnion = isBill ? [] : Object.keys(igniteData.dailyByDate);
+            const allDates = new Set([...Object.keys(byDate), ...igDatesForUnion]);
             const dates = Array.from(allDates).sort();
 
             // Determine which categories appear anywhere (union)
@@ -3367,27 +3735,32 @@
             const table = document.getElementById('dailyBreakdownTable');
             const container = document.getElementById('dailyBreakdownContainer');
             container.style.display = 'block';
+            const isBill = currentReconciliationType === 'abcBilling';
 
             // Header
             let html = '<thead><tr>';
             html += '<th>Date</th>';
             orderedCategories.forEach(c => html += `<th>${escapeHtml(c)}</th>`);
             html += '<th>Rev Total</th>';
-            html += '<th>Ignite Coll</th>';
-            html += '<th>Match</th>';
-            html += '<th>Deduction</th>';
-            html += '<th>End Bal</th>';
+            if (isBill) {
+                html += '<th>DRDR Rev</th>';
+                html += '<th>Match</th>';
+                html += '<th>Fee</th>';
+            } else {
+                html += '<th>Ignite Coll</th>';
+                html += '<th>Match</th>';
+                html += '<th>Deduction</th>';
+                html += '<th>End Bal</th>';
+            }
             html += '</tr></thead><tbody>';
 
-            // Column totals
-            const colTotals = {}; // category -> sum
+            const colTotals = {};
             let totalRev = 0, totalIgColl = 0, totalDed = 0, totalRefunds = 0;
 
             dates.forEach(iso => {
                 const b = byDate[iso] || { categories: {} };
-                const ig = igniteData.dailyByDate[iso];
+                const ig = isBill ? null : (igniteData ? igniteData.dailyByDate[iso] : null);
                 const revTotal = Object.values(b.categories).reduce((s, o) => s + o.tot, 0);
-                // Ignite net = Collections + Refunds  (both signed; refunds are negative)
                 const igNet = ig ? (ig.collections + ig.refunds) : null;
                 const diff = ig ? (revTotal - igNet) : null;
                 const isMismatch = ig && Math.abs(diff) > 5;
@@ -3407,16 +3780,22 @@
                     html += `<td>${val ? fmtMoney(val) : ''}</td>`;
                 });
                 html += `<td>${fmtMoney(revTotal)}</td>`;
-                html += `<td>${ig ? fmtMoney(ig.collections) : '—'}</td>`;
-                if (ig) {
-                    const cls = isMismatch ? 'match-warn' : 'match-ok';
-                    const sym = isMismatch ? '✗' : '✓';
-                    html += `<td class="${cls}">${sym} ${fmtMoney(diff)}</td>`;
+                if (isBill) {
+                    // For ABC Bill: per-day cells show only Rev Total.
+                    // DRDR Rev/Match/Fee are single-value totals shown only in the Total row.
+                    html += `<td></td><td></td><td></td>`;
                 } else {
-                    html += `<td>—</td>`;
+                    html += `<td>${ig ? fmtMoney(ig.collections) : '—'}</td>`;
+                    if (ig) {
+                        const cls = isMismatch ? 'match-warn' : 'match-ok';
+                        const sym = isMismatch ? '✗' : '✓';
+                        html += `<td class="${cls}">${sym} ${fmtMoney(diff)}</td>`;
+                    } else {
+                        html += `<td>—</td>`;
+                    }
+                    html += `<td class="deduction-cell">${ig ? fmtMoney(ig.deduction) : '—'}</td>`;
+                    html += `<td>${ig ? fmtMoney(ig.endingBalance) : '—'}</td>`;
                 }
-                html += `<td class="deduction-cell">${ig ? fmtMoney(ig.deduction) : '—'}</td>`;
-                html += `<td>${ig ? fmtMoney(ig.endingBalance) : '—'}</td>`;
                 html += `</tr>`;
             });
 
@@ -3424,10 +3803,28 @@
             html += '<tr class="total-row"><td>Total</td>';
             orderedCategories.forEach(c => html += `<td>${fmtMoney(colTotals[c] || 0)}</td>`);
             html += `<td>${fmtMoney(totalRev)}</td>`;
-            html += `<td>${fmtMoney(totalIgColl)}</td>`;
-            html += `<td>—</td>`;
-            html += `<td class="deduction-cell">${fmtMoney(totalDed)}</td>`;
-            html += `<td>—</td>`;
+            if (isBill) {
+                // DRDR Rev cell
+                const drdrRevCell = drdrRevenue !== null ? fmtMoney(drdrRevenue) : '—';
+                html += `<td>${drdrRevCell}</td>`;
+                // Match cell
+                if (drdrRevenue !== null) {
+                    const variance = totalRev - drdrRevenue;
+                    const isMatch = Math.abs(variance) < 5;
+                    const cls = isMatch ? 'match-ok' : 'match-warn';
+                    const sym = isMatch ? '✓' : '✗';
+                    html += `<td class="${cls}">${sym} ${fmtMoney(variance)}</td>`;
+                } else {
+                    html += `<td>—</td>`;
+                }
+                // Fee cell
+                html += `<td class="deduction-cell">${drdrDeduction !== null ? fmtMoney(drdrDeduction) : '—'}</td>`;
+            } else {
+                html += `<td>${fmtMoney(totalIgColl)}</td>`;
+                html += `<td>—</td>`;
+                html += `<td class="deduction-cell">${fmtMoney(totalDed)}</td>`;
+                html += `<td>—</td>`;
+            }
             html += '</tr></tbody>';
             table.innerHTML = html;
         }
@@ -3435,39 +3832,67 @@
         function renderQboWarnings() {
             const w = document.getElementById('qboWarnings');
             const parts = [];
+            const isBill = currentReconciliationType === 'abcBilling';
 
-            // Ignite range vs report range mismatch
-            const revDates = new Set(dailyBreakdown.dates.filter(d => (dailyBreakdown.byDate[d]?.categories && Object.keys(dailyBreakdown.byDate[d].categories).length > 0)));
-            const igDates = new Set(Object.keys(igniteData.dailyByDate));
-            const revOnly = [...revDates].filter(d => !igDates.has(d));
-            const igOnly = [...igDates].filter(d => !revDates.has(d));
-            if (revOnly.length || igOnly.length) {
-                parts.push(`<div class="warning-banner info">⚠ Date coverage differs: ${revOnly.length ? `Revenue-only days: ${revOnly.length}. ` : ''}${igOnly.length ? `Ignite-only days: ${igOnly.length}.` : ''} Review the breakdown table.</div>`);
+            // Ignite range vs report range mismatch (POS only)
+            if (!isBill && igniteData) {
+                const revDates = new Set(dailyBreakdown.dates.filter(d => (dailyBreakdown.byDate[d]?.categories && Object.keys(dailyBreakdown.byDate[d].categories).length > 0)));
+                const igDates = new Set(Object.keys(igniteData.dailyByDate));
+                const revOnly = [...revDates].filter(d => !igDates.has(d));
+                const igOnly = [...igDates].filter(d => !revDates.has(d));
+                if (revOnly.length || igOnly.length) {
+                    parts.push(`<div class="warning-banner info">⚠ Date coverage differs: ${revOnly.length ? `Revenue-only days: ${revOnly.length}. ` : ''}${igOnly.length ? `Ignite-only days: ${igOnly.length}.` : ''} Review the breakdown table.</div>`);
+                }
             }
 
-            // Flagged categories
+            // Flagged categories with routing dropdowns
             const flagged = dailyBreakdown.flaggedTotals;
             const flaggedKeys = Object.keys(flagged).filter(k => Math.abs(flagged[k]) > 0.001);
             if (flaggedKeys.length) {
-                const parts2 = flaggedKeys.map(k => `${escapeHtml(k)}: ${fmtMoney(flagged[k])}`).join(', ');
-                parts.push(`<div class="warning-banner warn">⚠ Non-income categories detected — excluded from QBO CSV: ${parts2}. Review manually.</div>`);
+                const optionCats = Object.keys(QBO_ACCOUNTS).sort();
+                const rowsHtml = flaggedKeys.map(k => {
+                    const currentRouting = flaggedRouting[k] || '';
+                    const status = currentRouting 
+                        ? `<span style="color:#065f46; font-weight:600;">→ ${escapeHtml(currentRouting)}</span>`
+                        : `<span style="color:#92400e; font-weight:600;">⚠ Excluded from CSV</span>`;
+                    const opts = optionCats.map(c => 
+                        `<option value="${escapeHtml(c)}"${c === currentRouting ? ' selected' : ''}>${escapeHtml(c)}</option>`
+                    ).join('');
+                    return `<div style="display:flex; align-items:center; gap:10px; padding:6px 0;">
+                        <div style="min-width:160px;"><strong>${escapeHtml(k)}</strong>: ${fmtMoney(flagged[k])}</div>
+                        <select onchange="handleFlaggedRoutingChange('${escapeHtml(k)}', this.value)" style="padding:6px 10px; border:1px solid #d1d5db; border-radius:6px; font-size:13px; background:white; cursor:pointer;">
+                            <option value=""${!currentRouting ? ' selected' : ''}>-- Skip (exclude from CSV) --</option>
+                            ${opts}
+                        </select>
+                        <div>${status}</div>
+                    </div>`;
+                }).join('');
+                parts.push(`<div class="warning-banner warn" style="display:block; padding:14px 16px;">
+                    <div style="font-weight:600; margin-bottom:8px;">⚠ Non-income categories detected — choose where to route each:</div>
+                    ${rowsHtml}
+                </div>`);
             }
 
-            // Mismatch days summary
-            let mismatchCount = 0;
-            let mismatchNet = 0;
-            for (const iso of dailyBreakdown.dates) {
-                const b = dailyBreakdown.byDate[iso];
-                const ig = igniteData.dailyByDate[iso];
-                if (!b || !ig) continue;
-                const revTotal = Object.values(b.categories).reduce((s, o) => s + o.tot, 0);
-                const diff = revTotal - (ig.collections + ig.refunds);
-                if (Math.abs(diff) > 5) { mismatchCount++; mismatchNet += diff; }
-            }
-            if (mismatchCount > 0) {
-                parts.push(`<div class="warning-banner warn">⚠ ${mismatchCount} day(s) with variance &gt; $5 vs. Ignite Collections. Net variance: ${fmtMoney(mismatchNet)}. Highlighted in yellow.</div>`);
-            } else {
-                parts.push(`<div class="warning-banner success">✓ All days reconcile within $5 of Ignite Collections.</div>`);
+            if (isBill) {
+                // ABC Bill: match check and totals now live in the daily breakdown table Total row.
+                // No separate summary banner needed.
+            } else if (igniteData) {
+                // POS mismatch days summary
+                let mismatchCount = 0;
+                let mismatchNet = 0;
+                for (const iso of dailyBreakdown.dates) {
+                    const b = dailyBreakdown.byDate[iso];
+                    const ig = igniteData.dailyByDate[iso];
+                    if (!b || !ig) continue;
+                    const revTotal = Object.values(b.categories).reduce((s, o) => s + o.tot, 0);
+                    const diff = revTotal - (ig.collections + ig.refunds);
+                    if (Math.abs(diff) > 5) { mismatchCount++; mismatchNet += diff; }
+                }
+                if (mismatchCount > 0) {
+                    parts.push(`<div class="warning-banner warn">⚠ ${mismatchCount} day(s) with variance &gt; $5 vs. Ignite Collections. Net variance: ${fmtMoney(mismatchNet)}. Highlighted in yellow.</div>`);
+                } else {
+                    parts.push(`<div class="warning-banner success">✓ All days reconcile within $5 of Ignite Collections.</div>`);
+                }
             }
 
             w.innerHTML = parts.join('');
@@ -3475,12 +3900,36 @@
 
         // ---- QBO CSV Generation ----
 
-        function buildQboRows() {
-            // Produces an array of {date: 'MM/DD/YYYY', description, amount}
-            // For each day and each mapped category: one line per (day, category)
-            // Plus one Deduction line per day where Ignite deduction != 0
-            if (!dailyBreakdown || !igniteData) return [];
+        // Tab-specific QBO export config
+        function getQboConfig() {
+            if (currentReconciliationType === 'abcBilling') {
+                return {
+                    suffix: 'ABCBill',
+                    clearingAccount: '1010 ABC Bill Clearing',
+                    filenamePrefix: 'QBO_ABC_Bill_Clearing',
+                    label: 'ABC Bill'
+                };
+            }
+            return {
+                suffix: 'ABC',
+                clearingAccount: '1007 ABC POS Clearing',
+                filenamePrefix: 'QBO_ABC_POS_Clearing',
+                label: 'ABC POS'
+            };
+        }
 
+        function buildQboRows() {
+            console.log('[buildQbo] called. tab:', currentReconciliationType);
+            if (!dailyBreakdown) { console.log('[buildQbo] EXIT: no dailyBreakdown'); return []; }
+            const isBill = currentReconciliationType === 'abcBilling';
+            if (isBill) {
+                if (drdrDeduction === null) { console.log('[buildQbo] EXIT: ABC Bill needs DRDR'); return []; }
+            } else {
+                if (!igniteData) { console.log('[buildQbo] EXIT: POS needs Ignite'); return []; }
+            }
+
+            const cfg = getQboConfig();
+            console.log('[buildQbo] config:', cfg);
             const rows = [];
             for (const iso of dailyBreakdown.dates) {
                 const b = dailyBreakdown.byDate[iso] || { categories: {} };
@@ -3488,30 +3937,48 @@
 
                 // Revenue lines (positive or negative)
                 for (const cat of Object.keys(b.categories)) {
-                    if (QBO_FLAG_CATEGORIES.has(cat)) continue; // safety — should already be excluded
+                    if (QBO_FLAG_CATEGORIES.has(cat)) continue;
                     const acct = QBO_ACCOUNTS[cat];
-                    if (!acct) continue; // unmapped — skip
+                    if (!acct) continue;
                     const item = b.categories[cat];
-                    if (Math.abs(item.tot) < 0.005) continue; // skip zero rows
+                    if (Math.abs(item.tot) < 0.005) continue;
                     rows.push({
                         date: mmddyyyy,
-                        description: `${acct.num} ${acct.name} - ABC`,
+                        description: `${acct.num} ${acct.name} - ${cfg.suffix}`,
                         amount: round2(item.tot),
                         category: cat
                     });
                 }
 
-                // Merchant fee line (from Ignite Deduction) — always negative amount
-                const ig = igniteData.dailyByDate[iso];
-                if (ig && Math.abs(ig.deduction) > 0.005) {
-                    rows.push({
-                        date: mmddyyyy,
-                        description: `${QBO_MERCHANT_FEES.num} ${QBO_MERCHANT_FEES.name} - ABC`,
-                        amount: round2(ig.deduction),
-                        category: 'Merchant Service Fees'
-                    });
+                // POS: merchant fee line per day from Ignite Deduction
+                if (!isBill) {
+                    const ig = igniteData.dailyByDate[iso];
+                    if (ig && Math.abs(ig.deduction) > 0.005) {
+                        rows.push({
+                            date: mmddyyyy,
+                            description: `${QBO_MERCHANT_FEES.num} ${QBO_MERCHANT_FEES.name} - ${cfg.suffix}`,
+                            amount: round2(ig.deduction),
+                            category: 'Merchant Service Fees'
+                        });
+                    }
                 }
             }
+
+            // ABC Bill: one merchant fee entry on the last day of the range
+            if (isBill && drdrDeduction !== null && Math.abs(drdrDeduction) > 0.005 && dailyBreakdown.dates.length > 0) {
+                const lastIso = dailyBreakdown.dates[dailyBreakdown.dates.length - 1];
+                rows.push({
+                    date: isoToMMDDYYYY(lastIso),
+                    description: `${QBO_MERCHANT_FEES.num} ${QBO_MERCHANT_FEES.name} - ${cfg.suffix}`,
+                    amount: round2(drdrDeduction),
+                    category: 'Merchant Service Fees'
+                });
+                console.log('[buildQbo] added single ABC Bill fee line on', lastIso, 'amount:', round2(drdrDeduction));
+            }
+
+            const posSum = rows.filter(r => r.amount > 0).reduce((s,r) => s + r.amount, 0);
+            const negSum = rows.filter(r => r.amount < 0).reduce((s,r) => s + r.amount, 0);
+            console.log('[buildQbo] returning', rows.length, 'rows. Revenue:', posSum.toFixed(2), 'Fees:', negSum.toFixed(2));
             return rows;
         }
 
@@ -3530,7 +3997,7 @@
                         Revenue lines: ${numRevenue} &nbsp;|&nbsp; Fee lines: ${numFees} &nbsp;|&nbsp;
                         <strong>Net total:</strong> ${fmtMoney(total)}
                     </div>
-                    <div style="font-size:12px; color:#6b7280; margin-bottom:8px;">Upload target: <strong>1007 ABC Clearing</strong> (Bank / Cash on hand). Format: Date, Description, Received, Spent (QBO 2-column).</div>
+                    <div style="font-size:12px; color:#6b7280; margin-bottom:8px;">Upload target: <strong>${escapeHtml(getQboConfig().clearingAccount)}</strong> (Bank / Cash on hand). Format: Date, Description, Received, Spent (QBO 2-column).</div>
                     <table><thead><tr><th>Date</th><th>Description</th><th style="text-align:right;">Received</th><th style="text-align:right;">Spent</th></tr></thead><tbody>`;
                 for (const r of rows) {
                     if (r.amount >= 0) {
@@ -3567,11 +4034,14 @@
             const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
-            const rangeLabel = igniteData.dateRange
-                ? `${igniteData.dateRange.start}_to_${igniteData.dateRange.end}`
-                : 'export';
+            let rangeLabel = 'export';
+            if (igniteData && igniteData.dateRange) {
+                rangeLabel = `${igniteData.dateRange.start}_to_${igniteData.dateRange.end}`;
+            } else if (dailyBreakdown && dailyBreakdown.dates.length > 0) {
+                rangeLabel = `${dailyBreakdown.dates[0]}_to_${dailyBreakdown.dates[dailyBreakdown.dates.length - 1]}`;
+            }
             a.href = url;
-            a.download = `QBO_ABC_Clearing_${rangeLabel}.csv`;
+            a.download = `${getQboConfig().filenamePrefix}_${rangeLabel}.csv`;
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
