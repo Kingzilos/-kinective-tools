@@ -1266,7 +1266,7 @@
     <div class="container">
         <div class="header">
             <h1 id="pageTitle">ABC POS Reconciliation</h1>
-            <div style="text-align:center; font-size:11px; color:rgba(255,255,255,0.7); margin-top:4px;">v4-clubacct — open browser console (F12) to see logs</div>
+            <div style="text-align:center; font-size:11px; color:rgba(255,255,255,0.7); margin-top:4px;">v4-taxsplit — open browser console (F12) to see logs</div>
             <p>Upload and analyze your reports</p>
             <div class="reconciliation-toggle">
                 <button class="toggle-btn active" id="dailyDepBtn" onclick="switchReconciliation('dailyDep')">
@@ -3214,6 +3214,7 @@
             'Talks and events':   { num: '20013', name: 'Talks and Events' }
         };
         const QBO_MERCHANT_FEES = { num: '40026', name: 'Merchant Service Fees' };
+        const QBO_SALES_TAX = { num: '8012', name: 'Sales Tax Payable' };
         // Categories that need flagging - do NOT export to CSV
         const QBO_FLAG_CATEGORIES = new Set(['Kin Donations', 'Laundry']);
 
@@ -3977,23 +3978,41 @@
             const cfg = getQboConfig();
             console.log('[buildQbo] config:', cfg);
             const rows = [];
+            let totalTaxAccrued = 0;
             for (const iso of dailyBreakdown.dates) {
                 const b = dailyBreakdown.byDate[iso] || { categories: {} };
                 const mmddyyyy = isoToMMDDYYYY(iso);
+                let dailyTax = 0;
 
-                // Revenue lines (positive or negative)
+                // Revenue lines — PRE-TAX (item.ex) posts to income; tax accumulates for daily 8012 line
                 for (const cat of Object.keys(b.categories)) {
                     if (QBO_FLAG_CATEGORIES.has(cat)) continue;
                     const acct = QBO_ACCOUNTS[cat];
                     if (!acct) continue;
                     const item = b.categories[cat];
-                    if (Math.abs(item.tot) < 0.005) continue;
+                    // Fall back to tot if ex is 0 but tot isn't (e.g. non-taxable categories that only track tot)
+                    const preTax = (Math.abs(item.ex) > 0.005 || Math.abs(item.tax) > 0.005) ? item.ex : item.tot;
+                    if (Math.abs(preTax) < 0.005 && Math.abs(item.tax) < 0.005) continue;
+                    if (Math.abs(preTax) >= 0.005) {
+                        rows.push({
+                            date: mmddyyyy,
+                            description: `${acct.num} ${acct.name} - ${cfg.suffix}`,
+                            amount: round2(preTax),
+                            category: cat
+                        });
+                    }
+                    dailyTax += item.tax || 0;
+                }
+
+                // Sales tax line per day (only if there's tax on that day)
+                if (Math.abs(dailyTax) > 0.005) {
                     rows.push({
                         date: mmddyyyy,
-                        description: `${acct.num} ${acct.name} - ${cfg.suffix}`,
-                        amount: round2(item.tot),
-                        category: cat
+                        description: `${QBO_SALES_TAX.num} ${QBO_SALES_TAX.name} - ${cfg.suffix}`,
+                        amount: round2(dailyTax),
+                        category: 'Sales Tax Payable'
                     });
+                    totalTaxAccrued += dailyTax;
                 }
 
                 // POS: merchant fee line per day from Ignite Deduction
@@ -4022,9 +4041,10 @@
                 console.log('[buildQbo] added single ABC Bill fee line on', lastIso, 'amount:', round2(drdrDeduction));
             }
 
-            const posSum = rows.filter(r => r.amount > 0).reduce((s,r) => s + r.amount, 0);
+            const posSum = rows.filter(r => r.amount > 0 && r.category !== 'Sales Tax Payable').reduce((s,r) => s + r.amount, 0);
+            const taxSum = rows.filter(r => r.category === 'Sales Tax Payable').reduce((s,r) => s + r.amount, 0);
             const negSum = rows.filter(r => r.amount < 0).reduce((s,r) => s + r.amount, 0);
-            console.log('[buildQbo] returning', rows.length, 'rows. Revenue:', posSum.toFixed(2), 'Fees:', negSum.toFixed(2));
+            console.log('[buildQbo] returning', rows.length, 'rows. Revenue (pre-tax):', posSum.toFixed(2), 'Sales Tax:', taxSum.toFixed(2), 'Fees:', negSum.toFixed(2));
             return rows;
         }
 
@@ -4034,14 +4054,20 @@
                 document.getElementById('qboPreviewContent').innerHTML = '<div class="warning-banner warn">No rows to export.</div>';
             } else {
                 const total = rows.reduce((s, r) => s + r.amount, 0);
-                const numRevenue = rows.filter(r => r.amount > 0).length;
+                const numRevenue = rows.filter(r => r.amount > 0 && r.category !== 'Sales Tax Payable').length;
+                const numTax = rows.filter(r => r.category === 'Sales Tax Payable').length;
                 const numFees = rows.filter(r => r.amount < 0).length;
+                const revenueSum = rows.filter(r => r.amount > 0 && r.category !== 'Sales Tax Payable').reduce((s,r) => s + r.amount, 0);
+                const taxSum = rows.filter(r => r.category === 'Sales Tax Payable').reduce((s,r) => s + r.amount, 0);
+                const feeSum = rows.filter(r => r.amount < 0).reduce((s,r) => s + r.amount, 0);
 
                 let html = `
                     <div style="background:#f8f9fa; padding:12px 16px; border-radius:8px; margin-bottom:14px; font-size:13px; color:#4b5563;">
-                        <strong>Summary:</strong> ${rows.length} rows &nbsp;|&nbsp;
-                        Revenue lines: ${numRevenue} &nbsp;|&nbsp; Fee lines: ${numFees} &nbsp;|&nbsp;
-                        <strong>Net total:</strong> ${fmtMoney(total)}
+                        <div><strong>Summary:</strong> ${rows.length} rows &nbsp;|&nbsp;
+                        Revenue: ${numRevenue} lines <strong>${fmtMoney(revenueSum)}</strong> (pre-tax) &nbsp;|&nbsp;
+                        Sales Tax: ${numTax} lines <strong>${fmtMoney(taxSum)}</strong> (to 8012) &nbsp;|&nbsp;
+                        Fees: ${numFees} lines <strong>${fmtMoney(feeSum)}</strong></div>
+                        <div style="margin-top:6px;"><strong>Net total:</strong> ${fmtMoney(total)} (should match clearing account inflow)</div>
                     </div>
                     <div style="font-size:12px; color:#6b7280; margin-bottom:8px;">Upload target: <strong>${escapeHtml(getQboConfig().clearingAccount)}</strong> (Bank / Cash on hand). Format: Date, Description, Received, Spent (QBO 2-column).</div>
                     <table><thead><tr><th>Date</th><th>Description</th><th style="text-align:right;">Received</th><th style="text-align:right;">Spent</th></tr></thead><tbody>`;
