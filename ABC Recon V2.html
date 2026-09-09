@@ -1266,7 +1266,7 @@
     <div class="container">
         <div class="header">
             <h1 id="pageTitle">ABC POS Reconciliation</h1>
-            <div style="text-align:center; font-size:11px; color:rgba(255,255,255,0.7); margin-top:4px;">v4-clean — open browser console (F12) to see logs</div>
+            <div style="text-align:center; font-size:11px; color:rgba(255,255,255,0.7); margin-top:4px;">v4-clubacct — open browser console (F12) to see logs</div>
             <p>Upload and analyze your reports</p>
             <div class="reconciliation-toggle">
                 <button class="toggle-btn active" id="dailyDepBtn" onclick="switchReconciliation('dailyDep')">
@@ -1274,6 +1274,9 @@
                 </button>
                 <button class="toggle-btn" id="abcBillingBtn" onclick="switchReconciliation('abcBilling')">
                     ABC Bill
+                </button>
+                <button class="toggle-btn" id="clubAcctBtn" onclick="switchReconciliation('clubAcct')">
+                    ABC Club Collect
                 </button>
             </div>
         </div>
@@ -1567,7 +1570,7 @@
         // ============================================================
         const SB_URL = 'https://jbqvtnukspnlpxgosmhp.supabase.co';
         const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpicXZ0bnVrc3BubHB4Z29zbWhwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyNzU0NjcsImV4cCI6MjA4ODg1MTQ2N30.0EvUKNrSbH2UkQPEkTWXKS8PGNVr4G0dvWoJp9HBROs';
-        const SYNCED_KEYS = ['dailyDepReports', 'dailyDepGroups', 'abcBillingReports', 'abcBillingGroups', 'abcReconCollapsedYears'];
+        const SYNCED_KEYS = ['dailyDepReports', 'dailyDepGroups', 'abcBillingReports', 'abcBillingGroups', 'clubAcctReports', 'clubAcctGroups', 'abcReconCollapsedYears'];
         const CLOUD_PREFIX = 'abc_recon:';
 
         // In-memory cache. Default shapes: arrays for reports/groups, object for collapse state.
@@ -1576,6 +1579,8 @@
             dailyDepGroups: [],
             abcBillingReports: [],
             abcBillingGroups: [],
+            clubAcctReports: [],
+            clubAcctGroups: [],
             abcReconCollapsedYears: {}
         };
 
@@ -1834,7 +1839,7 @@
             // Force-expand the year this new group belongs to (both KPI + list)
             // so the user actually sees what they just created.
             try {
-                const storageKey = currentReconciliationType === 'dailyDep' ? 'dailyDepReports' : 'abcBillingReports';
+                const storageKey = (currentReconciliationType === 'dailyDep' ? 'dailyDepReports' : currentReconciliationType === 'clubAcct' ? 'clubAcctReports' : 'abcBillingReports');
                 const allReports = store.get(storageKey, []);
                 const year = getGroupYear(newGroup, allReports);
                 collapsedYears[`kpi:${year}`] = false;
@@ -2042,7 +2047,7 @@
         }
 
         function renderGroupSummaryCards() {
-            const storageKey = currentReconciliationType === 'dailyDep' ? 'dailyDepReports' : 'abcBillingReports';
+            const storageKey = (currentReconciliationType === 'dailyDep' ? 'dailyDepReports' : currentReconciliationType === 'clubAcct' ? 'clubAcctReports' : 'abcBillingReports');
             const savedReports = store.get(storageKey, []);
             const groups = getGroups();
             const cardsContainer = document.getElementById('groupSummaryCards');
@@ -2127,7 +2132,7 @@
 
         // Group Management Functions
         function getGroupsStorageKey() {
-            return currentReconciliationType === 'dailyDep' ? 'dailyDepGroups' : 'abcBillingGroups';
+            return (currentReconciliationType === 'dailyDep' ? 'dailyDepGroups' : currentReconciliationType === 'clubAcct' ? 'clubAcctGroups' : 'abcBillingGroups');
         }
 
         function getGroups() {
@@ -2446,10 +2451,13 @@
             // Update UI
             document.getElementById('dailyDepBtn').classList.toggle('active', type === 'dailyDep');
             document.getElementById('abcBillingBtn').classList.toggle('active', type === 'abcBilling');
+            document.getElementById('clubAcctBtn').classList.toggle('active', type === 'clubAcct');
             
             // Update title
             if (type === 'dailyDep') {
                 pageTitle.textContent = 'ABC POS Reconciliation';
+            } else if (type === 'clubAcct') {
+                pageTitle.textContent = 'ABC Club Collect Reconciliation';
             } else {
                 pageTitle.textContent = 'ABC Bill Reconciliation';
             }
@@ -2769,11 +2777,29 @@
                 // Tab-specific filtering:
                 if (currentReconciliationType === 'dailyDep') {
                     if (paymentType && paymentType.toString().toUpperCase() === 'CASH') { debugCounters.skipCash++; continue; }
-                    if (collectedMethodIdx >= 0 && collectedMethod && 
-                        String(collectedMethod).trim().toLowerCase() === 'abc member billing') { debugCounters.skipNotAbcBill++; continue; }
+                    if (collectedMethodIdx >= 0 && collectedMethod) {
+                        const cm = String(collectedMethod).trim().toLowerCase();
+                        // Exclude non-POS channels (ABC Bill AND Club Acct)
+                        if (cm === 'abc member billing' || cm === 'club acct abc collected') {
+                            debugCounters.skipNotAbcBill++;
+                            continue;
+                        }
+                    }
                 } else if (currentReconciliationType === 'abcBilling') {
                     if (collectedMethodIdx < 0) { debugCounters.skipOldFile++; continue; }
                     if (!collectedMethod || String(collectedMethod).trim().toLowerCase() !== 'abc member billing') {
+                        debugCounters.skipNotAbcBill++;
+                        if (debugFirstFewSkips.notAbcBill.length < 5) {
+                            debugFirstFewSkips.notAbcBill.push({
+                                row: i, collectedMethod: collectedMethod, 
+                                type: typeof collectedMethod, profitCenter: profitCenter
+                            });
+                        }
+                        continue;
+                    }
+                } else if (currentReconciliationType === 'clubAcct') {
+                    if (collectedMethodIdx < 0) { debugCounters.skipOldFile++; continue; }
+                    if (!collectedMethod || String(collectedMethod).trim().toLowerCase() !== 'club acct abc collected') {
                         debugCounters.skipNotAbcBill++;
                         if (debugFirstFewSkips.notAbcBill.length < 5) {
                             debugFirstFewSkips.notAbcBill.push({
@@ -2963,7 +2989,7 @@
 
         function saveReport(reportData) {
             // Get the correct storage key based on reconciliation type
-            const storageKey = currentReconciliationType === 'dailyDep' ? 'dailyDepReports' : 'abcBillingReports';
+            const storageKey = (currentReconciliationType === 'dailyDep' ? 'dailyDepReports' : currentReconciliationType === 'clubAcct' ? 'clubAcctReports' : 'abcBillingReports');
             
             // Get existing reports from localStorage
             let savedReports = store.get(storageKey, []);
@@ -3025,7 +3051,7 @@
         }
 
         function loadSavedReports() {
-            const storageKey = currentReconciliationType === 'dailyDep' ? 'dailyDepReports' : 'abcBillingReports';
+            const storageKey = (currentReconciliationType === 'dailyDep' ? 'dailyDepReports' : currentReconciliationType === 'clubAcct' ? 'clubAcctReports' : 'abcBillingReports');
             const savedReports = store.get(storageKey, []);
             const groups = getGroups();
 
@@ -3145,7 +3171,7 @@
         }
 
         function viewReport(reportId) {
-            const storageKey = currentReconciliationType === 'dailyDep' ? 'dailyDepReports' : 'abcBillingReports';
+            const storageKey = (currentReconciliationType === 'dailyDep' ? 'dailyDepReports' : currentReconciliationType === 'clubAcct' ? 'clubAcctReports' : 'abcBillingReports');
             const savedReports = store.get(storageKey, []);
             const report = savedReports.find(r => r.id === reportId);
             
@@ -3157,7 +3183,7 @@
 
         function deleteReport(reportId) {
             if (confirm('Are you sure you want to delete this report?')) {
-                const storageKey = currentReconciliationType === 'dailyDep' ? 'dailyDepReports' : 'abcBillingReports';
+                const storageKey = (currentReconciliationType === 'dailyDep' ? 'dailyDepReports' : currentReconciliationType === 'clubAcct' ? 'clubAcctReports' : 'abcBillingReports');
                 let savedReports = store.get(storageKey, []);
                 savedReports = savedReports.filter(r => r.id !== reportId);
                 store.set(storageKey, savedReports);
@@ -3213,13 +3239,14 @@
             if (header) header.textContent = `QBO Export — ${cfg.label} Daily Breakdown`;
             const sub = document.getElementById('qboSectionSub');
 
-            const isBill = currentReconciliationType === 'abcBilling';
+            const isBill = (currentReconciliationType === 'abcBilling' || currentReconciliationType === 'clubAcct');
             const igniteZone = document.getElementById('igniteDropZone');
             const drdrZone = document.getElementById('drdrDropZone');
 
             if (isBill) {
-                // ABC Bill: use DRDR for deductions (single monthly number)
-                if (sub) sub.textContent = 'Upload the DRDR file — tool will auto-extract Total Deductions for ABC Member Billing. Pick Daily or MTD after upload, or enter a manual value.';
+                // ABC Bill / Club Acct: use DRDR for deductions (single monthly number)
+                const channel = currentReconciliationType === 'clubAcct' ? 'Club Acct ABC Collected' : 'ABC Member Billing';
+                if (sub) sub.textContent = `Upload the DRDR file — tool will auto-extract Total Deductions for ${channel}. Pick Daily or MTD after upload, or enter a manual value.`;
                 if (igniteZone) igniteZone.style.display = 'none';
                 if (drdrZone) drdrZone.style.display = 'block';
                 wireDrdrDropZone();
@@ -3323,13 +3350,24 @@
                     } else {
                         console.log('[DRDR] warning: "Total Revenue by Profit Center" row not found - match check will be skipped');
                     }
-                    // ABC Member Billing:
-                    //   Column 5 (index 4) = Daily (single day, whatever the DRDR was pulled for)
-                    //   Column 7 (index 6) = MTD (full month cumulative)
-                    const dailyDedVal = grid[deductionRow][4];
-                    const mtdDedVal = grid[deductionRow][6];
-                    const dailyRevVal = revenueRow >= 0 ? grid[revenueRow][4] : null;
-                    const mtdRevVal = revenueRow >= 0 ? grid[revenueRow][6] : null;
+                    // Determine which DRDR columns to read based on tab:
+                    //   ABC Bill (abcBilling)  -> Daily = col 5 (idx 4), MTD = col 7 (idx 6)  [ABC Member Billing]
+                    //   Club Acct (clubAcct)   -> Daily = col 10 (idx 9), MTD = col 11 (idx 10) [Club Acct ABC Collected]
+                    let dailyColIdx, mtdColIdx, channelLabel;
+                    if (currentReconciliationType === 'clubAcct') {
+                        dailyColIdx = 9;
+                        mtdColIdx = 10;
+                        channelLabel = 'Club Acct ABC Collected';
+                    } else {
+                        dailyColIdx = 4;
+                        mtdColIdx = 6;
+                        channelLabel = 'ABC Member Billing';
+                    }
+                    console.log('[DRDR] channel:', channelLabel, 'dailyCol(0-idx):', dailyColIdx, 'mtdCol(0-idx):', mtdColIdx);
+                    const dailyDedVal = grid[deductionRow][dailyColIdx];
+                    const mtdDedVal = grid[deductionRow][mtdColIdx];
+                    const dailyRevVal = revenueRow >= 0 ? grid[revenueRow][dailyColIdx] : null;
+                    const mtdRevVal = revenueRow >= 0 ? grid[revenueRow][mtdColIdx] : null;
                     console.log('[DRDR] Deduction: daily(col5)=', dailyDedVal, 'MTD(col7)=', mtdDedVal);
                     console.log('[DRDR] Revenue: daily(col5)=', dailyRevVal, 'MTD(col7)=', mtdRevVal);
                     if (typeof mtdDedVal !== 'number' || isNaN(mtdDedVal)) {
@@ -3621,7 +3659,7 @@
         function computeAndRenderDailyBreakdown() {
             console.log('[compute] called. tab:', currentReconciliationType, 'igniteData:', !!igniteData, 'drdrDeduction:', drdrDeduction);
             if (!currentReportData || !currentReportData.rawRows) { console.log('[compute] EXIT: no rawRows'); return; }
-            const isBill = currentReconciliationType === 'abcBilling';
+            const isBill = (currentReconciliationType === 'abcBilling' || currentReconciliationType === 'clubAcct');
             if (!isBill && !igniteData) { console.log('[compute] EXIT: POS but no ignite'); return; }
             if (isBill && drdrDeduction === null) { console.log('[compute] EXIT: ABC Bill but no DRDR deduction'); return; }
             console.log('[compute] proceeding. rawRows:', currentReportData.rawRows.length);
@@ -3735,7 +3773,7 @@
             const table = document.getElementById('dailyBreakdownTable');
             const container = document.getElementById('dailyBreakdownContainer');
             container.style.display = 'block';
-            const isBill = currentReconciliationType === 'abcBilling';
+            const isBill = (currentReconciliationType === 'abcBilling' || currentReconciliationType === 'clubAcct');
 
             // Header
             let html = '<thead><tr>';
@@ -3832,7 +3870,7 @@
         function renderQboWarnings() {
             const w = document.getElementById('qboWarnings');
             const parts = [];
-            const isBill = currentReconciliationType === 'abcBilling';
+            const isBill = (currentReconciliationType === 'abcBilling' || currentReconciliationType === 'clubAcct');
 
             // Ignite range vs report range mismatch (POS only)
             if (!isBill && igniteData) {
@@ -3910,6 +3948,14 @@
                     label: 'ABC Bill'
                 };
             }
+            if (currentReconciliationType === 'clubAcct') {
+                return {
+                    suffix: 'ABCCA',
+                    clearingAccount: '1011 Club Acct Clearing',
+                    filenamePrefix: 'QBO_Club_Acct_Clearing',
+                    label: 'ABC Club Collect'
+                };
+            }
             return {
                 suffix: 'ABC',
                 clearingAccount: '1007 ABC POS Clearing',
@@ -3921,7 +3967,7 @@
         function buildQboRows() {
             console.log('[buildQbo] called. tab:', currentReconciliationType);
             if (!dailyBreakdown) { console.log('[buildQbo] EXIT: no dailyBreakdown'); return []; }
-            const isBill = currentReconciliationType === 'abcBilling';
+            const isBill = (currentReconciliationType === 'abcBilling' || currentReconciliationType === 'clubAcct');
             if (isBill) {
                 if (drdrDeduction === null) { console.log('[buildQbo] EXIT: ABC Bill needs DRDR'); return []; }
             } else {
