@@ -3192,6 +3192,7 @@ function applyToReport(acctNum, expenses, incomeItems, transfers, filename) {
   updateTotals();
   recomputeCombinedTotal();
   addUploadPill(acctNum, filename, expenses.length + incomeItems.length);
+  if (!isReadOnly && typeof saveWeek === 'function') saveWeek();
 }
 
 function updateHeroKPIs() {
