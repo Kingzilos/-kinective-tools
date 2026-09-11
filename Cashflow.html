@@ -3298,6 +3298,15 @@ function downloadExcel() {
       capexItems.push({n,a});
     });
     const capexTot=capexItems.reduce((s,c)=>s+c.a,0), ocf=fcf+capexTot;
+    const entLabel={amd:'AMD Capital',kin:'KIN El Paso',plano:'KIN Plano'};
+    const financingItems=[];
+    document.querySelectorAll('#financing-rows .financing-item').forEach(item=>{
+      const n=(item.querySelector('.analytic-name')?.textContent||'').trim();
+      const a=pN((item.querySelector('.financing-amount')?.textContent||'').trim());
+      const ent=item.querySelector('.capex-entity-toggle')?.dataset.entity||'';
+      financingItems.push({n,a,ent:entLabel[ent]||''});
+    });
+    const finTot=financingItems.reduce((s,f)=>s+f.a,0);
     const cbKin=gN('cb-kin'), cbAmd=gN('cb-amd'), cbComb=gN('cb-combined'), accum2026=gN('accum-2026');
     let accum2025=0, amdRent=0;
     const e25=document.getElementById('accum-2025'); if(e25) accum2025=pN(e25.textContent);
@@ -3455,6 +3464,17 @@ function downloadExcel() {
     HDR('Project / Asset','','','2026 YTD','');
     capexItems.forEach((ci,i)=>DR(ci.n,'','',ci.a>0?ci.a:'—',i%2===1));
     TOT('Weekly CAPEX', capexTot>0?capexTot:'—');
+    BL(16);
+
+    // ── 05b FINANCING ACTIVITIES ────────────────────────────────────────
+    SEC('05b  FINANCING ACTIVITIES');
+    HDR('Activity','Entity','','Amount','');
+    if(financingItems.length){
+      financingItems.forEach((fi,i)=>DR(fi.n,fi.ent,'',fi.a>0?fi.a:'—',i%2===1));
+    } else {
+      DR('—','','',0,false);
+    }
+    TOT('Total Financing Activities', finTot>0?finTot:'—');
     BL(16);
 
     // ── 06 YTD ──────────────────────────────────────────────────────────
