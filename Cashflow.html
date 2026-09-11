@@ -2468,6 +2468,8 @@ function buildWeek12Snapshot() {
 
   // Persist transfer adjustments so closing balances survive reload without re-uploading XLS
   week.transferAdjustments = JSON.parse(JSON.stringify(window.transferAdjustments || {}));
+  // Persist loan advances (financing draws) for the same reason — closing balances depend on them
+  week.loanAdjustments = JSON.parse(JSON.stringify(window._loanAdjustments || {}));
 
   // CAPEX items
   week.capexItems = [];
@@ -2796,6 +2798,8 @@ function loadWeekIntoUI(weekNum, readOnly) {
 
   // Restore saved transfer adjustments (e.g. 8152→2213 funding transfer)
   window.transferAdjustments = JSON.parse(JSON.stringify(week.transferAdjustments || {}));
+  // Restore saved loan advances so closing balances survive reload without re-uploading XLS
+  window._loanAdjustments = JSON.parse(JSON.stringify(week.loanAdjustments || {}));
   window._xlsUploadedThisSession = false;
   const cb = week.closingBalances || {};
   setEl('cb-kin',      fmt(cb.kin      || 0));
