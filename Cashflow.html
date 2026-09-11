@@ -3063,6 +3063,11 @@ function parseXLS(buffer, filename) {
   const acctMatch = acctRaw.match(/(\d{4})$/);
   const acctNum = acctMatch ? acctMatch[1] : 'unknown';
 
+  // Reset any prior loan adjustment for THIS account so re-uploads don't stack
+  if (window._loanAdjustments && window._loanAdjustments[acctNum]) {
+    delete window._loanAdjustments[acctNum];
+  }
+
   const expenses = [], income = [], transfers = [];
   for (let i = 1; i < rows.length; i++) {
     const row     = rows[i];
