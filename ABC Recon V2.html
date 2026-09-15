@@ -1266,7 +1266,7 @@
     <div class="container">
         <div class="header">
             <h1 id="pageTitle">ABC POS Reconciliation</h1>
-            <div style="text-align:center; font-size:11px; color:rgba(255,255,255,0.7); margin-top:4px;">v4-taxsplit — open browser console (F12) to see logs</div>
+            <div style="text-align:center; font-size:11px; color:rgba(255,255,255,0.7); margin-top:4px;">v4-totalfix — open browser console (F12) to see logs</div>
             <p>Upload and analyze your reports</p>
             <div class="reconciliation-toggle">
                 <button class="toggle-btn active" id="dailyDepBtn" onclick="switchReconciliation('dailyDep')">
@@ -1277,6 +1277,9 @@
                 </button>
                 <button class="toggle-btn" id="clubAcctBtn" onclick="switchReconciliation('clubAcct')">
                     ABC Club Collect
+                </button>
+                <button class="toggle-btn" id="cashDepBtn" onclick="switchReconciliation('cashDep')">
+                    Cash Deposits
                 </button>
             </div>
         </div>
@@ -1570,7 +1573,7 @@
         // ============================================================
         const SB_URL = 'https://jbqvtnukspnlpxgosmhp.supabase.co';
         const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpicXZ0bnVrc3BubHB4Z29zbWhwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyNzU0NjcsImV4cCI6MjA4ODg1MTQ2N30.0EvUKNrSbH2UkQPEkTWXKS8PGNVr4G0dvWoJp9HBROs';
-        const SYNCED_KEYS = ['dailyDepReports', 'dailyDepGroups', 'abcBillingReports', 'abcBillingGroups', 'clubAcctReports', 'clubAcctGroups', 'abcReconCollapsedYears'];
+        const SYNCED_KEYS = ['dailyDepReports', 'dailyDepGroups', 'abcBillingReports', 'abcBillingGroups', 'clubAcctReports', 'clubAcctGroups', 'cashDepReports', 'cashDepGroups', 'abcReconCollapsedYears'];
         const CLOUD_PREFIX = 'abc_recon:';
 
         // In-memory cache. Default shapes: arrays for reports/groups, object for collapse state.
@@ -1581,6 +1584,8 @@
             abcBillingGroups: [],
             clubAcctReports: [],
             clubAcctGroups: [],
+            cashDepReports: [],
+            cashDepGroups: [],
             abcReconCollapsedYears: {}
         };
 
@@ -1839,7 +1844,7 @@
             // Force-expand the year this new group belongs to (both KPI + list)
             // so the user actually sees what they just created.
             try {
-                const storageKey = (currentReconciliationType === 'dailyDep' ? 'dailyDepReports' : currentReconciliationType === 'clubAcct' ? 'clubAcctReports' : 'abcBillingReports');
+                const storageKey = (currentReconciliationType === 'dailyDep' ? 'dailyDepReports' : currentReconciliationType === 'clubAcct' ? 'clubAcctReports' : currentReconciliationType === 'cashDep' ? 'cashDepReports' : 'abcBillingReports');
                 const allReports = store.get(storageKey, []);
                 const year = getGroupYear(newGroup, allReports);
                 collapsedYears[`kpi:${year}`] = false;
@@ -2047,7 +2052,7 @@
         }
 
         function renderGroupSummaryCards() {
-            const storageKey = (currentReconciliationType === 'dailyDep' ? 'dailyDepReports' : currentReconciliationType === 'clubAcct' ? 'clubAcctReports' : 'abcBillingReports');
+            const storageKey = (currentReconciliationType === 'dailyDep' ? 'dailyDepReports' : currentReconciliationType === 'clubAcct' ? 'clubAcctReports' : currentReconciliationType === 'cashDep' ? 'cashDepReports' : 'abcBillingReports');
             const savedReports = store.get(storageKey, []);
             const groups = getGroups();
             const cardsContainer = document.getElementById('groupSummaryCards');
@@ -2132,7 +2137,7 @@
 
         // Group Management Functions
         function getGroupsStorageKey() {
-            return (currentReconciliationType === 'dailyDep' ? 'dailyDepGroups' : currentReconciliationType === 'clubAcct' ? 'clubAcctGroups' : 'abcBillingGroups');
+            return (currentReconciliationType === 'dailyDep' ? 'dailyDepGroups' : currentReconciliationType === 'clubAcct' ? 'clubAcctGroups' : currentReconciliationType === 'cashDep' ? 'cashDepGroups' : 'abcBillingGroups');
         }
 
         function getGroups() {
@@ -2452,12 +2457,15 @@
             document.getElementById('dailyDepBtn').classList.toggle('active', type === 'dailyDep');
             document.getElementById('abcBillingBtn').classList.toggle('active', type === 'abcBilling');
             document.getElementById('clubAcctBtn').classList.toggle('active', type === 'clubAcct');
+            document.getElementById('cashDepBtn').classList.toggle('active', type === 'cashDep');
             
             // Update title
             if (type === 'dailyDep') {
                 pageTitle.textContent = 'ABC POS Reconciliation';
             } else if (type === 'clubAcct') {
                 pageTitle.textContent = 'ABC Club Collect Reconciliation';
+            } else if (type === 'cashDep') {
+                pageTitle.textContent = 'Cash Deposits';
             } else {
                 pageTitle.textContent = 'ABC Bill Reconciliation';
             }
@@ -2809,6 +2817,12 @@
                         }
                         continue;
                     }
+                } else if (currentReconciliationType === 'cashDep') {
+                    // ONLY keep CASH — physical cash sales, GM deposits weekly
+                    if (!paymentType || paymentType.toString().toUpperCase() !== 'CASH') {
+                        debugCounters.skipNotAbcBill++;
+                        continue;
+                    }
                 }
                 
                 debugCounters.keptForProcessing++;
@@ -2885,11 +2899,24 @@
             console.log('[processReport] rawRows count:', rawRows.length);
             // === END DEBUG ===
             
+            // Recompute totalRevenue from actual filtered data (not the file's own header,
+            // which shows the pre-filter total from ALL payment types). This ensures the
+            // ungrouped-reports card and the Total Revenue display match the breakdown table.
+            // Note: unapplied payments are already folded into processedData['Dues'].totalAmount,
+            // so summing processedData alone gives the correct Grand Total.
+            let computedRevenue = 0;
+            for (const cat of Object.keys(processedData)) {
+                const item = processedData[cat];
+                if (item && typeof item.totalAmount === 'number') computedRevenue += item.totalAmount;
+            }
+            const totalRevenueDisplay = computedRevenue.toFixed(2);
+            console.log('[processReport] file-header revenue:', totalRevenue, '→ computed post-filter revenue:', totalRevenueDisplay);
+            
             // Store current report data
             currentReportData = {
                 location,
                 dateRange,
-                totalRevenue,
+                totalRevenue: totalRevenueDisplay,
                 data: processedData,
                 unappliedPayments,
                 rawRows: rawRows.length > 0 ? rawRows : undefined,
@@ -2973,11 +3000,12 @@
                 tableBody.appendChild(warningRow);
             }
             
-            // Show/hide the Prepare QBO Export button (works on both tabs if rawRows exist)
+            // Show/hide the Prepare QBO Export button (works on ABC POS/Bill/Club tabs; hidden for Cash Deposits since no export needed)
             const qboBtn = document.getElementById('qboExportBtn');
             if (qboBtn) {
                 const hasRawRows = currentReportData && currentReportData.rawRows && currentReportData.rawRows.length > 0;
-                qboBtn.style.display = hasRawRows ? 'inline-block' : 'none';
+                const isCashTab = currentReconciliationType === 'cashDep';
+                qboBtn.style.display = (hasRawRows && !isCashTab) ? 'inline-block' : 'none';
             }
             // Reset any open QBO section from a prior report
             hideQboSection();
@@ -2989,7 +3017,7 @@
 
         function saveReport(reportData) {
             // Get the correct storage key based on reconciliation type
-            const storageKey = (currentReconciliationType === 'dailyDep' ? 'dailyDepReports' : currentReconciliationType === 'clubAcct' ? 'clubAcctReports' : 'abcBillingReports');
+            const storageKey = (currentReconciliationType === 'dailyDep' ? 'dailyDepReports' : currentReconciliationType === 'clubAcct' ? 'clubAcctReports' : currentReconciliationType === 'cashDep' ? 'cashDepReports' : 'abcBillingReports');
             
             // Get existing reports from localStorage
             let savedReports = store.get(storageKey, []);
@@ -3051,7 +3079,7 @@
         }
 
         function loadSavedReports() {
-            const storageKey = (currentReconciliationType === 'dailyDep' ? 'dailyDepReports' : currentReconciliationType === 'clubAcct' ? 'clubAcctReports' : 'abcBillingReports');
+            const storageKey = (currentReconciliationType === 'dailyDep' ? 'dailyDepReports' : currentReconciliationType === 'clubAcct' ? 'clubAcctReports' : currentReconciliationType === 'cashDep' ? 'cashDepReports' : 'abcBillingReports');
             const savedReports = store.get(storageKey, []);
             const groups = getGroups();
 
@@ -3171,7 +3199,7 @@
         }
 
         function viewReport(reportId) {
-            const storageKey = (currentReconciliationType === 'dailyDep' ? 'dailyDepReports' : currentReconciliationType === 'clubAcct' ? 'clubAcctReports' : 'abcBillingReports');
+            const storageKey = (currentReconciliationType === 'dailyDep' ? 'dailyDepReports' : currentReconciliationType === 'clubAcct' ? 'clubAcctReports' : currentReconciliationType === 'cashDep' ? 'cashDepReports' : 'abcBillingReports');
             const savedReports = store.get(storageKey, []);
             const report = savedReports.find(r => r.id === reportId);
             
@@ -3183,7 +3211,7 @@
 
         function deleteReport(reportId) {
             if (confirm('Are you sure you want to delete this report?')) {
-                const storageKey = (currentReconciliationType === 'dailyDep' ? 'dailyDepReports' : currentReconciliationType === 'clubAcct' ? 'clubAcctReports' : 'abcBillingReports');
+                const storageKey = (currentReconciliationType === 'dailyDep' ? 'dailyDepReports' : currentReconciliationType === 'clubAcct' ? 'clubAcctReports' : currentReconciliationType === 'cashDep' ? 'cashDepReports' : 'abcBillingReports');
                 let savedReports = store.get(storageKey, []);
                 savedReports = savedReports.filter(r => r.id !== reportId);
                 store.set(storageKey, savedReports);
@@ -3263,7 +3291,8 @@
             const s = document.getElementById('qboSection');
             if (s) s.style.display = 'none';
             const btn = document.getElementById('qboExportBtn');
-            if (btn && currentReportData && currentReportData.rawRows) {
+            const isCashTab = currentReconciliationType === 'cashDep';
+            if (btn && currentReportData && currentReportData.rawRows && !isCashTab) {
                 btn.style.display = 'inline-block';
             }
         }
