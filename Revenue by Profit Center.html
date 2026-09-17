@@ -883,7 +883,7 @@ const PROFIT_CENTER_MAP = {
   'DAYCARE2': 'Kinective Kids',
   'DAYCARE3': 'Kinective Kids',
   'DUES': 'Dues',
-  'ESCAPE ALCOHOL': 'Zest',
+  'ESCAPE ALCOHOL': 'Zest Alcohol',
   'EXLOCKER': 'Lockers',
   'FREEZEFEE': 'Dues',
   'JRLOCKER': 'Lockers',
@@ -912,17 +912,18 @@ const PROFIT_CENTER_MAP = {
   'SUPPLEMENTS - THORNE': 'Retail',
   'TOE SOX': 'Retail',
   'UNAPPLIED PAYMENT': 'Dues',
-  'ZEST': 'Zest',
+  'ZEST': 'Zest Food',
   'CENTRIC': 'Retail',
   'KKIDS': 'Kinective Kids',
   'KKLATEFEE': 'Missed class fee',
+  'VUORI': 'Retail',
 };
 
 // Canonical category display order
 const CATEGORY_ORDER = [
-  'Dues', 'Annual Fees', 'PERSONAL TRAINING', 'Retail', 'Zest',
-  'Massages', 'Pilates', 'Kinective Kids', 'Lockers', 'Booking fee',
-  'Missed class fee', 'Laundry', 'Kin Donations'
+  'Dues', 'Annual Fees', 'PERSONAL TRAINING', 'Retail', 'Zest Food',
+  'Zest Alcohol', 'Zest (Combined)', 'Massages', 'Pilates', 'Kinective Kids',
+  'Lockers', 'Booking fee', 'Missed class fee', 'Laundry', 'Kin Donations'
 ];
 
 let currentData = null;
@@ -1052,6 +1053,13 @@ function processFile(file) {
           .map(([cat, val]) => ({ cat, val: Math.round(val * 100) / 100 }))
           .filter(r => Math.abs(r.val) > 0.005);
 
+        // Inject Zest Combined subtotal if either Zest category exists
+        const zestFood = totals['Zest Food'] || 0;
+        const zestAlc  = totals['Zest Alcohol'] || 0;
+        if (zestFood !== 0 || zestAlc !== 0) {
+          summary.push({ cat: 'Zest (Combined)', val: Math.round((zestFood + zestAlc) * 100) / 100, isSubtotal: true });
+        }
+
         // Sort by canonical order then by value
         summary.sort((a, b) => {
           const ia = CATEGORY_ORDER.indexOf(a.cat);
@@ -1062,7 +1070,8 @@ function processFile(file) {
           return b.val - a.val;
         });
 
-        const grandTotal = summary.reduce((s, r) => s + r.val, 0);
+        // Grand total excludes the combined subtotal row (it's already counted via Food + Alcohol)
+        const grandTotal = summary.filter(r => !r.isSubtotal).reduce((s, r) => s + r.val, 0);
 
         currentData = { summary, grandTotal, dateRange, location, fileName: file.name };
 
@@ -1087,10 +1096,11 @@ function renderResult(data) {
   document.getElementById('resultPeriod').textContent = data.dateRange || 'Period';
   document.getElementById('resultLocation').textContent = data.location || data.fileName;
 
-  // KPIs
-  const topCat = [...data.summary].sort((a,b) => b.val - a.val)[0];
-  const positiveTotal = data.summary.filter(r => r.val > 0).reduce((s,r) => s + r.val, 0);
-  const catCount = data.summary.filter(r => r.val > 0).length;
+  // KPIs (exclude the combined subtotal row from counts/totals)
+  const realRows = data.summary.filter(r => !r.isSubtotal);
+  const topCat = [...realRows].sort((a,b) => b.val - a.val)[0];
+  const positiveTotal = realRows.filter(r => r.val > 0).reduce((s,r) => s + r.val, 0);
+  const catCount = realRows.filter(r => r.val > 0).length;
 
   document.getElementById('kpiStrip').innerHTML = `
     <div class="kpi-card">
@@ -1125,16 +1135,34 @@ function renderResult(data) {
     const barPct = max !== 0 ? (Math.abs(row.val) / max * 100) : 0;
     const isNeg = row.val < 0;
     const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td>${row.cat}</td>
-      <td class="bar-cell">
-        <span class="pct-badge">${pct.toFixed(1)}%</span>
-        <div class="mini-bar-bg">
-          <div class="mini-bar-fill" style="width:${barPct}%; background: ${isNeg ? '#DC2626' : 'linear-gradient(90deg, var(--gold), var(--gold-light))'}"></div>
-        </div>
-      </td>
-      <td style="color:${isNeg ? '#DC2626' : 'inherit'}">${fmt(row.val)}</td>
-    `;
+
+    if (row.isSubtotal) {
+      // Zest Combined subtotal — indented, muted background, italic label
+      tr.style.cssText = 'background:#F4F1EC; border-top:1px solid var(--border); border-bottom:1px solid var(--border);';
+      tr.innerHTML = `
+        <td style="padding:11px 28px; font-size:13px; color:var(--text-secondary); font-style:italic;">
+          ↳ ${row.cat}
+        </td>
+        <td class="bar-cell" style="padding:11px 28px;">
+          <span class="pct-badge">${pct.toFixed(1)}%</span>
+          <div class="mini-bar-bg">
+            <div class="mini-bar-fill" style="width:${barPct}%; background:linear-gradient(90deg,#A08038,#C9A84C);"></div>
+          </div>
+        </td>
+        <td style="text-align:right; padding:11px 28px; font-family:'DM Mono',monospace; font-size:13px; color:var(--text-secondary); font-style:italic;">${fmt(row.val)}</td>
+      `;
+    } else {
+      tr.innerHTML = `
+        <td>${row.cat}</td>
+        <td class="bar-cell">
+          <span class="pct-badge">${pct.toFixed(1)}%</span>
+          <div class="mini-bar-bg">
+            <div class="mini-bar-fill" style="width:${barPct}%; background: ${isNeg ? '#DC2626' : 'linear-gradient(90deg, var(--gold), var(--gold-light))'}"></div>
+          </div>
+        </td>
+        <td style="color:${isNeg ? '#DC2626' : 'inherit'}">${fmt(row.val)}</td>
+      `;
+    }
     tbody.appendChild(tr);
   });
 
@@ -1291,6 +1319,18 @@ function viewReport(id) {
     const pct = r.grandTotal !== 0 ? (row.val / r.grandTotal * 100) : 0;
     const barPct = max !== 0 ? (Math.abs(row.val) / max * 100) : 0;
     const isNeg = row.val < 0;
+    if (row.isSubtotal) {
+      return `<tr style="background:#F4F1EC;border-top:1px solid var(--border);border-bottom:1px solid var(--border)">
+        <td style="padding:11px 20px;font-size:13px;color:var(--text-secondary);font-style:italic;">↳ ${row.cat}</td>
+        <td style="padding:11px 20px;width:160px">
+          <span style="font-family:'DM Mono',monospace;font-size:11px;color:var(--text-muted);display:block;margin-bottom:4px">${pct.toFixed(1)}%</span>
+          <div style="height:5px;background:var(--cream-dark);border-radius:3px;overflow:hidden">
+            <div style="height:100%;width:${barPct}%;background:linear-gradient(90deg,#A08038,#C9A84C);border-radius:3px"></div>
+          </div>
+        </td>
+        <td style="padding:11px 20px;text-align:right;font-family:'DM Mono',monospace;font-size:13px;color:var(--text-secondary);font-style:italic;">${fmt(row.val)}</td>
+      </tr>`;
+    }
     return `<tr style="border-bottom:1px solid var(--cream-dark)">
       <td style="padding:13px 20px;font-weight:500;color:var(--navy);font-size:14px">${row.cat}</td>
       <td style="padding:13px 20px;width:160px">
@@ -1350,22 +1390,24 @@ function downloadReportExcel(id) {
 
 function exportToExcel(summary, grandTotal, title, location) {
   const wb = XLSX.utils.book_new();
+  const dataRows = summary.map(r => {
+    if (r.isSubtotal) {
+      return ['  ↳ ' + r.cat + ' (subtotal)', r.val, ''];
+    }
+    return [r.cat, r.val, grandTotal !== 0 ? (r.val / grandTotal) : 0];
+  });
   const rows = [
     ['Kinective Fitness — Revenue by Profit Center'],
     [title],
     [location || ''],
     [],
     ['Category', 'Revenue', '% of Total'],
-    ...summary.map(r => [
-      r.cat,
-      r.val,
-      grandTotal !== 0 ? (r.val / grandTotal) : 0
-    ]),
+    ...dataRows,
     [],
     ['Grand Total', grandTotal, 1]
   ];
   const ws = XLSX.utils.aoa_to_sheet(rows);
-  ws['!cols'] = [{ wch: 30 }, { wch: 16 }, { wch: 14 }];
+  ws['!cols'] = [{ wch: 32 }, { wch: 16 }, { wch: 14 }];
   XLSX.utils.book_append_sheet(wb, ws, 'Revenue Summary');
   XLSX.writeFile(wb, `Kinective_Revenue_${title.replace(/[^a-zA-Z0-9]/g,'_')}.xlsx`);
   showToast('✓ Excel file downloaded');
