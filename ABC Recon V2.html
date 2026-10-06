@@ -1266,7 +1266,7 @@
     <div class="container">
         <div class="header">
             <h1 id="pageTitle">ABC POS Reconciliation</h1>
-            <div style="text-align:center; font-size:11px; color:rgba(255,255,255,0.7); margin-top:4px;">v4-matchtotal — open browser console (F12) to see logs</div>
+            <div style="text-align:center; font-size:11px; color:rgba(255,255,255,0.7); margin-top:4px;">v4-dupcheck — open browser console (F12) to see logs</div>
             <p>Upload and analyze your reports</p>
             <div class="reconciliation-toggle">
                 <button class="toggle-btn active" id="dailyDepBtn" onclick="switchReconciliation('dailyDep')">
@@ -1364,6 +1364,8 @@
             <div class="drop-zone-subtext">or click to browse (Supports Excel, CSV files)</div>
             <input type="file" id="fileInput" accept=".xlsx,.xls,.csv">
         </div>
+
+        <div id="duplicateWarningContainer"></div>
 
         <div class="report-info" id="reportInfo">
             <div class="info-header">
@@ -1573,7 +1575,7 @@
         // ============================================================
         const SB_URL = 'https://jbqvtnukspnlpxgosmhp.supabase.co';
         const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpicXZ0bnVrc3BubHB4Z29zbWhwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyNzU0NjcsImV4cCI6MjA4ODg1MTQ2N30.0EvUKNrSbH2UkQPEkTWXKS8PGNVr4G0dvWoJp9HBROs';
-        const SYNCED_KEYS = ['dailyDepReports', 'dailyDepGroups', 'abcBillingReports', 'abcBillingGroups', 'clubAcctReports', 'clubAcctGroups', 'cashDepReports', 'cashDepGroups', 'abcReconCollapsedYears'];
+        const SYNCED_KEYS = ['dailyDepReports', 'dailyDepGroups', 'abcBillingReports', 'abcBillingGroups', 'clubAcctReports', 'clubAcctGroups', 'cashDepReports', 'cashDepGroups', 'dailyDepDownloads', 'abcBillingDownloads', 'clubAcctDownloads', 'abcReconCollapsedYears'];
         const CLOUD_PREFIX = 'abc_recon:';
 
         // In-memory cache. Default shapes: arrays for reports/groups, object for collapse state.
@@ -1586,6 +1588,9 @@
             clubAcctGroups: [],
             cashDepReports: [],
             cashDepGroups: [],
+            dailyDepDownloads: [],
+            abcBillingDownloads: [],
+            clubAcctDownloads: [],
             abcReconCollapsedYears: {}
         };
 
@@ -2936,6 +2941,8 @@
             document.getElementById('location').textContent = location;
             document.getElementById('dateRange').textContent = dateRange;
             document.getElementById('totalRevenue').textContent = `$${totalRevenue}`;
+            // Check for process-time duplicates and show warning banner if found
+            renderDuplicateWarningBanner();
             
             // Show/hide deductions input based on reconciliation type
             const deductionsGroup = document.getElementById('deductionsGroup');
@@ -3260,7 +3267,66 @@
             computeAndRenderDailyBreakdown();
         }
 
-        function showQboSection() {
+        // Build and show modal popup when user clicks Prepare QBO Export but a prior
+        // CSV download overlaps the current date range. Hard-blocks until the user
+        // explicitly confirms "Continue anyway".
+        function showDuplicateDownloadModal(overlaps) {
+            // Remove any existing modal first
+            const prev = document.getElementById('duplicateDownloadModal');
+            if (prev) prev.remove();
+
+            const list = overlaps.map(d => {
+                const when = new Date(d.downloadedAt).toLocaleString();
+                return `<li style="margin-bottom:6px;"><strong>${escapeHtml(d.dateRange)}</strong> — downloaded ${escapeHtml(when)}, net ${fmtMoney(d.netTotal)}, ${d.rowCount} rows</li>`;
+            }).join('');
+
+            const modal = document.createElement('div');
+            modal.id = 'duplicateDownloadModal';
+            modal.style.cssText = 'position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:9999; display:flex; align-items:center; justify-content:center; padding:20px;';
+            modal.innerHTML = `
+                <div style="background:white; border-radius:12px; max-width:620px; width:100%; box-shadow:0 20px 60px rgba(0,0,0,0.3); overflow:hidden;">
+                    <div style="background:#fef3c7; padding:16px 20px; border-bottom:2px solid #f59e0b;">
+                        <div style="font-size:20px; font-weight:700; color:#92400e;">⚠ Duplicate Download Risk</div>
+                    </div>
+                    <div style="padding:20px;">
+                        <div style="color:#1a1a1a; font-size:14px; margin-bottom:12px;">
+                            You already downloaded a QBO CSV for a date range that overlaps the current report (<strong>${escapeHtml(currentReportData.dateRange)}</strong>) on this tab:
+                        </div>
+                        <ul style="margin:0 0 12px 20px; color:#444; font-size:13px;">${list}</ul>
+                        <div style="background:#fee2e2; border-left:4px solid #dc2626; padding:12px 14px; border-radius:4px; color:#7f1d1d; font-size:13px;">
+                            <strong>If you already uploaded that CSV to QuickBooks</strong>, downloading and uploading this one will <strong>double-count</strong> the overlapping transactions.
+                            <br><br>Before continuing, open the clearing account register in QBO and verify no entries exist for this period's suffix.
+                        </div>
+                    </div>
+                    <div style="padding:14px 20px; background:#f8f9fa; display:flex; justify-content:flex-end; gap:10px;">
+                        <button onclick="closeDuplicateDownloadModal()" style="padding:10px 20px; background:white; border:1px solid #d1d5db; color:#374151; border-radius:6px; cursor:pointer; font-weight:600; font-size:13px;">Cancel</button>
+                        <button onclick="confirmDuplicateDownload()" style="padding:10px 20px; background:#dc2626; color:white; border:none; border-radius:6px; cursor:pointer; font-weight:600; font-size:13px;">Continue anyway</button>
+                    </div>
+                </div>`;
+            document.body.appendChild(modal);
+            console.log('[duplicate-check] showing modal for', overlaps.length, 'overlapping downloads');
+        }
+
+        function closeDuplicateDownloadModal() {
+            const m = document.getElementById('duplicateDownloadModal');
+            if (m) m.remove();
+        }
+
+        function confirmDuplicateDownload() {
+            closeDuplicateDownloadModal();
+            showQboSection(true); // bypass check this time
+        }
+
+        // Hard block: when user clicks Prepare QBO Export, check download log first.
+        // If overlap found, show blocking modal — only proceeds if user confirms.
+        function showQboSection(bypassDuplicateCheck) {
+            if (!bypassDuplicateCheck && currentReportData && currentReportData.dateRange) {
+                const overlaps = findOverlappingDownloads(currentReportData.dateRange);
+                if (overlaps.length > 0) {
+                    showDuplicateDownloadModal(overlaps);
+                    return;
+                }
+            }
             document.getElementById('qboSection').style.display = 'block';
             document.getElementById('qboExportBtn').style.display = 'none';
             const cfg = getQboConfig();
@@ -4151,9 +4217,120 @@
             a.click();
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
+
+            // Log this download to duplicate-detection history (per-tab)
+            if (currentReportData && currentReportData.dateRange) {
+                const netTotal = rows.reduce((s, r) => s + r.amount, 0);
+                logCsvDownload(currentReportData.dateRange, netTotal, rows.length);
+            }
         }
 
         // ---- utils ----
+        // === DUPLICATE DETECTION ===
+        // Parse "08/01/2026 - 08/31/2026" or "08/01/2026" into {start, end} as YYYY-MM-DD strings
+        function parseDateRangeStr(str) {
+            if (!str) return null;
+            const matches = String(str).match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/g);
+            if (!matches || matches.length === 0) return null;
+            const toISO = s => {
+                const [m, d, y] = s.split('/');
+                return `${y}-${m.padStart(2,'0')}-${d.padStart(2,'0')}`;
+            };
+            const start = toISO(matches[0]);
+            const end = matches.length > 1 ? toISO(matches[1]) : start;
+            return { start, end };
+        }
+
+        // Returns true if two {start, end} ranges share any dates
+        function rangesOverlap(a, b) {
+            if (!a || !b) return false;
+            return a.start <= b.end && b.start <= a.end;
+        }
+
+        // Return downloads log key for current tab (null if tab has no downloads — Cash Deposits)
+        function getDownloadsKey() {
+            switch(currentReconciliationType) {
+                case 'dailyDep': return 'dailyDepDownloads';
+                case 'abcBilling': return 'abcBillingDownloads';
+                case 'clubAcct': return 'clubAcctDownloads';
+                case 'cashDep': return null; // no CSV, no downloads
+                default: return null;
+            }
+        }
+
+        // Check PROCESS-TIME duplicates: new report's date range vs. existing saved reports.
+        // Flags any overlap INCLUDING exact matches — exact match means you've processed
+        // this exact period before, which is the MOST likely sign you may have uploaded
+        // its CSV to QBO already. Only excluded if it's the SAME report (same id).
+        function findOverlappingReports(newDateRange, excludeId) {
+            const newRange = parseDateRangeStr(newDateRange);
+            if (!newRange) return [];
+            const key = (currentReconciliationType === 'dailyDep' ? 'dailyDepReports' : currentReconciliationType === 'clubAcct' ? 'clubAcctReports' : currentReconciliationType === 'cashDep' ? 'cashDepReports' : 'abcBillingReports');
+            const existing = getStoredArray(key);
+            const overlaps = [];
+            existing.forEach(r => {
+                if (excludeId && r.id === excludeId) return;
+                const existingRange = parseDateRangeStr(r.dateRange);
+                if (rangesOverlap(newRange, existingRange)) {
+                    overlaps.push(r);
+                }
+            });
+            return overlaps;
+        }
+
+        // Check DOWNLOAD-TIME duplicates: current report's date range vs. CSV download log
+        function findOverlappingDownloads(dateRange) {
+            const key = getDownloadsKey();
+            if (!key) return [];
+            const newRange = parseDateRangeStr(dateRange);
+            if (!newRange) return [];
+            const log = getStoredArray(key);
+            return log.filter(d => {
+                const r = parseDateRangeStr(d.dateRange);
+                return rangesOverlap(newRange, r);
+            });
+        }
+
+        // Helper to pull stored array from memStore safely
+        function getStoredArray(key) {
+            try {
+                const v = store.get(key, []);
+                return Array.isArray(v) ? v : [];
+            } catch(e) { return []; }
+        }
+
+        // Log a successful download for duplicate detection next time
+        function logCsvDownload(dateRange, netTotal, rowCount) {
+            const key = getDownloadsKey();
+            if (!key) return;
+            const log = getStoredArray(key);
+            log.push({
+                dateRange,
+                netTotal: round2(netTotal || 0),
+                rowCount: rowCount || 0,
+                downloadedAt: new Date().toISOString()
+            });
+            store.set(key, log);
+            console.log('[duplicate-check] logged download:', key, {dateRange, netTotal, rowCount, totalLogged: log.length});
+        }
+
+        // Render process-time duplicate warning banner (shown at top of report display)
+        function renderDuplicateWarningBanner() {
+            const container = document.getElementById('duplicateWarningContainer');
+            if (!container) return;
+            container.innerHTML = '';
+            if (!currentReportData || !currentReportData.dateRange) return;
+            const overlaps = findOverlappingReports(currentReportData.dateRange, currentReportData.id);
+            if (overlaps.length === 0) return;
+            const list = overlaps.map(r => `<li><strong>${escapeHtml(r.dateRange)}</strong> — saved ${new Date(r.timestamp).toLocaleDateString()}, Rev total ${fmtMoney(parseFloat(r.totalRevenue || 0))}</li>`).join('');
+            container.innerHTML = `
+                <div class="warning-banner warn" style="display:block; padding:14px 16px; margin-bottom:14px;">
+                    <div style="font-weight:600; color:#92400e; margin-bottom:6px;">⚠ Possible duplicate: this report's date range overlaps ${overlaps.length} previously processed report${overlaps.length>1?'s':''} on this tab:</div>
+                    <ul style="margin:4px 0 6px 20px; color:#78350f; font-size:13px;">${list}</ul>
+                    <div style="font-size:12px; color:#78350f;">If you uploaded a CSV for one of these to QBO already, re-uploading will double-count. Check the clearing account register before downloading again.</div>
+                </div>`;
+        }
+
         function fmtMoney(n) {
             if (n === null || n === undefined || isNaN(n)) return '—';
             const abs = Math.abs(n);
