@@ -160,6 +160,7 @@
       <span class="hdr-t">Stripe Recon</span>
       <div class="sep"></div>
       <span class="hdr-s">Kinective Fitness — MWC / Mindbody</span>
+      <span style="margin-left:10px;font-size:10px;color:var(--text3);opacity:0.7;">v2-dupcheck</span>
     </div>
     <div class="hdr-r">
       <div class="sbs"><div class="sbd" id="sbDot"></div><span id="sbLbl">Connecting…</span></div>
@@ -193,6 +194,7 @@
     </div>
 
     <div id="prevArea" style="display:none">
+      <div id="stripeDupeWarning"></div>
       <div style="display:flex;align-items:center;justify-content:space-between;margin-top:20px;margin-bottom:12px">
         <div>
           <span style="font-size:15px;font-weight:600" id="prevMonth"></span>
@@ -267,6 +269,84 @@
 
 <script>
 var SBU='',SBK='',allData=[],pRows=[],pMonth='',charts={};
+
+// ── DUPLICATE DETECTION ────────────────────────────────────
+// Track CSV downloads in localStorage keyed by month. Warns when loading a file
+// for a month already saved to Supabase OR already downloaded.
+var DL_KEY='stripeDownloadLog';
+function getDownloadLog(){
+  try{var raw=localStorage.getItem(DL_KEY);return raw?JSON.parse(raw):[];}catch(e){return [];}
+}
+function logDownload(month,netTotal,rowCount){
+  var log=getDownloadLog();
+  log.push({month:month,netTotal:Math.round((netTotal||0)*100)/100,rowCount:rowCount||0,downloadedAt:new Date().toISOString()});
+  try{localStorage.setItem(DL_KEY,JSON.stringify(log));}catch(e){}
+  console.log('[duplicate-check] logged download:',month,{netTotal:netTotal,rowCount:rowCount,totalLogged:log.length});
+}
+function findDownloadsForMonth(month){
+  if(!month)return [];
+  return getDownloadLog().filter(function(d){return d.month===month;});
+}
+// Check if the month exists in Supabase (previously saved pivot rows)
+async function checkSupabaseSavedMonth(month){
+  if(!month||!SBU||!SBK)return false;
+  try{
+    var r=await sbF('GET','stripe_pivot_rows?select=month&month=eq.'+encodeURIComponent(month)+'&limit=1');
+    return r&&r.length>0;
+  }catch(e){console.log('[duplicate-check] supabase check failed:',e);return false;}
+}
+// Render process-time warning banner above the preview
+async function renderDuplicateWarning(month){
+  var container=document.getElementById('stripeDupeWarning');
+  if(!container)return;
+  container.innerHTML='';
+  if(!month)return;
+  var downloads=findDownloadsForMonth(month);
+  var savedInSB=await checkSupabaseSavedMonth(month);
+  if(downloads.length===0 && !savedInSB)return;
+  var parts=['<div style="background:#fef3c7;border-left:4px solid #f59e0b;padding:12px 14px;border-radius:6px;margin:12px 0;color:#78350f;font-size:13px;">'];
+  parts.push('<div style="font-weight:600;color:#92400e;margin-bottom:6px;">⚠ Possible duplicate for <strong>'+escapeHtml(month)+'</strong>:</div>');
+  parts.push('<ul style="margin:4px 0 0 20px;padding:0;">');
+  if(savedInSB)parts.push('<li>Already saved to Supabase (pivot rows exist for this month)</li>');
+  downloads.forEach(function(d){
+    var when=new Date(d.downloadedAt).toLocaleString();
+    parts.push('<li>Downloaded <strong>'+when+'</strong> — net $'+d.netTotal.toFixed(2)+', '+d.rowCount+' rows</li>');
+  });
+  parts.push('</ul>');
+  parts.push('<div style="margin-top:8px;font-size:12px;">If you already uploaded this to QuickBooks, re-uploading will double-count. Check 1006 Stripe Clearing register before downloading again.</div>');
+  parts.push('</div>');
+  container.innerHTML=parts.join('');
+}
+function escapeHtml(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+// Show hard-block modal before Export QBO CSV when duplicates detected
+function showDupeDownloadModal(month,downloads,onConfirm){
+  var prev=document.getElementById('dupeDlModal');
+  if(prev)prev.remove();
+  var list=downloads.map(function(d){
+    var when=new Date(d.downloadedAt).toLocaleString();
+    return '<li style="margin-bottom:6px;"><strong>'+escapeHtml(when)+'</strong> — net $'+d.netTotal.toFixed(2)+', '+d.rowCount+' rows</li>';
+  }).join('');
+  var m=document.createElement('div');
+  m.id='dupeDlModal';
+  m.style.cssText='position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;';
+  m.innerHTML='<div style="background:white;border-radius:12px;max-width:620px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,0.3);overflow:hidden;font-family:system-ui,sans-serif;">'
+    +'<div style="background:#fef3c7;padding:16px 20px;border-bottom:2px solid #f59e0b;"><div style="font-size:20px;font-weight:700;color:#92400e;">⚠ Duplicate Download Risk</div></div>'
+    +'<div style="padding:20px;color:#1a1a1a;font-size:14px;">'
+    +'<div style="margin-bottom:12px;">You already downloaded a QBO CSV for <strong>'+escapeHtml(month)+'</strong>:</div>'
+    +'<ul style="margin:0 0 12px 20px;color:#444;font-size:13px;">'+list+'</ul>'
+    +'<div style="background:#fee2e2;border-left:4px solid #dc2626;padding:12px 14px;border-radius:4px;color:#7f1d1d;font-size:13px;">'
+    +'<strong>If you already uploaded that CSV to QuickBooks</strong>, downloading and uploading this one will <strong>double-count</strong>. Check 1006 Stripe Clearing register in QBO first.</div>'
+    +'</div>'
+    +'<div style="padding:14px 20px;background:#f8f9fa;display:flex;justify-content:flex-end;gap:10px;">'
+    +'<button onclick="closeDupeDlModal()" style="padding:10px 20px;background:white;border:1px solid #d1d5db;color:#374151;border-radius:6px;cursor:pointer;font-weight:600;font-size:13px;">Cancel</button>'
+    +'<button id="dupeDlContinue" style="padding:10px 20px;background:#dc2626;color:white;border:none;border-radius:6px;cursor:pointer;font-weight:600;font-size:13px;">Continue anyway</button>'
+    +'</div></div>';
+  document.body.appendChild(m);
+  document.getElementById('dupeDlContinue').onclick=function(){closeDupeDlModal();if(onConfirm)onConfirm();};
+  console.log('[duplicate-check] showing modal, '+downloads.length+' prior downloads for '+month);
+}
+function closeDupeDlModal(){var m=document.getElementById('dupeDlModal');if(m)m.remove();}
 
 const PILL={
   'Pilates':               'background:#eff6ff;color:#2563eb',
@@ -506,16 +586,30 @@ function parsePreview(rows,fname){
   var btn=document.getElementById('saveBtn');
   btn.disabled=false;btn.innerHTML='Save to Supabase';
   document.getElementById('saveStatus').textContent='';
+  // Fire duplicate check (async — supabase lookup)
+  renderDuplicateWarning(month);
 }
 
-function clr(){pRows=[];pMonth='';document.getElementById('prevArea').style.display='none';document.getElementById('fi').value=''}
+function clr(){pRows=[];pMonth='';document.getElementById('prevArea').style.display='none';document.getElementById('fi').value='';var w=document.getElementById('stripeDupeWarning');if(w)w.innerHTML='';}
 
 // ── Export to QBO CSV ──────────────────────────────────────
 // Groups pRows by date + category + raw item name, outputs QBO-native bank CSV.
 // Description format: "{acct} {category} - {raw_name} - Stripe"
 // This keeps account# prefix for bank-rule matching while surfacing the
 // specific Stripe product (Reformer 10-pack, Summer Escape, Deep Tissue, etc.)
-function exportQBOCSV(){
+// Wrapper: checks for duplicate downloads before proceeding
+function exportQBOCSV(bypassDupeCheck){
+  if(!pRows||!pRows.length){toast('No data to export — upload a Stripe file first','err');return;}
+  if(!bypassDupeCheck){
+    var priorDownloads=findDownloadsForMonth(pMonth);
+    if(priorDownloads.length>0){
+      showDupeDownloadModal(pMonth,priorDownloads,function(){exportQBOCSV(true);});
+      return;
+    }
+  }
+  exportQBOCSVActual();
+}
+function exportQBOCSVActual(){
   if(!pRows||!pRows.length){toast('No data to export — upload a Stripe file first','err');return;}
 
   // KFC El Paso COA mapping for Stripe categories
@@ -587,6 +681,16 @@ function exportQBOCSV(){
   document.body.appendChild(a);a.click();document.body.removeChild(a);
   URL.revokeObjectURL(url);
   toast('Exported '+(lines.length-1)+' rows to '+fname,'ok');
+  // Log download for duplicate detection next time
+  var netTotal=0;
+  for(var i=1;i<lines.length;i++){
+    var parts=lines[i].split(',');
+    var amtStr=parts[parts.length-1];
+    netTotal+=parseFloat(amtStr)||0;
+  }
+  logDownload(pMonth,netTotal,lines.length-1);
+  // Re-render warning banner to reflect new download
+  renderDuplicateWarning(pMonth);
 }
 
 // ── Build pivot HTML ──────────────────────────────────────
