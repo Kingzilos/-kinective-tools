@@ -1266,7 +1266,7 @@
     <div class="container">
         <div class="header">
             <h1 id="pageTitle">ABC POS Reconciliation</h1>
-            <div style="text-align:center; font-size:11px; color:rgba(255,255,255,0.7); margin-top:4px;">v4-totalfix — open browser console (F12) to see logs</div>
+            <div style="text-align:center; font-size:11px; color:rgba(255,255,255,0.7); margin-top:4px;">v4-matchtotal — open browser console (F12) to see logs</div>
             <p>Upload and analyze your reports</p>
             <div class="reconciliation-toggle">
                 <button class="toggle-btn active" id="dailyDepBtn" onclick="switchReconciliation('dailyDep')">
@@ -3823,7 +3823,7 @@
             html += '</tr></thead><tbody>';
 
             const colTotals = {};
-            let totalRev = 0, totalIgColl = 0, totalDed = 0, totalRefunds = 0;
+            let totalRev = 0, totalIgColl = 0, totalDed = 0, totalRefunds = 0, totalDiff = 0;
 
             dates.forEach(iso => {
                 const b = byDate[iso] || { categories: {} };
@@ -3838,6 +3838,7 @@
                     totalIgColl += ig.collections;
                     totalRefunds += ig.refunds;
                     totalDed += ig.deduction;
+                    totalDiff += diff || 0;
                 }
 
                 html += `<tr${isMismatch ? ' class="mismatch-row"' : ''}>`;
@@ -3889,7 +3890,10 @@
                 html += `<td class="deduction-cell">${drdrDeduction !== null ? fmtMoney(drdrDeduction) : '—'}</td>`;
             } else {
                 html += `<td>${fmtMoney(totalIgColl)}</td>`;
-                html += `<td>—</td>`;
+                // Total Match = sum of daily variances. Threshold scales with number of days (loosely).
+                const matchCls = Math.abs(totalDiff) < 5 ? 'match-ok' : 'match-warn';
+                const matchSym = Math.abs(totalDiff) < 5 ? '✓' : '✗';
+                html += `<td class="${matchCls}">${matchSym} ${fmtMoney(totalDiff)}</td>`;
                 html += `<td class="deduction-cell">${fmtMoney(totalDed)}</td>`;
                 html += `<td>—</td>`;
             }
