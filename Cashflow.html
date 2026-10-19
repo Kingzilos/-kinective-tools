@@ -222,15 +222,20 @@
   .closing-bar-kin  { background: var(--navy) !important; }
   .closing-bar-amd  { background: #1a3a2a !important; }
 
-  /* ── TWO-ENTITY GRID ────────────────────────────────── */
+  /* ── TWO/THREE-ENTITY GRID ────────────────────────────────── */
   .entity-grid {
     display: grid;
     grid-template-columns: 1fr 1px 1fr;
+  }
+  .entity-grid.three-col {
+    grid-template-columns: 1fr 1px 1fr 1px 1fr;
   }
   .entity-divider {
     background: var(--gray-200);
   }
   .entity-col { padding: 24px; }
+  .entity-col.plano .entity-label { border-bottom-color: #3b82f6; }
+  .entity-col.plano .entity-label .total-pill { color: #3b82f6; }
   .entity-label {
     font-family: 'Syne', sans-serif;
     font-size: 11px;
@@ -646,7 +651,7 @@
   @media (max-width: 960px) {
     .hero-grid { grid-template-columns: 1fr; }
     .hero-kpis { flex-wrap: wrap; }
-    .entity-grid { grid-template-columns: 1fr; }
+    .entity-grid, .entity-grid.three-col { grid-template-columns: 1fr; }
     .entity-divider { display: none; }
     .cf-tiles { grid-template-columns: 1fr; }
     .analytics-grid { grid-template-columns: 1fr; }
@@ -769,11 +774,11 @@
       <div class="card-header-title">Opening Balances — Prior Week Closing</div>
       <div class="card-header-meta" id="opening-meta">Week 7 → Week 8 carry-forward</div>
     </div>
-    <div class="entity-grid">
-      <!-- KINECTIVE -->
+    <div class="entity-grid three-col">
+      <!-- KINECTIVE EL PASO -->
       <div class="entity-col">
         <div class="entity-label">
-          Kinective
+          Kinective El Paso
           <span class="total-pill" id="ob-kin-pill">$4,462,489.75</span>
         </div>
         <div class="account-row alt">
@@ -796,17 +801,29 @@
           <span class="acct-name"><strong>3472</strong> Investment — 4.09% Interest</span>
           <span class="acct-amount large editable" contenteditable="true" id="ob-3472" oninput="obEdited('3472')" onblur="obBlur('3472')">$4,111,595.77</span>
         </div>
-        <div class="account-row">
+        <div class="account-row total-row">
+          <span class="acct-name total-label">Kinective El Paso Total</span>
+          <span class="acct-amount total" id="ob-kin-total">$4,462,489.75</span>
+        </div>
+      </div>
+      <div class="entity-divider"></div>
+      <!-- KINECTIVE PLANO -->
+      <div class="entity-col plano">
+        <div class="entity-label">
+          Kinective Plano
+          <span class="total-pill" id="ob-plano-pill">$0.00</span>
+        </div>
+        <div class="account-row alt">
           <span class="acct-name"><strong>6299</strong> Plano — Income</span>
           <span class="acct-amount editable" contenteditable="true" id="ob-6299" oninput="obEdited('6299')" onblur="obBlur('6299')">$0.00</span>
         </div>
-        <div class="account-row alt">
+        <div class="account-row">
           <span class="acct-name"><strong>6280</strong> Plano — Expenses</span>
           <span class="acct-amount editable" contenteditable="true" id="ob-6280" oninput="obEdited('6280')" onblur="obBlur('6280')">$0.00</span>
         </div>
         <div class="account-row total-row">
-          <span class="acct-name total-label">Kinective Total</span>
-          <span class="acct-amount total" id="ob-kin-total">$4,462,489.75</span>
+          <span class="acct-name total-label">Kinective Plano Total</span>
+          <span class="acct-amount total" id="ob-plano-total">$0.00</span>
         </div>
       </div>
       <div class="entity-divider"></div>
@@ -849,8 +866,12 @@
       <div class="card-header-title">Weekly Income</div>
       <div class="card-header-meta">Incomes + Loans + Transfers</div>
     </div>
-    <div class="entity-grid">
+    <div class="entity-grid three-col">
       <div class="entity-col" id="income-kin-col">
+        <!-- rendered by renderIncome() -->
+      </div>
+      <div class="entity-divider"></div>
+      <div class="entity-col plano" id="income-plano-col">
         <!-- rendered by renderIncome() -->
       </div>
       <div class="entity-divider"></div>
@@ -1100,6 +1121,19 @@
     </div><!-- end scroll wrapper -->
   </div>
 
+  <!-- CARD 4.5 – RECONCILIATION AUDIT (collapsible) -->
+  <div class="card" id="audit-card">
+    <div class="card-header" style="cursor:pointer;" onclick="toggleAudit()">
+      <div class="card-header-title">
+        <span id="audit-chevron" style="display:inline-block;transition:transform .15s;transform:rotate(0deg);margin-right:8px;font-size:11px;color:var(--gold);">▶</span>
+        Reconciliation Audit
+        <span style="font-size:10px;color:var(--gray-400);margin-left:12px;font-weight:400;letter-spacing:0.08em;">Click to expand · trace every number into the combined closing</span>
+      </div>
+      <div class="card-header-meta" id="audit-status">—</div>
+    </div>
+    <div id="audit-body" style="display:none; padding: 0 24px 24px; overflow-x:auto;"></div>
+  </div>
+
   <!-- CARD 5 – ANALYTICS & CAPEX -->
   <div class="card">
     <div class="card-header">
@@ -1342,11 +1376,17 @@
   }
   .acct-pill.kin-acct:hover { background: rgba(201,168,76,0.22); }
   .acct-pill.amd-acct {
+    background: rgba(16,185,129,0.1);
+    color: #34d399;
+    border-color: rgba(16,185,129,0.3);
+  }
+  .acct-pill.amd-acct:hover { background: rgba(16,185,129,0.2); }
+  .acct-pill.plano-acct {
     background: rgba(59,130,246,0.1);
     color: #60a5fa;
     border-color: rgba(59,130,246,0.25);
   }
-  .acct-pill.amd-acct:hover { background: rgba(59,130,246,0.2); }
+  .acct-pill.plano-acct:hover { background: rgba(59,130,246,0.2); }
   .acct-pill.blank-acct {
     background: rgba(201,168,76,0.08);
     color: var(--gold);
@@ -1393,7 +1433,8 @@
     font-weight: 700;
   }
   .acct-dropdown-item .kin-tag { background: rgba(201,168,76,0.15); color: var(--gold); }
-  .acct-dropdown-item .amd-tag { background: rgba(59,130,246,0.12); color: #60a5fa; }
+  .acct-dropdown-item .plano-tag { background: rgba(59,130,246,0.12); color: #60a5fa; }
+  .acct-dropdown-item .amd-tag { background: rgba(16,185,129,0.12); color: #34d399; }
 
   /* ── PER-ACCOUNT CLOSING BALANCE TABLE ───────────────── */
   .acct-close-table { width: 100%; border-collapse: collapse; margin-top: 8px; table-layout: fixed; }
@@ -1501,8 +1542,10 @@ let incomeData = {
     '9753': { label: '9753 Wells Fargo — Income',        amount: 0 },
     '3472': { label: '3472 Money Market — Interest',     amount: 0 },
     '0211': { label: '0211 Wells Fargo — Credit',        amount: 84.15 },
-    '6280': { label: '6280 Plano — Expenses',            amount: 0 },
+  },
+  plano: {
     '6299': { label: '6299 Plano — Income',              amount: 0 },
+    '6280': { label: '6280 Plano — Expenses',            amount: 0 },
   },
   amd: {
     '3775': { label: '3775 WestStar — Credit',          amount: 0 },
@@ -1512,9 +1555,10 @@ let incomeData = {
 };
 
 function getIncomeTotal() {
-  const kinSum = Object.values(incomeData.kin).reduce((s,x)=>s+x.amount,0);
-  const amdSum = Object.values(incomeData.amd).reduce((s,x)=>s+x.amount,0);
-  return kinSum + amdSum;
+  const kinSum   = Object.values(incomeData.kin).reduce((s,x)=>s+x.amount,0);
+  const planoSum = Object.values(incomeData.plano||{}).reduce((s,x)=>s+x.amount,0);
+  const amdSum   = Object.values(incomeData.amd).reduce((s,x)=>s+x.amount,0);
+  return kinSum + planoSum + amdSum;
 }
 // Keep INCOME_TOTAL as a getter alias so existing code still works
 Object.defineProperty(window, 'INCOME_TOTAL', { get: getIncomeTotal, configurable: true });
@@ -1559,8 +1603,8 @@ const ACCT_OPTIONS = [
   { key: '9753', label: '9753 Wells Fargo — Income', entity: 'kin' },
   { key: '0211', label: '0211 Wells Fargo — Exp.',   entity: 'kin' },
   { key: '3472', label: '3472 Investment — 4.09%',   entity: 'kin' },
-  { key: '6299', label: '6299 Plano — Income',       entity: 'kin' },
-  { key: '6280', label: '6280 Plano — Expenses',     entity: 'kin' },
+  { key: '6299', label: '6299 Plano — Income',       entity: 'plano' },
+  { key: '6280', label: '6280 Plano — Expenses',     entity: 'plano' },
   { key: '3775', label: '3775 WestStar (AMD)',        entity: 'amd' },
   { key: '7698', label: '7698 Wells Fargo (AMD)',     entity: 'amd' },
   { key: '2085',    label: '2085 Money Market',      entity: 'amd' },
@@ -1569,7 +1613,10 @@ const ACCT_OPTIONS = [
 function acctPillClass(acct) {
   if (!acct) return 'blank-acct';
   const opt = ACCT_OPTIONS.find(o => acct.startsWith(o.key));
-  return opt ? (opt.entity === 'kin' ? 'kin-acct' : 'amd-acct') : 'kin-acct';
+  if (!opt) return 'kin-acct';
+  if (opt.entity === 'plano') return 'plano-acct';
+  if (opt.entity === 'amd')   return 'amd-acct';
+  return 'kin-acct';
 }
 
 function acctPillLabel(acct) {
@@ -1651,18 +1698,21 @@ function makeRow(item, group, idx) {
 
 
 function renderIncome() {
-  const kinCol = document.getElementById('income-kin-col');
-  const amdCol = document.getElementById('income-amd-col');
+  const kinCol   = document.getElementById('income-kin-col');
+  const planoCol = document.getElementById('income-plano-col');
+  const amdCol   = document.getElementById('income-amd-col');
   if (!kinCol || !amdCol) return;
+  if (!incomeData.plano) incomeData.plano = {};
 
-  const kinSum = Object.values(incomeData.kin).reduce((s,x)=>s+x.amount,0);
-  const amdSum = Object.values(incomeData.amd).reduce((s,x)=>s+x.amount,0);
-  const combined = kinSum + amdSum;
+  const kinSum   = Object.values(incomeData.kin).reduce((s,x)=>s+x.amount,0);
+  const planoSum = Object.values(incomeData.plano).reduce((s,x)=>s+x.amount,0);
+  const amdSum   = Object.values(incomeData.amd).reduce((s,x)=>s+x.amount,0);
+  const combined = kinSum + planoSum + amdSum;
 
-  function incRow(acctKey, acctData, alt) {
+  function incRow(acctKey, acctData, alt, entity) {
     return `<div class="account-row${alt?' alt':''}">
       <span class="acct-name" style="font-size:12px;"><strong>${acctKey}</strong> ${acctData.label.replace(acctKey+' ','')}</span>
-      <span class="acct-amount income-amt" contenteditable="true" data-acct="${acctKey}" data-entity="${acctData.entity||'kin'}"
+      <span class="acct-amount income-amt" contenteditable="true" data-acct="${acctKey}" data-entity="${entity}"
         style="font-family:'DM Mono',monospace;font-size:12px;cursor:text;min-width:90px;text-align:right;outline:none;border-radius:3px;padding:1px 4px;"
         onblur="updateIncomeAmt(this)"
         onfocus="if(this.textContent.startsWith('$'))this.textContent=this.textContent.replace(/[$,]/g,'');"
@@ -1670,31 +1720,34 @@ function renderIncome() {
     </div>`;
   }
 
-  let kinRows = '';
-  let i = 0;
-  for (const [k,v] of Object.entries(incomeData.kin)) {
-    kinRows += incRow(k, v, i%2===0);
-    i++;
+  function buildRows(bucket, entity) {
+    let rows = ''; let i = 0;
+    for (const [k,v] of Object.entries(bucket)) { rows += incRow(k, v, i%2===0, entity); i++; }
+    return rows;
   }
+
   kinCol.innerHTML = `
-    <div class="entity-label">Kinective <span class="total-pill" id="income-kin-total">${fmt(kinSum)}</span></div>
+    <div class="entity-label">Kinective El Paso <span class="total-pill" id="income-kin-total">${fmt(kinSum)}</span></div>
     <div class="sub-label">Regular Income</div>
-    ${kinRows}
+    ${buildRows(incomeData.kin, 'kin')}
     <div class="account-row total-row">
-      <span class="acct-name total-label">Kinective Weekly Income</span>
+      <span class="acct-name total-label">El Paso Weekly Income</span>
       <span class="acct-amount total" id="income-kin-subtotal">${fmt(kinSum)}</span>
     </div>`;
 
-  let amdRows = '';
-  i = 0;
-  for (const [k,v] of Object.entries(incomeData.amd)) {
-    amdRows += incRow(k, v, i%2===0);
-    i++;
-  }
+  if (planoCol) planoCol.innerHTML = `
+    <div class="entity-label">Kinective Plano <span class="total-pill" id="income-plano-total">${fmt(planoSum)}</span></div>
+    <div class="sub-label">Regular Income</div>
+    ${buildRows(incomeData.plano, 'plano')}
+    <div class="account-row total-row">
+      <span class="acct-name total-label">Plano Weekly Income</span>
+      <span class="acct-amount total" id="income-plano-subtotal">${fmt(planoSum)}</span>
+    </div>`;
+
   amdCol.innerHTML = `
     <div class="entity-label">AMD Capital <span class="total-pill" id="income-amd-total">${fmt(amdSum)}</span></div>
     <div class="sub-label">Regular Income</div>
-    ${amdRows}
+    ${buildRows(incomeData.amd, 'amd')}
     <div class="account-row total-row">
       <span class="acct-name total-label">AMD Weekly Income</span>
       <span class="acct-amount total" id="income-amd-subtotal">${fmt(amdSum)}</span>
@@ -1716,7 +1769,8 @@ function updateIncomeAmt(el) {
   const raw = parseFloat(el.textContent.replace(/[$,]/g,'')) || 0;
   const acct = el.dataset.acct;
   el.textContent = fmt(raw);
-  if (incomeData.kin[acct] !== undefined) incomeData.kin[acct].amount = raw;
+  if (incomeData.plano && incomeData.plano[acct] !== undefined) incomeData.plano[acct].amount = raw;
+  else if (incomeData.kin[acct] !== undefined) incomeData.kin[acct].amount = raw;
   else if (incomeData.amd[acct] !== undefined) incomeData.amd[acct].amount = raw;
   renderIncome();
   updateTotals();
@@ -1832,13 +1886,11 @@ function updateTotals() {
   const planoSubEl = document.getElementById('plano-subtotal'); if(planoSubEl) planoSubEl.textContent = fmt(planoTotal);
   document.getElementById('amd-subtotal').textContent  = fmt(amdTotal);
 
-  // Income totals
-  const kinIncAll = Object.values(incomeData.kin).reduce((s,x)=>s+x.amount,0);
-  const amdInc    = Object.values(incomeData.amd).reduce((s,x)=>s+x.amount,0);
-  // Split Kinective income: El Paso vs Plano
-  const planoInc  = (incomeData.kin['6299']?.amount||0) + (incomeData.kin['6280']?.amount||0);
-  const kinInc    = kinIncAll - planoInc;  // El Paso only
-  const combInc   = kinIncAll + amdInc;
+  // Income totals (kin is now El Paso only; plano is its own bucket)
+  const kinInc   = Object.values(incomeData.kin).reduce((s,x)=>s+x.amount,0);
+  const planoInc = Object.values(incomeData.plano||{}).reduce((s,x)=>s+x.amount,0);
+  const amdInc   = Object.values(incomeData.amd).reduce((s,x)=>s+x.amount,0);
+  const combInc  = kinInc + planoInc + amdInc;
 
   // FCF per entity
   const kinFCF   = kinInc - kinTotal;     // El Paso FCF
@@ -1867,7 +1919,7 @@ function updateTotals() {
       if (k === '2213') return tagged + kinExpenses.filter(e => !e.account).reduce((s,x)=>s+x.amount,0);
       return tagged;
     }
-    function incForAcct(k) { return (incomeData.kin[k]?.amount||0)+(incomeData.amd[k]?.amount||0); }
+    function incForAcct(k) { return (incomeData.kin[k]?.amount||0)+(incomeData.plano?.[k]?.amount||0)+(incomeData.amd[k]?.amount||0); }
     function xferForAcct(k) { return (window.transferAdjustments||{})[k]||0; }
     const ac={};
     ['8152','2213','9753','0211'].forEach(k=>{ac[k]=(ob[k]||0)+incForAcct(k)-expForAcct(k)+xferForAcct(k);});
@@ -2709,21 +2761,33 @@ function loadWeekIntoUI(weekNum, readOnly) {
   ['8152','2213','9753','0211','3472','6299','6280','3775','7698','2085'].forEach(id => {
     if (ob[id] !== undefined) setEl('ob-' + id, fmt(ob[id]));
   });
-  const kinOB = (ob['8152']||0)+(ob['2213']||0)+(ob['9753']||0)+(ob['0211']||0)+(ob['3472']||0)+(ob['6299']||0)+(ob['6280']||0);
-  const amdOB = (ob['3775']||0)+(ob['7698']||0)+(ob['2085']||0);
-  setEl('ob-kin-total', fmt(kinOB));
-  setEl('ob-kin-pill',  fmt(kinOB));
-  setEl('ob-amd-total', fmt(amdOB));
-  setEl('ob-amd-pill',  fmt(amdOB));
-  setEl('ob-combined',  fmt(kinOB + amdOB));
+  const kinOB   = (ob['8152']||0)+(ob['2213']||0)+(ob['9753']||0)+(ob['0211']||0)+(ob['3472']||0);
+  const planoOB = (ob['6299']||0)+(ob['6280']||0);
+  const amdOB   = (ob['3775']||0)+(ob['7698']||0)+(ob['2085']||0);
+  setEl('ob-kin-total',   fmt(kinOB));
+  setEl('ob-kin-pill',    fmt(kinOB));
+  setEl('ob-plano-total', fmt(planoOB));
+  setEl('ob-plano-pill',  fmt(planoOB));
+  setEl('ob-amd-total',   fmt(amdOB));
+  setEl('ob-amd-pill',    fmt(amdOB));
+  setEl('ob-combined',    fmt(kinOB + planoOB + amdOB));
 
   // Income — restore all accounts, default $0 if missing
   if (week.income?.data) {
     incomeData = JSON.parse(JSON.stringify(week.income.data));
   } else {
     Object.keys(incomeData.kin).forEach(k => incomeData.kin[k].amount = 0);
+    if (incomeData.plano) Object.keys(incomeData.plano).forEach(k => incomeData.plano[k].amount = 0);
     Object.keys(incomeData.amd).forEach(k => incomeData.amd[k].amount = 0);
   }
+  // Migrate legacy data: 6299/6280 used to live under kin
+  if (!incomeData.plano) incomeData.plano = {};
+  ['6299','6280'].forEach(k => {
+    if (incomeData.kin[k] && !incomeData.plano[k]) {
+      incomeData.plano[k] = incomeData.kin[k];
+    }
+    delete incomeData.kin[k];
+  });
   // Always ensure new accounts added after save are present
   const defaultKin = {
     '8152': { label: '8152 El Paso — Income', amount: 0 },
@@ -2731,6 +2795,8 @@ function loadWeekIntoUI(weekNum, readOnly) {
     '9753': { label: '9753 Wells Fargo — Income',       amount: 0 },
     '3472': { label: '3472 Money Market — Interest',    amount: 0 },
     '0211': { label: '0211 Wells Fargo — Credit',       amount: 0 },
+  };
+  const defaultPlano = {
     '6299': { label: '6299 Plano — Income',               amount: 0 },
     '6280': { label: '6280 Plano — Expenses',             amount: 0 },
   };
@@ -2739,8 +2805,9 @@ function loadWeekIntoUI(weekNum, readOnly) {
     '7698':   { label: '7698 Wells Fargo — Credit',     amount: 0 },
     '2085':   { label: '2085 Money Market — Interest',  amount: 0 },
   };
-  Object.keys(defaultKin).forEach(k => { if (!incomeData.kin[k]) incomeData.kin[k] = defaultKin[k]; });
-  Object.keys(defaultAmd).forEach(k => { if (!incomeData.amd[k]) incomeData.amd[k] = defaultAmd[k]; });
+  Object.keys(defaultKin).forEach(k   => { if (!incomeData.kin[k])   incomeData.kin[k]   = defaultKin[k]; });
+  Object.keys(defaultPlano).forEach(k => { if (!incomeData.plano[k]) incomeData.plano[k] = defaultPlano[k]; });
+  Object.keys(defaultAmd).forEach(k   => { if (!incomeData.amd[k])   incomeData.amd[k]   = defaultAmd[k]; });
   renderIncome();
 
   // Expenses
@@ -2845,6 +2912,267 @@ function recomputeCombinedTotal() {
   const tot = k + p + a;
   const el = document.getElementById('cb-combined');
   if (el) { el.textContent = fmt(tot); el.style.color = tot < 0 ? '#f87171' : '#F0D080'; }
+  // Keep the audit panel in sync if it's open
+  const audit = document.getElementById('audit-body');
+  if (audit && audit.style.display !== 'none') renderAudit();
+}
+
+// ── RECONCILIATION AUDIT ─────────────────────────────────────
+function addTransferAdjustment() {
+  const fromEl = document.getElementById('xfer-from');
+  const toEl   = document.getElementById('xfer-to');
+  const amtEl  = document.getElementById('xfer-amt');
+  if (!fromEl || !toEl || !amtEl) return;
+  const from = fromEl.value, to = toEl.value;
+  const amt  = parseFloat((amtEl.value||'').replace(/[$,\s()]/g,''));
+  if (!amt || amt <= 0) { alert('Enter a positive amount.'); return; }
+  if (from === to) { alert('FROM and TO must differ.'); return; }
+  if (!window.transferAdjustments) window.transferAdjustments = {};
+  window.transferAdjustments[from] = (window.transferAdjustments[from]||0) - amt;
+  window.transferAdjustments[to]   = (window.transferAdjustments[to]  ||0) + amt;
+  const week = allWeeks[currentWeekNum];
+  if (week) week.transferAdjustments = JSON.parse(JSON.stringify(window.transferAdjustments));
+  // Rebuild per-account closing from live inputs so the saved snapshot matches
+  rebuildClosingFromInputs();
+  window._xlsUploadedThisSession = true;
+  updateTotals();
+  recomputeCombinedTotal();
+  renderAudit();
+  if (typeof saveCurrentWeek === 'function') saveCurrentWeek();
+  showToast && showToast(`Transfer recorded: ${fmt(amt)} ${from} → ${to}`);
+}
+
+function removeTransferAdjustment(acctKey) {
+  if (!window.transferAdjustments) return;
+  if (!confirm('Clear transfer adjustment on ' + acctKey + '?')) return;
+  delete window.transferAdjustments[acctKey];
+  const week = allWeeks[currentWeekNum];
+  if (week) week.transferAdjustments = JSON.parse(JSON.stringify(window.transferAdjustments));
+  rebuildClosingFromInputs();
+  window._xlsUploadedThisSession = true;
+  updateTotals();
+  recomputeCombinedTotal();
+  renderAudit();
+  if (typeof saveCurrentWeek === 'function') saveCurrentWeek();
+}
+
+// Recompute saved snapshot closingBalances.accounts from current live inputs
+function rebuildClosingFromInputs() {
+  const week = allWeeks[currentWeekNum];
+  if (!week) return;
+  const ob = week.openingBalances || {};
+  const xfer = window.transferAdjustments || {};
+  const loan = window._loanAdjustments || {};
+  function incFor(k){ return (incomeData.kin[k]?.amount||0)+(incomeData.plano?.[k]?.amount||0)+(incomeData.amd[k]?.amount||0); }
+  function expFor(k){
+    const all = [...kinExpenses, ...planoExpenses, ...amdExpenses];
+    let tot = all.filter(e=>(e.account||'').startsWith(k)).reduce((s,x)=>s+x.amount,0);
+    if (k === '2213') tot += kinExpenses.filter(e=>!e.account).reduce((s,x)=>s+x.amount,0);
+    if (k === '3775') tot += amdExpenses.filter(e=>!e.account).reduce((s,x)=>s+x.amount,0);
+    return tot;
+  }
+  const accounts = {};
+  ['8152','2213','9753','0211','3472','6299','6280','3775','7698','2085'].forEach(k => {
+    accounts[k] = (ob[k]||0) + incFor(k) - expFor(k) + (xfer[k]||0) + (loan[k]||0);
+  });
+  const kinC   = accounts['8152']+accounts['2213']+accounts['9753']+accounts['0211']+accounts['3472'];
+  const planoC = accounts['6299']+accounts['6280'];
+  const amdC   = accounts['3775']+accounts['7698']+accounts['2085'];
+  week.closingBalances = { kin: kinC, amd: amdC, combined: kinC+planoC+amdC, accounts };
+}
+
+function toggleAudit() {
+  const body = document.getElementById('audit-body');
+  const chev = document.getElementById('audit-chevron');
+  if (!body) return;
+  const open = body.style.display === 'none';
+  body.style.display = open ? 'block' : 'none';
+  if (chev) chev.style.transform = open ? 'rotate(90deg)' : 'rotate(0deg)';
+  if (open) renderAudit();
+}
+
+function renderAudit() {
+  const body = document.getElementById('audit-body');
+  if (!body) return;
+  const week = (typeof allWeeks !== 'undefined') ? allWeeks[currentWeekNum] : null;
+  const ob   = (week && week.openingBalances) || {};
+  const xfer = window.transferAdjustments || {};
+  const loan = window._loanAdjustments || {};
+  const savedCB = week?.closingBalances?.accounts || {};
+
+  function incFor(k){ return (incomeData.kin[k]?.amount||0)+(incomeData.plano?.[k]?.amount||0)+(incomeData.amd[k]?.amount||0); }
+  function expFor(k){
+    const kinSum = kinExpenses.filter(e=>(e.account||'').startsWith(k)).reduce((s,x)=>s+x.amount,0);
+    const planoSum = planoExpenses.filter(e=>(e.account||'').startsWith(k)).reduce((s,x)=>s+x.amount,0);
+    const amdSum = amdExpenses.filter(e=>(e.account||'').startsWith(k)).reduce((s,x)=>s+x.amount,0);
+    let tot = kinSum + planoSum + amdSum;
+    if (k === '2213') tot += kinExpenses.filter(e=>!e.account).reduce((s,x)=>s+x.amount,0);
+    if (k === '3775') tot += amdExpenses.filter(e=>!e.account).reduce((s,x)=>s+x.amount,0);
+    return tot;
+  }
+
+  const accounts = [
+    { k:'8152', label:'8152 El Paso — Income',        entity:'Kinective El Paso' },
+    { k:'2213', label:'2213 El Paso — Expenses',       entity:'Kinective El Paso' },
+    { k:'9753', label:'9753 Wells Fargo — Income',     entity:'Kinective El Paso' },
+    { k:'0211', label:'0211 Wells Fargo — Expenses',   entity:'Kinective El Paso' },
+    { k:'3472', label:'3472 Investment — 4.09% Int.',  entity:'Kinective El Paso' },
+    { k:'6299', label:'6299 Plano — Income',           entity:'Kinective Plano' },
+    { k:'6280', label:'6280 Plano — Expenses',         entity:'Kinective Plano' },
+    { k:'3775', label:'3775 WestStar',                 entity:'AMD Capital' },
+    { k:'7698', label:'7698 Wells Fargo',              entity:'AMD Capital' },
+    { k:'2085', label:'2085 Money Market — Interest',  entity:'AMD Capital' },
+  ];
+
+  const entityTotals = {
+    'Kinective El Paso': { ob:0, inc:0, exp:0, xfer:0, loan:0, computed:0, displayed:0 },
+    'Kinective Plano':   { ob:0, inc:0, exp:0, xfer:0, loan:0, computed:0, displayed:0 },
+    'AMD Capital':       { ob:0, inc:0, exp:0, xfer:0, loan:0, computed:0, displayed:0 },
+  };
+
+  // Build the Transfer Recorder UI
+  const ACCT_LIST = [
+    { k:'8152', name:'8152 El Paso — Income' },
+    { k:'2213', name:'2213 El Paso — Expenses' },
+    { k:'9753', name:'9753 Wells Fargo — Income' },
+    { k:'0211', name:'0211 Wells Fargo — Expenses' },
+    { k:'3472', name:'3472 Investment — 4.09%' },
+    { k:'6299', name:'6299 Plano — Income' },
+    { k:'6280', name:'6280 Plano — Expenses' },
+    { k:'3775', name:'3775 WestStar (AMD)' },
+    { k:'7698', name:'7698 Wells Fargo (AMD)' },
+    { k:'2085', name:'2085 Money Market (AMD)' },
+  ];
+  const optList = ACCT_LIST.map(a => `<option value="${a.k}">${a.name}</option>`).join('');
+
+  // List existing non-zero transfer adjustments
+  const existing = Object.entries(xfer).filter(([k,v]) => Math.abs(v) >= 0.01);
+  let existingRows = '';
+  if (existing.length) {
+    existingRows = `<div style="margin:8px 0 0;font-family:'DM Mono',monospace;font-size:10px;color:var(--gray-500);letter-spacing:0.08em;text-transform:uppercase;">Recorded Transfer Adjustments</div>
+      <table style="width:100%;max-width:620px;border-collapse:collapse;font-family:'DM Mono',monospace;font-size:11px;margin:6px 0 14px;">
+        ${existing.map(([k,v]) => `<tr style="border-bottom:1px dashed var(--gray-200);">
+          <td style="padding:4px 10px;color:var(--char);">${(ACCT_LIST.find(a=>a.k===k)||{name:k}).name}</td>
+          <td style="padding:4px 10px;text-align:right;color:${v<0?'var(--red)':'#16a34a'};font-weight:600;">${v<0?'':'+'}${fmt(v)}</td>
+          <td style="padding:4px 10px;text-align:right;"><button onclick="removeTransferAdjustment('${k}')" style="font-family:'DM Mono',monospace;font-size:9px;background:rgba(185,28,28,0.1);border:1px solid rgba(185,28,28,0.3);color:var(--red);padding:2px 8px;border-radius:10px;cursor:pointer;letter-spacing:0.08em;">✕ CLEAR</button></td>
+        </tr>`).join('')}
+      </table>`;
+  }
+
+  let html = `
+    <div style="margin-top:16px;padding:14px 16px;background:var(--gold-pale);border:1px solid rgba(201,168,76,0.3);border-radius:var(--radius-sm);">
+      <div style="font-family:'Syne',sans-serif;font-size:11px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--char);margin-bottom:8px;">+ Record Inter-Account Transfer</div>
+      <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;font-family:'DM Mono',monospace;font-size:11px;">
+        <span style="color:var(--gray-500);">FROM</span>
+        <select id="xfer-from" style="font-family:'DM Mono',monospace;font-size:11px;padding:4px 8px;border:1px solid var(--gray-300);border-radius:4px;background:var(--white);">${optList}</select>
+        <span style="color:var(--gray-500);">TO</span>
+        <select id="xfer-to" style="font-family:'DM Mono',monospace;font-size:11px;padding:4px 8px;border:1px solid var(--gray-300);border-radius:4px;background:var(--white);">${optList}</select>
+        <span style="color:var(--gray-500);">AMOUNT</span>
+        <input id="xfer-amt" type="text" placeholder="549779.11" style="font-family:'DM Mono',monospace;font-size:11px;padding:4px 8px;border:1px solid var(--gray-300);border-radius:4px;background:var(--white);width:140px;text-align:right;">
+        <button onclick="addTransferAdjustment()" style="font-family:'DM Mono',monospace;font-size:10px;background:var(--navy);color:var(--white);border:none;padding:6px 14px;border-radius:4px;cursor:pointer;letter-spacing:0.08em;font-weight:600;">RECORD</button>
+      </div>
+      ${existingRows}
+    </div>
+    <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--gray-500);margin:16px 0 10px;letter-spacing:0.08em;text-transform:uppercase;">
+      Formula: Closing = Opening + Income − Expense + Transfers + Loans
+    </div>`;
+  html += `
+    <table style="width:100%;border-collapse:collapse;font-family:'DM Mono',monospace;font-size:11px;min-width:900px;">
+      <thead>
+        <tr style="color:var(--gray-500);text-align:right;border-bottom:1px solid var(--gray-200);">
+          <th style="text-align:left;padding:6px 10px;">Account</th>
+          <th style="padding:6px 10px;">Opening</th>
+          <th style="padding:6px 10px;">+ Income</th>
+          <th style="padding:6px 10px;">− Expense</th>
+          <th style="padding:6px 10px;">± Transfer</th>
+          <th style="padding:6px 10px;">± Loan</th>
+          <th style="padding:6px 10px;color:var(--char);">= Computed</th>
+          <th style="padding:6px 10px;color:var(--char);">Displayed</th>
+          <th style="padding:6px 10px;color:var(--red);">Δ</th>
+        </tr>
+      </thead>
+      <tbody>`;
+
+  function row(acc) {
+    const o = ob[acc.k]||0, i = incFor(acc.k), e = expFor(acc.k), x = xfer[acc.k]||0, l = loan[acc.k]||0;
+    const comp = o + i - e + x + l;
+    const disp = savedCB[acc.k] !== undefined ? savedCB[acc.k] :
+      (parseFloat((document.getElementById('acct-close-'+acc.k)?.textContent||'0').replace(/[$,()]/g,''))||0);
+    const delta = comp - disp;
+    const et = entityTotals[acc.entity];
+    et.ob += o; et.inc += i; et.exp += e; et.xfer += x; et.loan += l;
+    et.computed += comp; et.displayed += disp;
+    const dColor = Math.abs(delta) < 0.01 ? 'var(--gray-400)' : 'var(--red)';
+    return `<tr style="border-bottom:1px dashed var(--gray-200);">
+      <td style="text-align:left;padding:6px 10px;color:var(--char);">${acc.label}</td>
+      <td style="text-align:right;padding:6px 10px;">${fmt(o)}</td>
+      <td style="text-align:right;padding:6px 10px;color:#16a34a;">${fmt(i)}</td>
+      <td style="text-align:right;padding:6px 10px;color:var(--red);">${fmt(e)}</td>
+      <td style="text-align:right;padding:6px 10px;">${x===0?'—':fmt(x)}</td>
+      <td style="text-align:right;padding:6px 10px;">${l===0?'—':fmt(l)}</td>
+      <td style="text-align:right;padding:6px 10px;font-weight:600;color:var(--char);">${fmt(comp)}</td>
+      <td style="text-align:right;padding:6px 10px;color:var(--gray-500);">${fmt(disp)}</td>
+      <td style="text-align:right;padding:6px 10px;color:${dColor};font-weight:600;">${Math.abs(delta)<0.01?'—':fmt(delta)}</td>
+    </tr>`;
+  }
+
+  ['Kinective El Paso','Kinective Plano','AMD Capital'].forEach(ent => {
+    html += `<tr><td colspan="9" style="padding:14px 10px 6px;font-family:'Syne',sans-serif;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:${ent.includes('Plano')?'#3b82f6':'var(--gold)'};font-weight:700;">${ent}</td></tr>`;
+    accounts.filter(a => a.entity === ent).forEach(a => { html += row(a); });
+    const t = entityTotals[ent];
+    const d = t.computed - t.displayed;
+    html += `<tr style="background:var(--gold-pale);border-top:1px solid rgba(201,168,76,0.3);">
+      <td style="text-align:left;padding:8px 10px;font-weight:700;">${ent} Subtotal</td>
+      <td style="text-align:right;padding:8px 10px;font-weight:700;">${fmt(t.ob)}</td>
+      <td style="text-align:right;padding:8px 10px;font-weight:700;color:#16a34a;">${fmt(t.inc)}</td>
+      <td style="text-align:right;padding:8px 10px;font-weight:700;color:var(--red);">${fmt(t.exp)}</td>
+      <td style="text-align:right;padding:8px 10px;font-weight:700;">${t.xfer===0?'—':fmt(t.xfer)}</td>
+      <td style="text-align:right;padding:8px 10px;font-weight:700;">${t.loan===0?'—':fmt(t.loan)}</td>
+      <td style="text-align:right;padding:8px 10px;font-weight:700;">${fmt(t.computed)}</td>
+      <td style="text-align:right;padding:8px 10px;font-weight:700;">${fmt(t.displayed)}</td>
+      <td style="text-align:right;padding:8px 10px;font-weight:700;color:${Math.abs(d)<0.01?'var(--gray-400)':'var(--red)'};">${Math.abs(d)<0.01?'—':fmt(d)}</td>
+    </tr>`;
+  });
+
+  const grand = {
+    ob:  entityTotals['Kinective El Paso'].ob  + entityTotals['Kinective Plano'].ob  + entityTotals['AMD Capital'].ob,
+    inc: entityTotals['Kinective El Paso'].inc + entityTotals['Kinective Plano'].inc + entityTotals['AMD Capital'].inc,
+    exp: entityTotals['Kinective El Paso'].exp + entityTotals['Kinective Plano'].exp + entityTotals['AMD Capital'].exp,
+    xfer:entityTotals['Kinective El Paso'].xfer+ entityTotals['Kinective Plano'].xfer+ entityTotals['AMD Capital'].xfer,
+    loan:entityTotals['Kinective El Paso'].loan+ entityTotals['Kinective Plano'].loan+ entityTotals['AMD Capital'].loan,
+    computed:  entityTotals['Kinective El Paso'].computed  + entityTotals['Kinective Plano'].computed  + entityTotals['AMD Capital'].computed,
+    displayed: entityTotals['Kinective El Paso'].displayed + entityTotals['Kinective Plano'].displayed + entityTotals['AMD Capital'].displayed,
+  };
+  const grandDelta = grand.computed - grand.displayed;
+  html += `<tr style="background:var(--navy);color:var(--white);">
+    <td style="text-align:left;padding:12px 10px;font-weight:700;font-family:'Syne',sans-serif;letter-spacing:0.08em;text-transform:uppercase;">Combined</td>
+    <td style="text-align:right;padding:12px 10px;font-weight:700;">${fmt(grand.ob)}</td>
+    <td style="text-align:right;padding:12px 10px;font-weight:700;color:#4ade80;">${fmt(grand.inc)}</td>
+    <td style="text-align:right;padding:12px 10px;font-weight:700;color:#f87171;">${fmt(grand.exp)}</td>
+    <td style="text-align:right;padding:12px 10px;font-weight:700;">${fmt(grand.xfer)}</td>
+    <td style="text-align:right;padding:12px 10px;font-weight:700;">${fmt(grand.loan)}</td>
+    <td style="text-align:right;padding:12px 10px;font-weight:700;color:var(--gold);">${fmt(grand.computed)}</td>
+    <td style="text-align:right;padding:12px 10px;font-weight:700;color:var(--gold-light);">${fmt(grand.displayed)}</td>
+    <td style="text-align:right;padding:12px 10px;font-weight:700;color:${Math.abs(grandDelta)<0.01?'var(--gray-400)':'#f87171'};">${Math.abs(grandDelta)<0.01?'—':fmt(grandDelta)}</td>
+  </tr>`;
+  html += `</tbody></table>`;
+
+  const notes = [];
+  if (Math.abs(grandDelta) >= 0.01) notes.push(`<strong style="color:var(--red);">Combined gap: ${fmt(grandDelta)}</strong> — Computed exceeds Displayed. Check the entity row(s) with a red Δ.`);
+  if (!window._xlsUploadedThisSession && week?.closingBalances?.accounts) notes.push(`Displayed values are from the <em>saved snapshot</em> for Week ${currentWeekNum}; they will not match Computed unless this week's inputs match what was saved. Re-save to resync, or upload the XLS to recompute.`);
+  if (notes.length) html += `<div style="margin-top:14px;padding:12px 14px;background:var(--red-pale);border:1px solid rgba(185,28,28,0.3);border-radius:var(--radius-sm);font-size:11px;color:var(--char);line-height:1.5;">${notes.join('<br>')}</div>`;
+
+  body.innerHTML = html;
+
+  // Update header status
+  const status = document.getElementById('audit-status');
+  if (status) {
+    if (Math.abs(grandDelta) < 0.01) {
+      status.innerHTML = `<span style="color:#16a34a;font-weight:600;">✓ Balanced</span>`;
+    } else {
+      status.innerHTML = `<span style="color:var(--red);font-weight:600;">Δ ${fmt(grandDelta)}</span>`;
+    }
+  }
 }
 
 // ── RIPPLE FORWARD ────────────────────────────────
@@ -3171,8 +3499,8 @@ function applyToReport(acctNum, expenses, incomeItems, transfers, filename) {
   const incomeTotal = incomeItems.reduce((s,x)=>s+x.amount,0);
   if (isKin && incomeData.kin[acctNum] !== undefined) {
     incomeData.kin[acctNum].amount = incomeTotal;
-  } else if (isPlano && incomeData.kin[acctNum] !== undefined) {
-    incomeData.kin[acctNum].amount = incomeTotal;
+  } else if (isPlano && incomeData.plano && incomeData.plano[acctNum] !== undefined) {
+    incomeData.plano[acctNum].amount = incomeTotal;
   } else if (!isKin && !isPlano && incomeData.amd[acctNum] !== undefined) {
     incomeData.amd[acctNum].amount = incomeTotal;
   }
@@ -3208,9 +3536,9 @@ function updateHeroKPIs() {
   const kinExp   = kinExpenses.reduce((s,x)=>s+x.amount,0);
   const planoExp = planoExpenses.reduce((s,x)=>s+x.amount,0);
   const amdExp   = amdExpenses.reduce((s,x)=>s+x.amount,0);
-  const kinIncAll = Object.values(incomeData.kin).reduce((s,x)=>s+x.amount,0);
-  const planoInc  = (incomeData.kin['6299']?.amount||0)+(incomeData.kin['6280']?.amount||0);
-  const kinInc    = kinIncAll - planoInc;
+  const kinInc    = Object.values(incomeData.kin).reduce((s,x)=>s+x.amount,0);
+  const planoInc  = Object.values(incomeData.plano||{}).reduce((s,x)=>s+x.amount,0);
+  const kinIncAll = kinInc + planoInc; // legacy alias (kin + plano)
   const amdInc    = Object.values(incomeData.amd).reduce((s,x)=>s+x.amount,0);
   const view      = activeView || 'combined';
 
@@ -3291,12 +3619,13 @@ function downloadExcel() {
     const wk  = typeof currentWeekNum!=='undefined'?currentWeekNum:9;
     const dtl = (typeof WEEK_DATES!=='undefined'&&WEEK_DATES[wk])||'';
     const ob  = {k8152:gN('ob-8152'),k2213:gN('ob-2213'),k9753:gN('ob-9753'),k0211:gN('ob-0211'),k3472:gN('ob-3472'),k6299:gN('ob-6299'),k6280:gN('ob-6280'),a3775:gN('ob-3775'),a7698:gN('ob-7698'),aInv:gN('ob-2085')};
-    const kinIncRows=[], amdIncRows=[];
+    const kinIncRows=[], planoIncRows=[], amdIncRows=[];
     if(typeof incomeData!=='undefined'){
-      Object.entries(incomeData.kin||{}).forEach(([k,v])=>kinIncRows.push({n:v.label,a:+(v.amount||0),ent:'Kinective',ac:k}));
+      Object.entries(incomeData.kin||{}).forEach(([k,v])=>kinIncRows.push({n:v.label,a:+(v.amount||0),ent:'Kinective El Paso',ac:k}));
+      Object.entries(incomeData.plano||{}).forEach(([k,v])=>planoIncRows.push({n:v.label,a:+(v.amount||0),ent:'Kinective Plano',ac:k}));
       Object.entries(incomeData.amd||{}).forEach(([k,v])=>amdIncRows.push({n:v.label,a:+(v.amount||0),ent:'AMD Capital',ac:k}));
     }
-    const kinIncTot=kinIncRows.reduce((s,x)=>s+x.a,0), amdIncTot=amdIncRows.reduce((s,x)=>s+x.a,0), incTotal=kinIncTot+amdIncTot;
+    const kinIncTot=kinIncRows.reduce((s,x)=>s+x.a,0), planoIncTot=planoIncRows.reduce((s,x)=>s+x.a,0), amdIncTot=amdIncRows.reduce((s,x)=>s+x.a,0), incTotal=kinIncTot+planoIncTot+amdIncTot;
     const kinExp=(typeof kinExpenses!=='undefined'?kinExpenses:[]).map(e=>({n:e.name,a:+(e.amount||0),ac:e.account||''}));
     const planoExp=(typeof planoExpenses!=='undefined'?planoExpenses:[]).map(e=>({n:e.name,a:+(e.amount||0),ac:e.account||''}));
     const amdExp=(typeof amdExpenses!=='undefined'?amdExpenses:[]).map(e=>({n:e.name,a:+(e.amount||0),ac:e.account||''}));
@@ -3397,6 +3726,60 @@ function downloadExcel() {
       ],21);
     }
 
+    // ── Formula-driven row tracking + helpers ───────────────────────────
+    const R = {}; // range/row index store, e.g. R.ob_kin = {start, end}; R.sub_ob_kin = <excel row>
+    function markStart(k){ R[k] = {start: ri + 1}; }        // next pushed row will be Excel row ri+1
+    function markEnd(k){   R[k].end = ri; }                 // last pushed row's Excel row index
+    function markRow(k){   R[k] = ri; }                     // store Excel row index of the last push
+    function colSum(k, col){ return `SUM(${col}${R[k].start}:${R[k].end===0?R[k].start:R[k].end})`; }
+    function cellF(k, col){ return `${col}${R[k]}`; }
+    // Formula-aware number cell
+    function MONF(formula, cached, bold, bg, bdr){
+      return { v: cached, t:'n', f: formula, s:{
+        font:{name:'Calibri', bold:!!bold, color:{rgb:'FF000000'}, sz:10},
+        fill: bg?{patternType:'solid', fgColor:{rgb:'FF'+bg}}:{patternType:'none'},
+        alignment:{horizontal:'right', vertical:'center'},
+        border: bdr||{},
+        numFmt: CURR
+      }};
+    }
+    // SUBT variant that accepts a formula string (without leading '=')
+    function SUBTF(label, formula, cached){
+      row([
+        cs('  '+label,true,'FF000000',10,false,'F7F7F7',null,'left',2,borThtb),
+        BLK('F7F7F7',borThtb),BLK('F7F7F7',borThtb),
+        MONF(formula, cached, true, 'F7F7F7', borThtb),
+        BLK('F7F7F7',borThtb)
+      ],18);
+    }
+    // TOT variant with formula
+    function TOTF(label, formula, cached, color){
+      const clr = color || 'FF000000';
+      row([
+        cs(label,true,clr,11,false,'F2F2F2',null,'left',1,borTot),
+        cs('',false,clr,11,false,'F2F2F2',null,'left',0,borTot),
+        cs('',false,clr,11,false,'F2F2F2',null,'left',0,borTot),
+        { v: cached, t:'n', f: formula, s:{
+          font:{name:'Calibri', bold:true, color:{rgb:clr}, sz:11},
+          fill:{patternType:'solid', fgColor:{rgb:'FFF2F2F2'}},
+          alignment:{horizontal:'right', vertical:'center'},
+          border: borTot, numFmt: CURR
+        }},
+        cs('',false,clr,11,false,'F2F2F2',null,'left',0,borTot)
+      ],21);
+    }
+    // DR variant whose amount cell is a formula (used for per-account closing)
+    function DRF(a, b, c, formula, cached, alt){
+      const bg = alt ? 'F2F2F2' : 'FFFFFF';
+      row([
+        cs('  '+String(a),false,'FF000000',10,false,bg,null,'left',1,borBot),
+        cs(b||'',false,'FF000000',10,false,bg,null,'left',0,borBot),
+        cs(c||'',false,'FF000000',10,false,bg,null,'left',0,borBot),
+        MONF(formula, cached, false, bg, borBot),
+        BLK(bg,borBot)
+      ],17.1);
+    }
+
     // ── HEADER ──────────────────────────────────────────────────────────
     row([BLK('FFFFFF')],9.95);
     merges.push({s:{r:ri,c:0},e:{r:ri,c:4}});
@@ -3410,81 +3793,182 @@ function downloadExcel() {
     // ── 01 Opening Balances ─────────────────────────────────────────────
     SEC('01   OPENING BALANCES — Prior Week Closing');
     HDR('Account','Entity','','Amount','');
-    DR('8152 El Paso — Income',     'Kinective','',ob.k8152,false);
-    DR('2213 El Paso — Expenses',   'Kinective','',ob.k2213,true);
-    DR('9753 Wells Fargo — Income',  'Kinective','',ob.k9753,false);
-    DR('0211 Wells Fargo — Expenses','Kinective','',ob.k0211,true);
-    DR('3472 Investment — 4.09% Int.','Kinective','',ob.k3472,false);
-    DR('6299 Plano — Income',        'Kinective','',ob.k6299,true);
-    DR('6280 Plano — Expenses',      'Kinective','',ob.k6280,false);
-    SUBT('Kinective Total', ob.k8152+ob.k2213+ob.k9753+ob.k0211+ob.k3472+ob.k6299+ob.k6280);
+    markStart('ob_kin');
+    DR('8152 El Paso — Income',     'Kinective El Paso','',ob.k8152,false); markRow('ob_8152');
+    DR('2213 El Paso — Expenses',   'Kinective El Paso','',ob.k2213,true);  markRow('ob_2213');
+    DR('9753 Wells Fargo — Income',  'Kinective El Paso','',ob.k9753,false); markRow('ob_9753');
+    DR('0211 Wells Fargo — Expenses','Kinective El Paso','',ob.k0211,true);  markRow('ob_0211');
+    DR('3472 Investment — 4.09% Int.','Kinective El Paso','',ob.k3472,false); markRow('ob_3472');
+    markEnd('ob_kin');
+    SUBTF('Kinective El Paso Total', colSum('ob_kin','D'), ob.k8152+ob.k2213+ob.k9753+ob.k0211+ob.k3472); markRow('ob_kin_sub');
     BL(6);
-    DR('3775 WestStar',              'AMD Capital','',ob.a3775,false);
-    DR('7698 Wells Fargo',           'AMD Capital','',ob.a7698,true);
-    DR('Investment — 4.09% Interest','AMD Capital','',ob.aInv,false);
-    SUBT('AMD Capital Total', ob.a3775+ob.a7698+ob.aInv);
-    TOT('Combined Opening Balance', ob.k8152+ob.k2213+ob.k9753+ob.k0211+ob.k3472+ob.k6299+ob.k6280+ob.a3775+ob.a7698+ob.aInv);
+    markStart('ob_plano');
+    DR('6299 Plano — Income',        'Kinective Plano','',ob.k6299,false); markRow('ob_6299');
+    DR('6280 Plano — Expenses',      'Kinective Plano','',ob.k6280,true);  markRow('ob_6280');
+    markEnd('ob_plano');
+    SUBTF('Kinective Plano Total', colSum('ob_plano','D'), ob.k6299+ob.k6280); markRow('ob_plano_sub');
+    BL(6);
+    markStart('ob_amd');
+    DR('3775 WestStar',              'AMD Capital','',ob.a3775,false); markRow('ob_3775');
+    DR('7698 Wells Fargo',           'AMD Capital','',ob.a7698,true);  markRow('ob_7698');
+    DR('Investment — 4.09% Interest','AMD Capital','',ob.aInv,false);  markRow('ob_2085');
+    markEnd('ob_amd');
+    SUBTF('AMD Capital Total', colSum('ob_amd','D'), ob.a3775+ob.a7698+ob.aInv); markRow('ob_amd_sub');
+    TOTF('Combined Opening Balance',
+      `${cellF('ob_kin_sub','D')}+${cellF('ob_plano_sub','D')}+${cellF('ob_amd_sub','D')}`,
+      ob.k8152+ob.k2213+ob.k9753+ob.k0211+ob.k3472+ob.k6299+ob.k6280+ob.a3775+ob.a7698+ob.aInv);
+    markRow('ob_combined');
     BL(16);
 
     // ── 02 Income ───────────────────────────────────────────────────────
     SEC('02   WEEKLY INCOME');
     HDR('Source / Description','Entity','Account','Amount','');
-    kinIncRows.forEach((e,i)=>DR(e.n,e.ent,e.ac||'',e.a,i%2===1));
-    SUBT('Kinective Income Total', kinIncTot);
+    markStart('inc_kin');
+    kinIncRows.forEach((e,i)=>{ DR(e.n,e.ent,e.ac||'',e.a,i%2===1); markRow('inc_'+e.ac); });
+    markEnd('inc_kin');
+    SUBTF('Kinective El Paso Income Total', colSum('inc_kin','D'), kinIncTot); markRow('inc_kin_sub');
     BL(6);
-    amdIncRows.forEach((e,i)=>DR(e.n,e.ent,e.ac||'',e.a,i%2===1));
-    SUBT('AMD Capital Income Total', amdIncTot);
-    TOT('Combined Weekly Income', incTotal, 'FF1E6B3C');
+    if(planoIncRows.length){
+      markStart('inc_plano');
+      planoIncRows.forEach((e,i)=>{ DR(e.n,e.ent,e.ac||'',e.a,i%2===1); markRow('inc_'+e.ac); });
+      markEnd('inc_plano');
+      SUBTF('Kinective Plano Income Total', colSum('inc_plano','D'), planoIncTot); markRow('inc_plano_sub');
+      BL(6);
+    }
+    markStart('inc_amd');
+    amdIncRows.forEach((e,i)=>{ DR(e.n,e.ent,e.ac||'',e.a,i%2===1); markRow('inc_'+e.ac); });
+    markEnd('inc_amd');
+    SUBTF('AMD Capital Income Total', colSum('inc_amd','D'), amdIncTot); markRow('inc_amd_sub');
+    const incTotalFormula = R.inc_plano_sub
+      ? `${cellF('inc_kin_sub','D')}+${cellF('inc_plano_sub','D')}+${cellF('inc_amd_sub','D')}`
+      : `${cellF('inc_kin_sub','D')}+${cellF('inc_amd_sub','D')}`;
+    TOTF('Combined Weekly Income', incTotalFormula, incTotal, 'FF1E6B3C'); markRow('inc_combined');
     BL(16);
 
     // ── 03 Expenses ─────────────────────────────────────────────────────
     SEC(`03   EXPENSES — Week ${wk}  (sorted largest → smallest)`);
     HDR('Transaction / Vendor','Entity','Account','Amount','');
-    kinExp.forEach((e,i)=>DR(e.n,'Kinective',e.ac,e.a,i%2===1));
-    SUBT('Kinective Subtotal', kinExpTot);
+    markStart('exp_kin'); markStart('exp_all');
+    const kinExpStart = ri + 1;
+    kinExp.forEach((e,i)=>DR(e.n,'Kinective El Paso',e.ac,e.a,i%2===1));
+    markEnd('exp_kin');
+    SUBTF('Kinective El Paso Subtotal', colSum('exp_kin','D'), kinExpTot); markRow('exp_kin_sub');
     BL(6);
     if(planoExp.length){
+      markStart('exp_plano');
       planoExp.forEach((e,i)=>DR(e.n,'Kinective Plano',e.ac,e.a,i%2===1));
-      SUBT('Kinective Plano Subtotal', planoExpTot);
+      markEnd('exp_plano');
+      SUBTF('Kinective Plano Subtotal', colSum('exp_plano','D'), planoExpTot); markRow('exp_plano_sub');
       BL(6);
     }
+    markStart('exp_amd');
     if(amdExp.length) amdExp.forEach((e,i)=>DR(e.n,'AMD Capital',e.ac,e.a,i%2===1));
     else DR('—','AMD Capital','—',0,false);
-    SUBT('AMD Capital Subtotal', amdExpTot);
-    TOT('Total Expenses', totalExp, 'FFC00000');
+    markEnd('exp_amd');
+    SUBTF('AMD Capital Subtotal', colSum('exp_amd','D'), amdExpTot); markRow('exp_amd_sub');
+    // Overall expense range (for SUMIF of per-account closing); covers all three subgroups
+    R.exp_all = { start: kinExpStart, end: R.exp_amd.end };
+    const expTotalFormula = R.exp_plano_sub
+      ? `${cellF('exp_kin_sub','D')}+${cellF('exp_plano_sub','D')}+${cellF('exp_amd_sub','D')}`
+      : `${cellF('exp_kin_sub','D')}+${cellF('exp_amd_sub','D')}`;
+    TOTF('Total Expenses', expTotalFormula, totalExp, 'FFC00000'); markRow('exp_combined');
     BL(16);
 
     // ── 04 Cash Flow Summary ────────────────────────────────────────────
     SEC('04   CASH FLOW SUMMARY');
     HDR('Metric','','','Amount','');
-    DR('Total Weekly Income','','',incTotal,false);
-    DR('Total Weekly Expenses','',' ',-totalExp,true);
-    SUBT('Free Cash Flow  (Income − Expenses)', fcf);
+    DRF('Total Weekly Income','','', cellF('inc_combined','D'), incTotal, false); markRow('cf_inc');
+    DRF('Total Weekly Expenses','',' ', '-'+cellF('exp_combined','D'), -totalExp, true); markRow('cf_exp');
+    SUBTF('Free Cash Flow  (Income − Expenses)', `${cellF('cf_inc','D')}+${cellF('cf_exp','D')}`, fcf); markRow('cf_fcf');
     BL(8);
-    DR('Current Week CAPEX','','',capexTot>0?capexTot:'—',false);
-    SUBT('Operating Cash Flow  (FCF + CAPEX)', ocf);
+    DR('Current Week CAPEX','','',capexTot>0?capexTot:'—',false); markRow('cf_capex');
+    SUBTF('Operating Cash Flow  (FCF + CAPEX)', `${cellF('cf_fcf','D')}+${cellF('cf_capex','D')}`, ocf); markRow('cf_ocf');
     BL(8);
-    DR('Kinective Closing Balance','','',cbKin,false);
-    DR('AMD Capital Closing Balance','','',cbAmd,true);
-    TOT('Combined Closing Balance', cbComb);
+
+    // ── 04b Per-Account Closing Reconciliation (formula-driven) ─────────
+    SEC('04b  PER-ACCOUNT CLOSING RECONCILIATION — Opening + Income − Expenses');
+    HDR('Account','Entity','','Closing','');
+    const xferMap = window.transferAdjustments || {};
+    const loanMap = window._loanAdjustments || {};
+    function closingFormula(acctKey, obRowKey, isExpenseIncluded) {
+      // closing = Opening + Income − SUMIF(Expenses, "acct*") + xfer + loan
+      let f = `${cellF(obRowKey,'D')}+${cellF('inc_'+acctKey,'D')}`;
+      if (isExpenseIncluded) f += `-SUMIF(C${R.exp_all.start}:C${R.exp_all.end},"${acctKey}*",D${R.exp_all.start}:D${R.exp_all.end})`;
+      const xv = xferMap[acctKey] || 0;
+      const lv = loanMap[acctKey] || 0;
+      if (xv) f += (xv >= 0 ? '+' : '') + xv.toFixed(2);
+      if (lv) f += (lv >= 0 ? '+' : '') + lv.toFixed(2);
+      return f;
+    }
+    function closingVal(acctKey) {
+      const obK = { k8152:'8152', k2213:'2213', k9753:'9753', k0211:'0211', k3472:'3472',
+                    k6299:'6299', k6280:'6280', a3775:'3775', a7698:'7698', aInv:'2085' };
+      const obVal = (Object.entries(ob).find(([k,v]) => obK[k]===acctKey) || [,0])[1] || 0;
+      const incVal = (incomeData.kin[acctKey]?.amount||0) + (incomeData.plano?.[acctKey]?.amount||0) + (incomeData.amd[acctKey]?.amount||0);
+      const allExp = [...kinExp, ...planoExp, ...amdExp];
+      const expVal = allExp.filter(e => (e.ac||'').startsWith(acctKey)).reduce((s,x)=>s+x.a,0);
+      return obVal + incVal - expVal + (xferMap[acctKey]||0) + (loanMap[acctKey]||0);
+    }
+    markStart('cls_kin');
+    [['8152','ob_8152','Kinective El Paso'],['2213','ob_2213','Kinective El Paso'],['9753','ob_9753','Kinective El Paso'],['0211','ob_0211','Kinective El Paso'],['3472','ob_3472','Kinective El Paso']].forEach(([k,obk,ent],i)=>{
+      // 3472 Investment has no expenses posted directly
+      DRF(k==='3472'?'3472 Investment — 4.09% Int.':ACCT_OPTIONS.find(o=>o.key===k)?.label||k, ent, '', closingFormula(k,obk,k!=='3472'), closingVal(k), i%2===1);
+      markRow('cls_'+k);
+    });
+    markEnd('cls_kin');
+    SUBTF('Kinective El Paso Closing', colSum('cls_kin','D'),
+      closingVal('8152')+closingVal('2213')+closingVal('9753')+closingVal('0211')+closingVal('3472')); markRow('cls_kin_sub');
+    BL(6);
+    markStart('cls_plano');
+    [['6299','ob_6299'],['6280','ob_6280']].forEach(([k,obk],i)=>{
+      DRF(ACCT_OPTIONS.find(o=>o.key===k)?.label||k, 'Kinective Plano', '', closingFormula(k,obk,true), closingVal(k), i%2===1);
+      markRow('cls_'+k);
+    });
+    markEnd('cls_plano');
+    SUBTF('Kinective Plano Closing', colSum('cls_plano','D'), closingVal('6299')+closingVal('6280')); markRow('cls_plano_sub');
+    BL(6);
+    markStart('cls_amd');
+    [['3775','ob_3775'],['7698','ob_7698'],['2085','ob_2085']].forEach(([k,obk],i)=>{
+      // 2085 Investment has no expenses posted directly
+      DRF(ACCT_OPTIONS.find(o=>o.key===k)?.label||k, 'AMD Capital', '', closingFormula(k,obk,k!=='2085'), closingVal(k), i%2===1);
+      markRow('cls_'+k);
+    });
+    markEnd('cls_amd');
+    SUBTF('AMD Capital Closing', colSum('cls_amd','D'),
+      closingVal('3775')+closingVal('7698')+closingVal('2085')); markRow('cls_amd_sub');
+    TOTF('Combined Closing Balance',
+      `${cellF('cls_kin_sub','D')}+${cellF('cls_plano_sub','D')}+${cellF('cls_amd_sub','D')}`,
+      cbComb);
     BL(16);
 
     // ── 05 CAPEX ────────────────────────────────────────────────────────
     SEC('05   CAPITAL EXPENDITURES (CAPEX) — 2026 YTD');
     HDR('Project / Asset','','','2026 YTD','');
-    capexItems.forEach((ci,i)=>DR(ci.n,'','',ci.a>0?ci.a:'—',i%2===1));
-    TOT('Weekly CAPEX', capexTot>0?capexTot:'—');
+    markStart('capex_items');
+    capexItems.forEach((ci,i)=>DR(ci.n,'','',ci.a>0?ci.a:0,i%2===1));
+    markEnd('capex_items');
+    if (capexTot > 0) {
+      TOTF('Weekly CAPEX', colSum('capex_items','D'), capexTot);
+    } else {
+      TOT('Weekly CAPEX', '—');
+    }
     BL(16);
 
     // ── 05b FINANCING ACTIVITIES ────────────────────────────────────────
     SEC('05b  FINANCING ACTIVITIES');
     HDR('Activity','Entity','','Amount','');
+    markStart('fin_items');
     if(financingItems.length){
-      financingItems.forEach((fi,i)=>DR(fi.n,fi.ent,'',fi.a>0?fi.a:'—',i%2===1));
+      financingItems.forEach((fi,i)=>DR(fi.n,fi.ent,'',fi.a>0?fi.a:0,i%2===1));
     } else {
       DR('—','','',0,false);
     }
-    TOT('Total Financing Activities', finTot>0?finTot:'—');
+    markEnd('fin_items');
+    if (finTot > 0) {
+      TOTF('Total Financing Activities', colSum('fin_items','D'), finTot);
+    } else {
+      TOT('Total Financing Activities', '—');
+    }
     BL(16);
 
     // ── 06 YTD ──────────────────────────────────────────────────────────
@@ -3497,7 +3981,7 @@ function downloadExcel() {
       BLK('FFFFFF',borBot),BLK('FFFFFF',borBot),
       MON(accum2026,false,'FFFFFF',borBot),
       MON(accum2025,false,'FFFFFF',borBot),
-      {v:accum2026-accum2025,t:'n',s:{font:{name:'Calibri',bold:true,color:{rgb:varColor},sz:10},fill:{patternType:'solid',fgColor:{rgb:'FFFFFFFF'}},alignment:{horizontal:'right',vertical:'center'},border:borBot,numFmt:NVAR}}
+      {v:accum2026-accum2025,t:'n',f:`D${ri+1}-E${ri+1}`,s:{font:{name:'Calibri',bold:true,color:{rgb:varColor},sz:10},fill:{patternType:'solid',fgColor:{rgb:'FFFFFFFF'}},alignment:{horizontal:'right',vertical:'center'},border:borBot,numFmt:NVAR}}
     ],17.1);
     row([
       cs('  AMD Rent paid by Kinective (Jan–Dec)',false,'FF000000',10,false,'F2F2F2',null,'left',2,borBot),
