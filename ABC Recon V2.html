@@ -2695,10 +2695,14 @@
                     const data = new Uint8Array(e.target.result);
                     const workbook = XLSX.read(data, { type: 'array' });
                     
-                    // Process the "Revenue by Profit Center Detail" sheet
-                    const sheetName = 'Revenue by Profit Center Detail';
-                    if (!workbook.SheetNames.includes(sheetName)) {
-                        alert('Sheet "Revenue by Profit Center Detail" not found!');
+                    // Find the "Revenue by Profit Center Detail" sheet.
+                    // Tolerant of ABC casing/spacing changes (e.g. "By" vs "by", extra spaces).
+                    const _normSheet = s => String(s).toLowerCase().replace(/\s+/g, ' ').trim();
+                    const _target = _normSheet('Revenue by Profit Center Detail');
+                    const sheetName = workbook.SheetNames.find(n => _normSheet(n) === _target)
+                        || workbook.SheetNames.find(n => _normSheet(n).includes('profit center detail'));
+                    if (!sheetName) {
+                        alert('Could not find a "Revenue by Profit Center Detail" sheet.\n\nSheets in this file: ' + workbook.SheetNames.join(', '));
                         return;
                     }
                     
@@ -2717,8 +2721,16 @@
         }
 
         function processReport(data) {
-            // Extract info from row 4 (index 3)
-            const infoRow = data[3] ? data[3][0] : '';
+            // Normalize a header/info cell: collapse all whitespace (newlines + spaces)
+            // so "Payment\nAmount" and "Payment Amount" are treated the same.
+            const _h = v => (v == null ? '' : String(v).replace(/\s+/g, ' ').trim());
+
+            // Locate the info line dynamically. ABC's export row offset can shift
+            // (e.g. an extra blank row), so don't assume a fixed index.
+            let infoRowIdx = data.findIndex(r => Array.isArray(r) && r.some(c => /Location:/i.test(_h(c)) && /Total Revenue:/i.test(_h(c))));
+            if (infoRowIdx < 0) infoRowIdx = data.findIndex(r => Array.isArray(r) && r.some(c => /Location:/i.test(_h(c))));
+            const infoCell = infoRowIdx >= 0 ? (data[infoRowIdx].find(c => /Location:/i.test(_h(c))) || '') : '';
+            const infoRow = String(infoCell || '');
             const locationMatch = infoRow.match(/Location:\s*([^|]+)/);
             const dateMatch = infoRow.match(/Date:\s*([^|]+)/);
             const revenueMatch = infoRow.match(/Total Revenue:\s*\$?([\d,\.]+)/);
@@ -2727,16 +2739,24 @@
             const dateRange = dateMatch ? dateMatch[1].trim() : 'Unknown';
             const totalRevenue = revenueMatch ? revenueMatch[1].trim() : '0';
             
-            // Find header row (row 5, index 4)
-            const headers = data[4] || [];
-            const profitCenterIdx = headers.findIndex(h => h && h.toString().includes('Profit Center'));
-            const paymentTypeIdx = headers.findIndex(h => h && h.toString().includes('Payment') && h.toString().includes('Type'));
-            const paymentAmountIdx = headers.findIndex(h => h && h === 'Payment\nAmount');
-            const salesTaxIdx = headers.findIndex(h => h && h === 'Sales Tax');
-            const paymentExcludingIdx = headers.findIndex(h => h && h.toString().includes('Excluding Tax'));
-            const paymentDateIdx = headers.findIndex(h => h && h.toString().includes('Payment') && h.toString().includes('Date'));
-            const clubNameIdx = headers.findIndex(h => h && h.toString().includes('Club') && h.toString().includes('Name'));
-            const collectedMethodIdx = headers.findIndex(h => h && h.toString().includes('Collected Method'));
+            // Locate the header row dynamically (the row carrying both "Profit Center"
+            // and "Payment Type"), then derive where the data rows begin.
+            let headerRowIdx = data.findIndex(r => Array.isArray(r)
+                && r.some(c => /profit center/i.test(_h(c)))
+                && r.some(c => /payment\s*type/i.test(_h(c))));
+            if (headerRowIdx < 0 && infoRowIdx >= 0) headerRowIdx = infoRowIdx + 1;  // fallback: row after info line
+            if (headerRowIdx < 0) headerRowIdx = 4;                                   // last-resort legacy default
+            const headers = data[headerRowIdx] || [];
+            const dataStartIdx = headerRowIdx + 1;
+            
+            const profitCenterIdx = headers.findIndex(h => _h(h).toLowerCase().includes('profit center'));
+            const paymentTypeIdx = headers.findIndex(h => /payment/i.test(_h(h)) && /type/i.test(_h(h)));
+            const paymentAmountIdx = headers.findIndex(h => _h(h).toLowerCase() === 'payment amount');
+            const salesTaxIdx = headers.findIndex(h => _h(h).toLowerCase() === 'sales tax');
+            const paymentExcludingIdx = headers.findIndex(h => /excluding tax/i.test(_h(h)));
+            const paymentDateIdx = headers.findIndex(h => /payment/i.test(_h(h)) && /date/i.test(_h(h)));
+            const clubNameIdx = headers.findIndex(h => /club/i.test(_h(h)) && /name/i.test(_h(h)));
+            const collectedMethodIdx = headers.findIndex(h => /collected method/i.test(_h(h)));
             
             // === DEBUG LOGGING ===
             console.log('[processReport] tab:', currentReconciliationType);
@@ -2747,15 +2767,16 @@
                 clubNameIdx, profitCenterIdx, paymentTypeIdx, paymentAmountIdx,
                 salesTaxIdx, paymentExcludingIdx, paymentDateIdx, collectedMethodIdx
             });
-            if (data[5]) {
-                console.log('[processReport] first data row (data[5]):', data[5]);
-                console.log('[processReport] first data row length:', data[5].length);
+            console.log('[processReport] header row index:', headerRowIdx, '| data starts at index:', dataStartIdx);
+            if (data[dataStartIdx]) {
+                console.log('[processReport] first data row:', data[dataStartIdx]);
+                console.log('[processReport] first data row length:', data[dataStartIdx].length);
                 console.log('[processReport] first data row Collected Method value:', 
-                    collectedMethodIdx >= 0 ? data[5][collectedMethodIdx] : '(no idx)');
+                    collectedMethodIdx >= 0 ? data[dataStartIdx][collectedMethodIdx] : '(no idx)');
             }
             // === END DEBUG ===
             
-            // Process data rows (starting from row 6, index 5)
+            // Process data rows (starting right after the detected header row)
             const processedData = {};
             let unappliedPayments = [];
             // Store raw rows for daily-slicing (QBO export feature — works on both tabs)
@@ -2774,7 +2795,7 @@
             let debugFirstFewSkips = { notAbcBill: [] };
             // === END DEBUG ===
             
-            for (let i = 5; i < data.length; i++) {
+            for (let i = dataStartIdx; i < data.length; i++) {
                 const row = data[i];
                 debugCounters.totalRows++;
                 if (!row || row.length === 0) { debugCounters.skipEmpty++; continue; }
