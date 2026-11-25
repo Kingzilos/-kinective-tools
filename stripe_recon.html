@@ -491,6 +491,11 @@ function normCat(raw){
   return'Talks and Events';
 }
 
+// ── Categories that render an itemized ↳ breakdown of their underlying
+//    Stripe product names. Add a category name here to turn its drill-down on.
+var BREAKDOWN_CATS=['Talks and Events','Massages'];
+function showsBreakdown(cat){return BREAKDOWN_CATS.indexOf(cat)>=0}
+
 function parsePreview(rows,fname){
   var keys=Object.keys(rows[0]);
 
@@ -700,13 +705,14 @@ function buildPivot(rows){
   // Group by date_label; also track raw_names for T&E rows
   var order=[];var by={};
   for(var r of rows){
-    if(!by[r.date_label]){by[r.date_label]={dt:r.deposit_dt,cats:{},teRaws:{}};order.push(r.date_label)}
+    if(!by[r.date_label]){by[r.date_label]={dt:r.deposit_dt,cats:{},raws:{}};order.push(r.date_label)}
     var g=by[r.date_label];
     g.cats[r.product_name]=(g.cats[r.product_name]||0)+r.net;
-    // Track original names that landed in Talks and Events
-    if(r.product_name==='Talks and Events'){
+    // Track original names for any category that shows a breakdown
+    if(showsBreakdown(r.product_name)){
       var rn=r.raw_name||r.product_name;
-      g.teRaws[rn]=(g.teRaws[rn]||0)+r.net;
+      if(!g.raws[r.product_name])g.raws[r.product_name]={};
+      g.raws[r.product_name][rn]=(g.raws[r.product_name][rn]||0)+r.net;
     }
   }
   order.sort((a,b)=>{
@@ -728,11 +734,11 @@ function buildPivot(rows){
       <td class="r ${dtotal<0?'neg':''}">${fmt(dtotal)}</td>
     </tr>`;
     for(var[cat,net] of Object.entries(g.cats)){
-      // Build T&E sub-note if this is the Talks and Events row
+      // Build sub-note of underlying product names for breakdown categories
       var teNote='';
-      if(cat==='Talks and Events'&&Object.keys(g.teRaws).length){
-        var items=Object.entries(g.teRaws)
-          .filter(([n])=>n!=='Talks and Events')
+      if(showsBreakdown(cat)&&g.raws[cat]){
+        var items=Object.entries(g.raws[cat])
+          .filter(([n])=>n!==cat)
           .map(([n,v])=>`<span style="white-space:nowrap">${n} <span style="color:var(--text3);font-size:10px">(${fmt(v)})</span></span>`)
           .join('<span style="color:var(--text4);margin:0 4px">·</span>');
         if(items) teNote=`<div style="font-size:11px;color:var(--text3);margin-top:4px;line-height:1.6;padding-left:2px">↳ ${items}</div>`;
@@ -780,10 +786,10 @@ function renderSummary(){
   document.getElementById('sumBd').innerHTML=cats.map(cat=>{
     var mc=months.map(m=>{var v=sm(allData.filter(r=>r.month===m&&r.product_name===cat),'net');return`<td class="r ${v<0?'cr':v>0?'cg':''}">${v?fmt(v):'—'}</td>`}).join('');
     var total=sm(allData.filter(r=>r.product_name===cat),'net');
-    // For T&E: show breakdown of unique original event names
+    // Breakdown categories: show unique original product names
     var teNote='';
-    if(cat==='Talks and Events'){
-      var teRows=allData.filter(r=>r.product_name==='Talks and Events'&&r.raw_name&&r.raw_name!=='Talks and Events');
+    if(showsBreakdown(cat)){
+      var teRows=allData.filter(r=>r.product_name===cat&&r.raw_name&&r.raw_name!==cat);
       var teMap={};
       teRows.forEach(r=>{teMap[r.raw_name]=(teMap[r.raw_name]||0)+r.net});
       var items=Object.entries(teMap).sort((a,b)=>b[1]-a[1])
@@ -995,8 +1001,9 @@ function buildSavedSalePivot(label){
   for(var cat of cats){
     var amt=grouped[cat];
     var teNote='';
-    if(cat==='Talks and Events'&&rawMap[cat]){
+    if(showsBreakdown(cat)&&rawMap[cat]){
       var items=Object.entries(rawMap[cat])
+        .filter(([n])=>n!==cat)
         .sort((a,b)=>b[1]-a[1])
         .map(([n,v])=>`<span style="white-space:nowrap">${n} <span style="color:var(--text3);font-size:10px">(${fmt(v)})</span></span>`)
         .join('<span style="color:var(--text4);margin:0 4px">·</span>');
@@ -1162,9 +1169,9 @@ function buildSalesPivot(grouped,rawMap){
   var html='<table><thead><tr><th>Category</th><th class="r">Converted Amount</th></tr></thead><tbody>';
   for(var cat of cats){
     var amt=grouped[cat];
-    // T&E sub-note
+    // sub-note of underlying product names for breakdown categories
     var teNote='';
-    if(cat==='Talks and Events'&&rawMap[cat]){
+    if(showsBreakdown(cat)&&rawMap[cat]){
       var items=Object.entries(rawMap[cat])
         .filter(([n])=>n!==cat)
         .sort((a,b)=>b[1]-a[1])
